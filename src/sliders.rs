@@ -69,14 +69,17 @@ impl AppState {
                         ui.vertical(|ui| {
                             let pos = self.game_state.player.position;
                             ui.label(format!(
-                                "Position: [x: {:.2}, y: {:.2}, z: {:.2}]",
+                                "Position:  x: {:.2},  y: {:.2},  z: {:.2}",
                                 pos[0], pos[1], pos[2]
                             ));
-                            ui.label(format!("Pitch: {:.2}", self.game_state.player.pitch));
-                            ui.label(format!("Yaw: {:.2}", self.game_state.player.yaw));
-                            ui.label(format!("Speed: {:.2}", self.game_state.player.speed));
+                            ui.label(format!(
+                                "Pitch: {:.2}   Yaw: {:.2}   Speed: {:.2}",
+                                self.game_state.player.pitch,
+                                self.game_state.player.yaw,
+                                self.game_state.player.speed
+                            ));
                             // Display key state (assuming Debug is implemented for KeyState)
-                            ui.label(format!("KeyState: {:?}", self.key_state));
+                            ui.label(format!("KeyState: {:?}", self.key_state.pressed_keys));
 
                             ui.label(format!("FPS: {}", self.game_state.current_fps));
                         })

@@ -56,14 +56,10 @@ impl AppState {
         );
     }
 
-    fn lock_cursor(&mut self, window: &Window) {
+    fn center_mouse(&mut self, window: &Window) {
         if let Err(e) = window.set_cursor_grab(winit::window::CursorGrabMode::Locked) {
             eprintln!("Failed to lock cursor: {}", e);
         }
-    }
-
-    fn center_mouse(&mut self, window: &Window) {
-        self.lock_cursor(window);
         window.set_cursor_visible(false);
         let window_size = window.inner_size().to_logical::<f64>(window.scale_factor());
 
@@ -73,43 +69,6 @@ impl AppState {
             window.set_cursor_position(winit::dpi::LogicalPosition::new(center_x, center_y))
         {
             eprintln!("Failed to center cursor: {}", e);
-        }
-    }
-
-    fn handle_mouse_motion(&mut self, delta: (f64, f64), window: &Window) {
-        self.game_state
-            .player
-            .handle_mouse_movement(delta.0, delta.1);
-        self.center_mouse(window);
-    }
-
-    // Process all currently pressed keys for movement
-    fn process_movement(&mut self) {
-        let delta_time = self.game_state.delta_time;
-
-        if self.key_state.is_pressed(GameKey::Jump) {
-            println!("omg she jumped")
-        }
-
-        if self.key_state.is_pressed(GameKey::Sprint) {
-            self.game_state.player.speed = 60.0;
-        }
-
-        if !self.key_state.is_pressed(GameKey::Sprint) {
-            self.game_state.player.speed = 30.0;
-        }
-
-        if self.key_state.is_pressed(GameKey::MoveForward) {
-            self.game_state.player.move_forward(delta_time);
-        }
-        if self.key_state.is_pressed(GameKey::MoveBackward) {
-            self.game_state.player.move_backward(delta_time);
-        }
-        if self.key_state.is_pressed(GameKey::MoveLeft) {
-            self.game_state.player.move_left(delta_time);
-        }
-        if self.key_state.is_pressed(GameKey::MoveRight) {
-            self.game_state.player.move_right(delta_time);
         }
     }
 }
@@ -147,7 +106,7 @@ impl App {
             surface,
             &window,
             initial_width,
-            initial_height, // Fixed: was initial_width twice
+            initial_height,
         )
         .await;
 
@@ -168,13 +127,18 @@ impl App {
     }
 
     fn handle_redraw(&mut self) {
+        let window = match &self.window {
+            Some(window) => window,
+            None => {
+                panic!("Window must be initialized before use");
+            }
+        };
+
         // Attempt to handle minimizing window
-        if let Some(window) = self.window.as_ref() {
-            if let Some(min) = window.is_minimized() {
-                if min {
-                    println!("Window is minimized");
-                    return;
-                }
+        if let Some(min) = window.is_minimized() {
+            if min {
+                println!("Window is minimized");
+                return;
             }
         }
 
@@ -185,15 +149,8 @@ impl App {
             }
         };
 
-        let window = match &self.window {
-            Some(window) => window,
-            None => {
-                panic!("Window must be initialized before use");
-            }
-        };
-
         // Process movement based on currently pressed keys
-        state.process_movement();
+        state.key_state.update(&mut state.game_state);
 
         // All of the UI code is handled by this 'update_ui' function which is defined in the gui module
         state.update_ui(window);
@@ -258,7 +215,11 @@ impl ApplicationHandler for App {
                         Some(window) => window,
                         None => return,
                     };
-                    state.handle_mouse_motion(delta, window.as_ref());
+                    state
+                        .game_state
+                        .player
+                        .handle_mouse_movement(delta.0, delta.1);
+                    state.center_mouse(window);
                 }
             }
             DeviceEvent::MouseWheel { delta } => match delta {
@@ -343,14 +304,17 @@ impl ApplicationHandler for App {
                     state.game_state.frame_count += 1;
                     let current_time = Instant::now();
                     let duration = current_time.duration_since(state.game_state.last_fps_time);
+
                     if duration.as_secs_f32() >= 1.0 {
                         state.game_state.current_fps = state.game_state.frame_count;
                         state.game_state.frame_count = 0;
                         state.game_state.last_fps_time = current_time;
                     }
+
                     let delta_time = current_time
                         .duration_since(state.game_state.last_frame_time)
                         .as_secs_f32();
+
                     state.game_state.delta_time = delta_time;
                     state.game_state.last_frame_time = current_time;
                 } else {

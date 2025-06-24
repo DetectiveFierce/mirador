@@ -28,7 +28,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let tan = vec4<f32>(0.941, 0.875, 0.62, 1.0);
     let purple = vec4<f32>(0.545, 0.455, 0.51, 1.0);
 
-    let tile_size = 40.0;
+    let tile_size = 20.0;
     let grid = vec2<i32>(floor(in.world_position / tile_size));
     let checker = (grid.x + grid.y) % 2 != 0;
 

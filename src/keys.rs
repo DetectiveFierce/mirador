@@ -1,3 +1,4 @@
+use crate::game::GameState;
 use std::collections::HashSet;
 use winit::keyboard;
 
@@ -15,7 +16,7 @@ pub enum GameKey {
 
 #[derive(Debug)]
 pub struct KeyState {
-    pressed_keys: HashSet<GameKey>,
+    pub pressed_keys: HashSet<GameKey>,
 }
 
 impl KeyState {
@@ -39,6 +40,33 @@ impl KeyState {
 
     pub fn _clear(&mut self) {
         self.pressed_keys.clear();
+    }
+
+    pub fn update(&mut self, game_state: &mut GameState) {
+        if self.is_pressed(GameKey::Jump) {
+            println!("omg she jumped")
+        }
+
+        if self.is_pressed(GameKey::Sprint) {
+            game_state.player.speed = 60.0;
+        }
+
+        if !self.is_pressed(GameKey::Sprint) {
+            game_state.player.speed = 30.0;
+        }
+
+        if self.is_pressed(GameKey::MoveForward) {
+            game_state.player.move_forward(game_state.delta_time);
+        }
+        if self.is_pressed(GameKey::MoveBackward) {
+            game_state.player.move_backward(game_state.delta_time);
+        }
+        if self.is_pressed(GameKey::MoveLeft) {
+            game_state.player.move_left(game_state.delta_time);
+        }
+        if self.is_pressed(GameKey::MoveRight) {
+            game_state.player.move_right(game_state.delta_time);
+        }
     }
 }
 
