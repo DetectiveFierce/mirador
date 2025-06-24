@@ -42,7 +42,7 @@ impl Player {
             pitch: 0.0,
             yaw: 0.0,
             fov: 100.0,
-            speed: 30.0,
+            speed: 60.0,
             mouse_sensitivity: 1.0,
         }
     }

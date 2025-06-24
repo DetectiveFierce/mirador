@@ -4,6 +4,7 @@ mod egui_lib;
 mod game;
 mod keys;
 mod math;
+mod maze;
 mod sliders;
 mod wgpu_lib;
 use winit::event_loop::{ControlFlow, EventLoop};

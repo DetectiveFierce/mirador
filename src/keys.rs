@@ -48,11 +48,11 @@ impl KeyState {
         }
 
         if self.is_pressed(GameKey::Sprint) {
-            game_state.player.speed = 60.0;
+            game_state.player.speed = 90.0;
         }
 
         if !self.is_pressed(GameKey::Sprint) {
-            game_state.player.speed = 30.0;
+            game_state.player.speed = 60.0;
         }
 
         if self.is_pressed(GameKey::MoveForward) {

@@ -1,9 +1,12 @@
-use crate::game::GameState;
-use crate::keys::{GameKey, KeyState, winit_key_to_game_key};
-use crate::{egui_lib::EguiRenderer, sliders::UiState, wgpu_lib::WgpuRenderer};
+use crate::{
+    egui_lib::EguiRenderer,
+    game::GameState,
+    keys::{GameKey, KeyState, winit_key_to_game_key},
+    sliders::UiState,
+    wgpu_lib::WgpuRenderer,
+};
 use egui_wgpu::wgpu;
-use std::sync::Arc;
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
