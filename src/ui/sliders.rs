@@ -1,5 +1,5 @@
 use crate::app::AppState;
-use crate::egui_lib;
+use crate::ui::egui_lib;
 use std::sync::Arc;
 use winit::window::Window;
 

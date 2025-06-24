@@ -1,9 +1,10 @@
 use crate::{
-    egui_lib::EguiRenderer,
-    game::GameState,
-    keys::{GameKey, KeyState, winit_key_to_game_key},
-    sliders::UiState,
-    wgpu_lib::WgpuRenderer,
+    game::{
+        GameState,
+        keys::{GameKey, KeyState, winit_key_to_game_key},
+    },
+    renderer::wgpu_lib::WgpuRenderer,
+    ui::{egui_lib::EguiRenderer, sliders::UiState},
 };
 use egui_wgpu::wgpu;
 use std::{sync::Arc, time::Instant};
