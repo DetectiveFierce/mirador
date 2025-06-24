@@ -1,11 +1,9 @@
 use crate::game::GameState;
-use crate::keys::GameKey;
-use crate::keys::KeyState;
+use crate::keys::{GameKey, KeyState, winit_key_to_game_key};
 use crate::{egui_lib::EguiRenderer, sliders::UiState, wgpu_lib::WgpuRenderer};
 use egui_wgpu::wgpu;
 use std::sync::Arc;
 use std::time::Instant;
-use winit::keyboard;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -31,7 +29,6 @@ impl AppState {
         height: u32,
     ) -> Self {
         window.set_cursor_visible(false);
-
         let wgpu_renderer = WgpuRenderer::new(instance, surface, width, height).await;
         let egui_renderer = EguiRenderer::new(
             &wgpu_renderer.device,
@@ -86,22 +83,21 @@ impl AppState {
         self.center_mouse(window);
     }
 
-    // Convert winit key to our game key enum
-    fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
-        match key.to_text() {
-            Some("w") | Some("ArrowUp") => Some(GameKey::MoveForward),
-            Some("s") | Some("ArrowDown") => Some(GameKey::MoveBackward),
-            Some("a") | Some("ArrowLeft") => Some(GameKey::MoveLeft),
-            Some("d") | Some("ArrowRight") => Some(GameKey::MoveRight),
-            Some("c") => Some(GameKey::ToggleSliders),
-            Some("q") => Some(GameKey::Quit),
-            _ => None,
-        }
-    }
-
     // Process all currently pressed keys for movement
     fn process_movement(&mut self) {
         let delta_time = self.game_state.delta_time;
+
+        if self.key_state.is_pressed(GameKey::Jump) {
+            println!("omg she jumped")
+        }
+
+        if self.key_state.is_pressed(GameKey::Sprint) {
+            self.game_state.player.speed = 60.0;
+        }
+
+        if !self.key_state.is_pressed(GameKey::Sprint) {
+            self.game_state.player.speed = 30.0;
+        }
 
         if self.key_state.is_pressed(GameKey::MoveForward) {
             self.game_state.player.move_forward(delta_time);
@@ -319,7 +315,7 @@ impl ApplicationHandler for App {
                     return;
                 }
 
-                if let Some(game_key) = AppState::winit_key_to_game_key(&key) {
+                if let Some(game_key) = winit_key_to_game_key(&key) {
                     match key_state {
                         ElementState::Pressed => {
                             state.key_state.press_key(game_key);
@@ -344,7 +340,14 @@ impl ApplicationHandler for App {
                 self.handle_redraw();
                 if let Some(state) = self.state.as_mut() {
                     state.ui.elapsed_time += 1.0;
+                    state.game_state.frame_count += 1;
                     let current_time = Instant::now();
+                    let duration = current_time.duration_since(state.game_state.last_fps_time);
+                    if duration.as_secs_f32() >= 1.0 {
+                        state.game_state.current_fps = state.game_state.frame_count;
+                        state.game_state.frame_count = 0;
+                        state.game_state.last_fps_time = current_time;
+                    }
                     let delta_time = current_time
                         .duration_since(state.game_state.last_frame_time)
                         .as_secs_f32();

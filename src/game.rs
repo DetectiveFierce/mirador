@@ -6,6 +6,9 @@ pub struct GameState {
     pub player: Player,
     pub last_frame_time: Instant,
     pub delta_time: f32,
+    pub frame_count: u32,
+    pub current_fps: u32,
+    pub last_fps_time: Instant,
 }
 
 impl GameState {
@@ -14,6 +17,10 @@ impl GameState {
             player: Player::new(),
             last_frame_time: Instant::now(),
             delta_time: 0.0,
+
+            frame_count: 0,
+            current_fps: 0,
+            last_fps_time: Instant::now(),
         }
     }
 }

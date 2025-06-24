@@ -57,7 +57,7 @@ impl Vertex {
     }
 
     fn create_floor_vertices() -> (Vec<Vertex>, usize) {
-        let floor_size = 500.0; // Size of the square floor
+        let floor_size = 1000.0; // Size of the square floor
         let half_size = floor_size / 2.0;
 
         // Define the four corners of the square floor centered at origin

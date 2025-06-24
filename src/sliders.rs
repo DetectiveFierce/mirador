@@ -26,7 +26,7 @@ impl UiState {
     }
 }
 
-fn custom_slider(
+fn _custom_slider(
     ui: &mut egui::Ui,
     label: &str,
     value: &mut f32,
@@ -55,7 +55,7 @@ impl AppState {
                 egui::Window::new("Debug Sliders:")
                     .default_open(true)
                     .collapsible(false)
-                    .default_size(egui::Vec2::new(200.0, 0.0))
+                    .default_size(egui::Vec2::new(225.0, 0.0))
                     .show(self.egui_renderer.context(), |ui| {
                         ui.spacing_mut().slider_width = 100.0;
                         match egui_lib::ui_theme() {
@@ -67,40 +67,18 @@ impl AppState {
                             }
                         }
                         ui.vertical(|ui| {
-                            ui.label("Background Color");
-                            custom_slider(ui, "Red", &mut self.ui.r, 0.0..=1.0, 0.01, 2);
-                            custom_slider(ui, "Green", &mut self.ui.g, 0.0..=1.0, 0.01, 2);
-                            custom_slider(ui, "Blue", &mut self.ui.b, 0.0..=1.0, 0.01, 2);
+                            let pos = self.game_state.player.position;
+                            ui.label(format!(
+                                "Position: [x: {:.2}, y: {:.2}, z: {:.2}]",
+                                pos[0], pos[1], pos[2]
+                            ));
+                            ui.label(format!("Pitch: {:.2}", self.game_state.player.pitch));
+                            ui.label(format!("Yaw: {:.2}", self.game_state.player.yaw));
+                            ui.label(format!("Speed: {:.2}", self.game_state.player.speed));
+                            // Display key state (assuming Debug is implemented for KeyState)
+                            ui.label(format!("KeyState: {:?}", self.key_state));
 
-                            ui.separator();
-                            // FOV: Smaller FOV means a more zoomed-in view, larger means wider.
-                            // If you go too high, distortion increases. Too low, you might crop the F.
-                            // A reasonable range to keep the F visible without extreme distortion.
-                            custom_slider(
-                                ui,
-                                "FOV",
-                                &mut self.game_state.player.fov,
-                                1.0..=179.0, // Constrained to physically meaningful range
-                                1.0,
-                                2,
-                            );
-
-                            // custom_slider(
-                            //     ui,
-                            //     "Pitch",
-                            //     &mut self.game_state.player.pitch,
-                            //     1.0..=359.0,
-                            //     1.0,
-                            //     2,
-                            // );
-                            // custom_slider(
-                            //     ui,
-                            //     "Yaw",
-                            //     &mut self.game_state.player.yaw,
-                            //     1.0..=359.0,
-                            //     1.0,
-                            //     2,
-                            // );
+                            ui.label(format!("FPS: {}", self.game_state.current_fps));
                         })
                     });
             }
