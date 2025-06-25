@@ -1,3 +1,20 @@
+//! WGPU-based renderer for the Mirador game.
+//!
+//! This module provides [`WgpuRenderer`], which manages all GPU resources, pipelines, and rendering
+//! logic for the main game scene, background, and title screen. It handles initialization of WGPU,
+//! creation of vertex/uniform buffers, pipelines, and orchestrates the rendering of the maze, player,
+//! animated background, and UI overlays.
+//!
+//! # Features
+//! - Loads maze geometry and floor/wall vertices
+//! - Renders a starfield background and animated title screen
+//! - Handles depth buffering and uniform updates for camera/player movement
+//! - Integrates with egui for UI overlays
+//!
+//! # Usage
+//! Create a [`WgpuRenderer`] via [`WgpuRenderer::new`] and call [`WgpuRenderer::update_canvas`]
+//! each frame to render the current game state.
+
 use crate::background::stars::{self, StarRenderer};
 use crate::game::player::Player;
 use crate::math::{deg_to_rad, mat::Mat4};
@@ -5,27 +22,67 @@ use crate::maze::title_screen::TitleScreenRenderer;
 use crate::maze::{parse_maze_file, title_screen};
 use crate::renderer::uniform::Uniforms;
 use crate::renderer::vertex::Vertex;
-use crate::ui::sliders::UiState;
+use crate::ui::ui_panel::UiState;
 use egui_wgpu::ScreenDescriptor;
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
+/// Main WGPU renderer for the Mirador game.
+///
+/// This struct manages all GPU resources, pipelines, and rendering logic for the game scene,
+/// including the maze, player, animated background, and title screen.
+///
+/// # Fields
+/// - `surface`: The WGPU surface for presenting rendered frames.
+/// - `device`: The WGPU device for resource creation.
+/// - `queue`: The WGPU queue for submitting commands.
+/// - `surface_config`: The surface configuration (format, size, etc.).
+/// - `pipeline`: Main render pipeline for the maze and floor.
+/// - `vertex_buffer`: Combined vertex buffer for floor and wall geometry.
+/// - `num_vertices`: Number of vertices to draw.
+/// - `uniform_buffer`: Uniform buffer for camera/view/projection matrices.
+/// - `uniform_bind_group`: Bind group for the uniform buffer.
+/// - `depth_texture`: Optional depth texture for depth testing.
+/// - `background`: StarRenderer for animated starfield background.
+/// - `title_screen_renderer`: Renderer for the title screen maze and loading bar.
 pub struct WgpuRenderer {
+    /// The WGPU surface for presenting rendered frames.
     pub surface: wgpu::Surface<'static>,
+    /// The WGPU device for resource creation.
     pub device: wgpu::Device,
+    /// The WGPU queue for submitting commands.
     pub queue: wgpu::Queue,
+    /// The surface configuration (format, size, etc.).
     pub surface_config: wgpu::SurfaceConfiguration,
+    /// Main render pipeline for the maze and floor.
     pub pipeline: wgpu::RenderPipeline,
+    /// Combined vertex buffer for floor and wall geometry.
     pub vertex_buffer: wgpu::Buffer,
+    /// Number of vertices to draw.
     pub num_vertices: u32,
+    /// Uniform buffer for camera/view/projection matrices.
     pub uniform_buffer: wgpu::Buffer,
+    /// Bind group for the uniform buffer.
     pub uniform_bind_group: wgpu::BindGroup,
+    /// Optional depth texture for depth testing.
     pub depth_texture: Option<wgpu::Texture>,
+    /// StarRenderer for animated starfield background.
     pub background: StarRenderer,
+    /// Renderer for the title screen maze and loading bar.
     pub title_screen_renderer: TitleScreenRenderer,
 }
 
 impl WgpuRenderer {
+    /// Initializes a new [`WgpuRenderer`] and all associated GPU resources.
+    ///
+    /// # Arguments
+    /// - `instance`: The WGPU instance.
+    /// - `surface`: The WGPU surface for presentation.
+    /// - `width`: Initial width of the surface.
+    /// - `height`: Initial height of the surface.
+    ///
+    /// # Returns
+    /// A fully initialized [`WgpuRenderer`] ready for rendering.
     pub async fn new(
         instance: &wgpu::Instance,
         surface: wgpu::Surface<'static>,
@@ -164,6 +221,19 @@ impl WgpuRenderer {
         }
     }
 
+    /// Renders the current frame to the surface, including the maze, player, background, and UI.
+    ///
+    /// # Arguments
+    /// - `window`: The window for retrieving DPI scaling.
+    /// - `ui_state`: Current UI state (colors, etc.).
+    /// - `encoder`: Command encoder for submitting draw commands.
+    /// - `start_time`: Start time for animation timing.
+    /// - `player`: Reference to the current player state.
+    /// - `title`: If true, renders the title screen; otherwise renders the main game scene.
+    ///
+    /// # Returns
+    /// - `Ok((TextureView, ScreenDescriptor, SurfaceTexture))` on success.
+    /// - `Err(String)` if the surface is outdated or unavailable.
     pub fn update_canvas(
         &mut self,
         window: &winit::window::Window,
@@ -315,7 +385,7 @@ impl WgpuRenderer {
             let elapsed_time = start_time.elapsed().as_secs_f32();
             self.background
                 .update_background_color(&self.queue, [ui_state.r, ui_state.g, ui_state.b, 1.0]);
-            self.background.update_time(&self.queue, elapsed_time);
+            self.background.update_star_time(&self.queue, elapsed_time);
             self.queue.write_buffer(
                 &self.background.time_buffer,
                 0,

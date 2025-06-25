@@ -1,3 +1,24 @@
+//! Maze generation using Kruskal's algorithm with Union-Find data structure.
+//!
+//! This module provides functionality to generate random mazes using Kruskal's algorithm,
+//! visualize the generation process, and save the resulting mazes to files.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use maze_generator::{MazeGenerator, Cell};
+//!
+//! // Create a 10x10 maze generator
+//! let (mut generator, maze) = MazeGenerator::new(10, 10);
+//!
+//! // Generate the maze step by step
+//! while !generator.is_complete() {
+//!     generator.step();
+//! }
+//!
+//! // Save the maze to a file
+//! maze.lock().unwrap().save_to_file().expect("Failed to save maze");
+//! ```
 use chrono::Local;
 use rand::prelude::*;
 use std::collections::HashMap;
@@ -9,30 +30,39 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+/// Represents a cell in the maze grid
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Cell {
+    /// Row index of the cell
     pub row: usize,
+    /// Column index of the cell
     pub col: usize,
 }
 
 impl Cell {
+    /// Creates a new Cell with the given coordinates
     pub fn new(row: usize, col: usize) -> Self {
         Self { row, col }
     }
 }
 
+/// Represents an edge between two cells in the maze
 #[derive(Debug, Clone, Copy)]
 pub struct Edge {
+    /// First cell connected by the edge
     pub cell1: Cell,
+    /// Second cell connected by the edge
     pub cell2: Cell,
 }
 
 impl Edge {
+    /// Creates a new Edge between two cells
     pub fn new(cell1: Cell, cell2: Cell) -> Self {
         Self { cell1, cell2 }
     }
 }
 
+/// Union-Find data structure for Kruskal's algorithm
 pub struct UnionFind {
     parent: HashMap<Cell, Cell>,
     rank: HashMap<Cell, usize>,
@@ -45,6 +75,7 @@ impl Default for UnionFind {
 }
 
 impl UnionFind {
+    /// Creates a new UnionFind structure
     pub fn new() -> Self {
         Self {
             parent: HashMap::new(),
@@ -52,6 +83,7 @@ impl UnionFind {
         }
     }
 
+    /// Adds a new cell to the UnionFind structure
     pub fn make_set(&mut self, cell: Cell) {
         if let Entry::Vacant(entry) = self.parent.entry(cell) {
             entry.insert(cell);
@@ -59,6 +91,7 @@ impl UnionFind {
         }
     }
 
+    /// Finds the root of the set containing the given cell
     pub fn find(&mut self, cell: Cell) -> Cell {
         if self.parent[&cell] != cell {
             let root = self.find(self.parent[&cell]);
@@ -67,6 +100,8 @@ impl UnionFind {
         self.parent[&cell]
     }
 
+    /// Unions two sets containing cell1 and cell2
+    /// Returns true if the sets were merged, false if they were already in the same set
     pub fn union(&mut self, cell1: Cell, cell2: Cell) -> bool {
         let root1 = self.find(cell1);
         let root2 = self.find(cell2);
@@ -91,16 +126,23 @@ impl UnionFind {
     }
 }
 
+/// Represents a maze with walls and passages
 #[derive(Clone)]
 pub struct Maze {
+    /// Width of the maze in cells
     pub width: usize,
+    /// Height of the maze in cells
     pub height: usize,
+    /// 2D vector representing walls (true) and passages (false)
     pub walls: Vec<Vec<bool>>,
+    /// Total number of edges in the maze
     pub total_edges: usize,
+    /// Number of edges processed during generation
     pub processed_edges: usize,
 }
 
 impl Maze {
+    /// Creates a new maze with all walls present
     pub fn new(width: usize, height: usize) -> Self {
         let walls = vec![vec![true; width * 2 + 1]; height * 2 + 1];
         Self {
@@ -112,6 +154,7 @@ impl Maze {
         }
     }
 
+    /// Generates pixel data for rendering the maze
     pub fn get_render_data(&self, connected: &HashSet<Cell>) -> Vec<u8> {
         let cell_px = 4;
         let wall_px = 1;
@@ -167,6 +210,7 @@ impl Maze {
         data
     }
 
+    /// Returns the dimensions of the rendered maze in pixels
     pub fn get_dimensions(&self) -> (usize, usize) {
         let cell_px = 4;
         let wall_px = 1;
@@ -177,6 +221,49 @@ impl Maze {
         (width, height)
     }
 
+    /// Saves the current maze to a timestamped file in the `src/maze/saved-mazes/generated` directory.
+    ///
+    /// # File Naming
+    /// The output file is named using the current local time in the format:
+    /// `Maze_MM-DD-YY_HH-MMPM.mz` (e.g., `Maze_06-24-25_11-24PM.mz`).
+    ///
+    /// # File Format
+    /// The maze is saved as a plain text file, where each cell is represented by either:
+    /// - `#` for a wall cell (`true` in `self.walls`)
+    /// - ` ` (space) for an open cell (`false` in `self.walls`)
+    ///
+    /// Each row of the maze is written on a new line, preserving the maze's 2D structure.
+    ///
+    /// # Side Effects
+    /// - Ensures the output directory exists (creates it if necessary).
+    /// - Prints the output file path to stdout upon success.
+    /// - Prints error messages to stderr if directory creation, file creation, or writing fails.
+    ///
+    /// # Returns
+    /// - `Ok(PathBuf)` with the path to the saved file on success.
+    /// - `Err(std::io::Error)` if any I/O operation fails.
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The output directory cannot be created.
+    /// - The file cannot be created.
+    /// - Any write operation fails.
+    ///
+    /// # Example Output
+    /// ```text
+    /// ###################################################
+    /// #     #   # #   # # #   # # #     # #     # #   # #
+    /// ### ### # # # ### # # ### # ##### # # ### # ### # #
+    /// #   #   # #     #     #   #   #     # #     #     #
+    /// # ##### # # ####### # ### ### # ####### ##### # # #
+    /// #     #   # #   #   #       #   # # # # # #   # # #
+    /// ##### # # # # ####### ##### ### # # # # # # # #####
+    /// # #     # #         # #       # # #     #   #     #
+    /// ###################################################
+    /// ```
+    ///
+    /// # See Also
+    /// - The generated file can be found in `src/maze/saved-mazes/generated/`.
     pub fn save_to_file(&self) -> Result<PathBuf, std::io::Error> {
         let timestamp = Local::now().format("Maze_%m-%d-%y_%I-%M%p.mz").to_string();
         let output_path = Path::new("src/maze/saved-mazes/generated").join(timestamp);
@@ -213,18 +300,26 @@ impl Maze {
     }
 }
 
+/// Maze generator using Kruskal's algorithm
 pub struct MazeGenerator {
+    /// The maze being generated (wrapped in Arc<Mutex> for thread safety)
     pub maze: Arc<Mutex<Maze>>,
-    pub union_find: UnionFind,
-    pub edges: Vec<Edge>,
-    pub current_edge: usize,
+    union_find: UnionFind,
+    edges: Vec<Edge>,
+    current_edge: usize,
+    /// Indicates if generation is complete
     pub generation_complete: bool,
+    /// Set of cells currently connected in the maze
     pub connected_cells: HashSet<Cell>,
-    pub fast_threshold: usize, // Number of edges remaining when we switch to fast mode
-    pub fast_mode: bool,       // Whether we're in fast mode
+    /// Number of edges remaining when we switch to fast mode
+    pub fast_threshold: usize,
+    /// Whether we're in fast mode
+    pub fast_mode: bool,
 }
 
 impl MazeGenerator {
+    /// Creates a new maze generator with the given dimensions
+    /// Returns both the generator and a shared reference to the maze
     pub fn new(width: usize, height: usize) -> (Self, Arc<Mutex<Maze>>) {
         let maze = Arc::new(Mutex::new(Maze::new(width, height)));
         let maze_clone = Arc::clone(&maze);
@@ -284,6 +379,8 @@ impl MazeGenerator {
         (generator, maze_clone)
     }
 
+    /// Performs one step of maze generation
+    /// Returns true if a wall was removed in this step
     pub fn step(&mut self) -> bool {
         if self.generation_complete || self.current_edge >= self.edges.len() {
             self.generation_complete = true;
@@ -315,14 +412,17 @@ impl MazeGenerator {
         false
     }
 
+    /// Checks if maze generation is complete
     pub fn is_complete(&self) -> bool {
         self.generation_complete
     }
 
+    /// Returns the current progress of generation (processed edges, total edges)
     pub fn get_progress(&self) -> (usize, usize) {
         (self.current_edge, self.edges.len())
     }
 
+    /// Returns the generation progress as a ratio (0.0 to 1.0)
     pub fn get_progress_ratio(&self) -> f32 {
         if self.edges.is_empty() {
             1.0

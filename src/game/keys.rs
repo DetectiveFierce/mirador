@@ -1,42 +1,72 @@
+//! Keyboard and mouse input handling for the game.
+//!
+//! This module defines the [`GameKey`] enum for abstracting game actions from physical keys,
+//! and provides [`KeyState`] for tracking pressed keys and updating the [`GameState`] accordingly.
+//! It also includes utilities for mapping from winit key events to game actions.
+
 use crate::game::GameState;
 use std::collections::HashSet;
 use winit::keyboard;
 
+/// Enum representing all possible in-game actions that can be triggered by keyboard or mouse input.
+///
+/// This abstraction allows the game logic to be decoupled from specific physical keys or buttons.
+/// Variants include movement, mouse buttons, toggles, and quitting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameKey {
+    /// Left mouse button.
     MouseButtonLeft,
+    /// Right mouse button.
     MouseButtonRight,
+    /// Move player forward (W or Up Arrow).
     MoveForward,
+    /// Move player backward (S or Down Arrow).
     MoveBackward,
+    /// Move player left (A or Left Arrow).
     MoveLeft,
+    /// Move player right (D or Right Arrow).
     MoveRight,
+    /// Sprint (Shift).
     Sprint,
+    /// Jump (Space).
     Jump,
+    /// Toggle UI sliders (C).
     ToggleSliders,
+    /// Quit the game (Q).
     Quit,
+    /// Escape key (toggle mouse capture).
     Escape,
 }
 
-#[derive(Debug)]
+/// Tracks the set of currently pressed game keys.
+///
+/// Use [`press_key`] and [`release_key`] to update the state, and [`is_pressed`] to query.
+/// The [`update`] method applies the current key state to the [`GameState`].
+#[derive(Debug, Default)]
 pub struct KeyState {
+    /// Set of currently pressed keys.
     pub pressed_keys: HashSet<GameKey>,
 }
 
 impl KeyState {
+    /// Creates a new, empty [`KeyState`]
     pub fn new() -> Self {
         Self {
             pressed_keys: HashSet::new(),
         }
     }
 
+    /// Marks a key as pressed.
     pub fn press_key(&mut self, key: GameKey) {
         self.pressed_keys.insert(key);
     }
 
+    /// Marks a key as released.
     pub fn release_key(&mut self, key: GameKey) {
         self.pressed_keys.remove(&key);
     }
 
+    /// Checks if a key is currently pressed.
     pub fn is_pressed(&self, key: GameKey) -> bool {
         self.pressed_keys.contains(&key)
     }
@@ -45,6 +75,12 @@ impl KeyState {
         self.pressed_keys.clear();
     }
 
+    /// Updates the [`GameState`] based on the current pressed keys.
+    ///
+    /// - Handles movement, sprinting, jumping, toggling UI, and mouse capture.
+    /// - Adjusts player speed for sprinting.
+    /// - Moves the player according to pressed movement keys.
+    /// - Handles mouse and escape key actions.
     pub fn update(&mut self, game_state: &mut GameState) {
         if self.is_pressed(GameKey::Jump) {
             println!("omg she jumped")
@@ -101,7 +137,16 @@ macro_rules! match_named_key {
     }};
 }
 
-// Convert winit key to our game key enum
+/// Converts a winit [`keyboard::Key`] to a [`GameKey`] if it matches a mapped action.
+///
+/// Supports both named keys (arrows, shift, space, escape) and character keys (WASD, C, Q).
+///
+/// # Arguments
+/// * `key` - The winit key event to convert.
+///
+/// # Returns
+/// * `Some(GameKey)` if the key maps to a game action.
+/// * `None` otherwise.
 pub fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
     match key {
         keyboard::Key::Named(named) => match_named_key!(named, {

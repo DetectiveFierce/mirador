@@ -1,10 +1,10 @@
-mod app;
-mod background;
-mod game;
-mod math;
-mod maze;
-mod renderer;
-mod ui;
+pub mod app;
+pub mod background;
+pub mod game;
+pub mod math;
+pub mod maze;
+pub mod renderer;
+pub mod ui;
 use winit::event_loop::{ControlFlow, EventLoop};
 
 fn main() {

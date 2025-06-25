@@ -1,3 +1,9 @@
+//! Title screen maze renderer module.
+//!
+//! This module provides [`TitleScreenRenderer`], which handles rendering a maze and a loading bar
+//! for the game's title screen using `wgpu`. It manages GPU resources for the maze texture, pipelines,
+//! and loading bar, and provides methods to update the maze texture and loading bar progress.
+
 use crate::maze::generator::Maze;
 use crate::maze::generator::MazeGenerator;
 use egui_wgpu::wgpu;
@@ -5,29 +11,69 @@ use egui_wgpu::wgpu::util::DeviceExt;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+/// Handles rendering of the maze and loading bar on the title screen.
+///
+/// This struct manages GPU resources for the maze texture, pipelines, vertex buffers, and loading bar.
+/// It also holds a [`MazeGenerator`] and a shared [`Maze`] instance for generating and displaying the maze.
+///
+/// # Fields
+/// - `generator`: Maze generator for producing new mazes.
+/// - `maze`: Shared, thread-safe reference to the current maze.
+/// - `vertex_buffer`: Vertex buffer for the maze quad.
+/// - `pipeline`: Render pipeline for the maze.
+/// - `texture`: Texture containing the maze image.
+/// - `bind_group`: Bind group for the maze texture and sampler.
+/// - `loading_bar_pipeline`: Render pipeline for the loading bar.
+/// - `loading_bar_vertex_buffer`: Vertex buffer for the loading bar quad.
+/// - `loading_bar_uniform_buffer`: Uniform buffer for loading bar progress.
+/// - `loading_bar_bind_group`: Bind group for the loading bar uniform.
+/// - `last_update`: Timestamp of the last update (for animation/timing).
 pub struct TitleScreenRenderer {
+    /// Maze generator for producing new mazes.
     pub generator: MazeGenerator,
+    /// Shared, thread-safe reference to the current maze.
     pub maze: Arc<Mutex<Maze>>,
+    /// Vertex buffer for the maze quad.
     pub vertex_buffer: wgpu::Buffer,
+    /// Render pipeline for the maze.
     pub pipeline: wgpu::RenderPipeline,
+    /// Texture containing the maze image.
     pub texture: wgpu::Texture,
+    /// Bind group for the maze texture and sampler.
     pub bind_group: wgpu::BindGroup,
     // Loading bar resources
+    /// Render pipeline for the loading bar.
     pub loading_bar_pipeline: wgpu::RenderPipeline,
+    /// Vertex buffer for the loading bar quad.
     pub loading_bar_vertex_buffer: wgpu::Buffer,
+    /// Uniform buffer for loading bar progress.
     pub loading_bar_uniform_buffer: wgpu::Buffer,
+    /// Bind group for the loading bar uniform.
     pub loading_bar_bind_group: wgpu::BindGroup,
+    /// Timestamp of the last update (for animation/timing).
     pub last_update: Instant,
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+/// Uniforms for the loading bar, passed to the GPU.
+///
+/// - `progress`: Loading progress (0.0 to 1.0).
+/// - `_padding`: Padding for alignment.
 struct LoadingBarUniforms {
     progress: f32,
     _padding: [f32; 3],
 }
 
 impl TitleScreenRenderer {
+    /// Creates a new [`TitleScreenRenderer`] with all GPU resources initialized.
+    ///
+    /// # Arguments
+    /// - `device`: The wgpu device to create buffers, textures, and pipelines.
+    /// - `surface_config`: The surface configuration (for color format).
+    ///
+    /// # Returns
+    /// A fully initialized [`TitleScreenRenderer`] ready for rendering the title screen maze and loading bar.
     pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
         let maze_width = 25;
         let maze_height = 25;
@@ -289,6 +335,13 @@ impl TitleScreenRenderer {
         }
     }
 
+    /// Updates the maze texture with new pixel data.
+    ///
+    /// # Arguments
+    /// - `queue`: The wgpu queue to write to the texture.
+    /// - `maze_data`: The new maze image data (RGBA, row-major).
+    /// - `width`: Width of the maze image.
+    /// - `height`: Height of the maze image.
     pub fn update_texture(
         &self,
         queue: &wgpu::Queue,
@@ -317,6 +370,11 @@ impl TitleScreenRenderer {
         );
     }
 
+    /// Updates the loading bar progress.
+    ///
+    /// # Arguments
+    /// - `queue`: The wgpu queue to write to the uniform buffer.
+    /// - `progress`: Loading progress (0.0 = empty, 1.0 = full).
     pub fn update_loading_bar(&self, queue: &wgpu::Queue, progress: f32) {
         let uniforms = LoadingBarUniforms {
             progress: progress.clamp(0.0, 1.0),

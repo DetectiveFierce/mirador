@@ -1,24 +1,63 @@
+//! Animated starfield background renderer.
+//!
+//! This module provides [`StarRenderer`], which renders a field of animated stars using `wgpu`.
+//! Stars are randomly generated in screen space and rendered as glowing points/quads.
+//!
+//! The renderer supports updating the background color and animating stars over time via uniform buffers.
+
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_wgpu::wgpu::{self, Buffer};
 use rand::Rng;
 
+/// Represents a single star in the starfield.
+///
+/// Each star has a 2D position (in normalized device coordinates), a size, and a brightness value.
 #[derive(Debug, Clone, Copy)]
 struct Star {
-    position: [f32; 2], // Changed to 2D for screen space
+    /// 2D position in screen space, range [-1.0, 1.0].
+    position: [f32; 2],
+    /// Size of the star (radius in NDC units).
     size: f32,
+    /// Brightness multiplier (0.0 = dim, 1.0 = bright).
     brightness: f32,
 }
 
+/// Handles GPU resources and rendering pipeline for the animated starfield.
+///
+/// Contains vertex/index buffers, uniform buffers for time and background color,
+/// the render pipeline, and the bind group for uniforms.
 pub struct StarRenderer {
+    /// Vertex buffer containing star quad vertices.
     pub vertex_buffer: Buffer,
+    /// Index buffer for drawing star quads as triangles.
     pub index_buffer: Buffer,
+    /// Number of indices to draw.
     pub num_indices: u32,
+    /// Render pipeline for the starfield.
     pub pipeline: wgpu::RenderPipeline,
+    /// Uniform buffer for animation time.
     pub time_buffer: Buffer,
+    /// Uniform buffer for background color (RGBA).
     pub background_color_buffer: Buffer,
+    /// Bind group for uniforms.
     pub uniform_bind_group: wgpu::BindGroup,
 }
 
+/// Creates a [`StarRenderer`] with randomly generated stars and all necessary GPU resources.
+///
+/// # Arguments
+/// - `device`: The wgpu device to create buffers and pipeline.
+/// - `surface_config`: The surface configuration (for color format).
+/// - `num_stars`: Number of stars to generate.
+///
+/// # Returns
+/// A fully initialized [`StarRenderer`] ready for rendering.
+///
+/// # Implementation Notes
+/// - Stars are randomly placed in NDC space ([-1, 1]).
+/// - Each star is rendered as a quad (two triangles).
+/// - Uniform buffers are created for animation time and background color.
+/// - The render pipeline and bind group are created using [`create_star_pipeline`].
 pub fn create_star_renderer(
     device: &wgpu::Device,
     surface_config: &wgpu::SurfaceConfiguration,
@@ -141,6 +180,21 @@ pub fn create_star_renderer(
     }
 }
 
+/// Creates the render pipeline and uniform bind group for the starfield.
+///
+/// # Arguments
+/// - `device`: The wgpu device.
+/// - `surface_config`: The surface configuration (for color format).
+/// - `time_buffer`: Uniform buffer for animation time.
+/// - `background_color_buffer`: Uniform buffer for background color.
+///
+/// # Returns
+/// A tuple of (`wgpu::RenderPipeline`, `wgpu::BindGroup`).
+///
+/// # Implementation Notes
+/// - Loads the WGSL shader from `star_shader.wgsl`.
+/// - Sets up vertex attributes for position, size, brightness, and tex coords.
+/// - Configures blending for alpha transparency.
 pub fn create_star_pipeline(
     device: &wgpu::Device,
     surface_config: &wgpu::SurfaceConfiguration,
@@ -273,6 +327,11 @@ pub fn create_star_pipeline(
 
 // Helper function to update background color
 impl StarRenderer {
+    /// Updates the background color used by the starfield shader.
+    ///
+    /// # Arguments
+    /// - `queue`: The wgpu queue to write to the buffer.
+    /// - `color`: The new background color as `[r, g, b, a]` (all floats 0.0..1.0).
     pub fn update_background_color(&self, queue: &wgpu::Queue, color: [f32; 4]) {
         queue.write_buffer(
             &self.background_color_buffer,
@@ -281,7 +340,12 @@ impl StarRenderer {
         );
     }
 
-    pub fn update_time(&self, queue: &wgpu::Queue, time: f32) {
+    /// Updates the animation time uniform for the starfield shader.
+    ///
+    /// # Arguments
+    /// - `queue`: The wgpu queue to write to the buffer.
+    /// - `time`: The new time value (in seconds).
+    pub fn update_star_time(&self, queue: &wgpu::Queue, time: f32) {
         queue.write_buffer(&self.time_buffer, 0, bytemuck::cast_slice(&[time]));
     }
 }

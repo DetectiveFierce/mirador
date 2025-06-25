@@ -11,6 +11,11 @@ pub struct UiState {
     pub start_time: std::time::Instant,
     pub elapsed_time: f32,
 }
+impl Default for UiState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl UiState {
     pub fn new() -> Self {

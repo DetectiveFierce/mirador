@@ -1,14 +1,31 @@
+//! Vertex definitions and geometry generation for maze and floor rendering.
+//!
+//! This module provides the [`Vertex`] struct, which describes the layout of vertex data for the renderer,
+//! and utility functions for generating floor and wall geometry from maze data.
+
 use egui_wgpu::wgpu;
 
+/// Vertex data for rendering maze and floor geometry.
+///
+/// Each vertex contains:
+/// - `position`: 3D position in world space.
+/// - `color`: RGBA color (as 4 normalized u8 values).
+/// - `material`: Material type (0 = floor, 1 = wall).
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
+    /// 3D position in world space.
     pub position: [f32; 3],
+    /// RGBA color (normalized 0-255).
     pub color: [u8; 4],
+    /// Material type (0 = floor, 1 = wall).
     pub material: u32, // 0 = floor, 1 = wall
 }
 
 impl Vertex {
+    /// Returns the vertex buffer layout for use in a wgpu pipeline.
+    ///
+    /// This describes the memory layout of [`Vertex`] for the GPU.
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress, // Correct overall stride
@@ -38,6 +55,10 @@ impl Vertex {
         }
     }
 
+    /// Generates vertices for a large square floor centered at the origin.
+    ///
+    /// # Returns
+    /// A tuple containing a vector of [`Vertex`] and the number of vertices.
     pub fn create_floor_vertices() -> (Vec<Vertex>, usize) {
         let floor_size = 3000.0; // Size of the square floor
         let half_size = floor_size / 2.0;
@@ -94,6 +115,15 @@ impl Vertex {
         (vertex_data, num_vertices)
     }
 
+    /// Generates wall geometry for a maze grid.
+    ///
+    /// For each wall cell (`true`), creates the necessary wall faces (as quads) to form the maze.
+    ///
+    /// # Arguments
+    /// * `maze_grid` - 2D grid of booleans, where `true` indicates a wall.
+    ///
+    /// # Returns
+    /// A vector of [`Vertex`] representing all wall faces.
     pub fn create_wall_vertices(maze_grid: &[Vec<bool>]) -> Vec<Vertex> {
         let mut vertices = Vec::new();
 
@@ -155,7 +185,15 @@ impl Vertex {
     }
 }
 
-// Creates a wall facing the Z direction (parallel to X axis)
+/// Creates a wall quad facing the Z direction (parallel to X axis).
+///
+/// # Arguments
+/// * `x`, `y`, `z` - Starting position.
+/// * `width` - Width of the wall.
+/// * `height` - Height of the wall.
+///
+/// # Returns
+/// An array of 6 [`Vertex`] forming two triangles (a quad).
 pub fn create_z_facing_wall(x: f32, y: f32, z: f32, width: f32, height: f32) -> [Vertex; 6] {
     let color: [u8; 4] = [107, 55, 55, 255];
     [
@@ -192,7 +230,15 @@ pub fn create_z_facing_wall(x: f32, y: f32, z: f32, width: f32, height: f32) -> 
     ]
 }
 
-// Creates a wall facing the X direction (parallel to Z axis)
+/// Creates a wall quad facing the X direction (parallel to Z axis).
+///
+/// # Arguments
+/// * `x`, `y`, `z` - Starting position.
+/// * `depth` - Depth of the wall.
+/// * `height` - Height of the wall.
+///
+/// # Returns
+/// An array of 6 [`Vertex`] forming two triangles (a quad).
 pub fn create_x_facing_wall(x: f32, y: f32, z: f32, depth: f32, height: f32) -> [Vertex; 6] {
     let color: [u8; 4] = [107, 55, 55, 255];
     [
