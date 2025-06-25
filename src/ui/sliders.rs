@@ -15,7 +15,7 @@ pub struct UiState {
 impl UiState {
     pub fn new() -> Self {
         UiState {
-            show_sliders: true,
+            show_sliders: false,
             r: 0.003,
             g: 0.0003,
             b: 0.007,
@@ -52,10 +52,10 @@ impl AppState {
         {
             self.egui_renderer.begin_frame(window);
             if self.ui.show_sliders {
-                egui::Window::new("Debug Sliders:")
+                egui::Window::new("Debug Values:")
                     .default_open(true)
                     .collapsible(false)
-                    .default_size(egui::Vec2::new(225.0, 0.0))
+                    .default_size(egui::Vec2::new(245.0, 0.0))
                     .show(self.egui_renderer.context(), |ui| {
                         ui.spacing_mut().slider_width = 100.0;
                         match egui_lib::ui_theme() {
@@ -82,6 +82,7 @@ impl AppState {
                             ui.label(format!("KeyState: {:?}", self.key_state.pressed_keys));
 
                             ui.label(format!("FPS: {}", self.game_state.current_fps));
+                            ui.label(format!("Maze Path: {:?}", self.game_state.maze_path));
                         })
                     });
             }

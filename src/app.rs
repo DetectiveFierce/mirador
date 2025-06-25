@@ -1,3 +1,5 @@
+use crate::maze::parse_maze_file;
+use crate::renderer::vertex::Vertex;
 use crate::{
     game::{
         GameState,
@@ -7,7 +9,10 @@ use crate::{
     ui::{egui_lib::EguiRenderer, sliders::UiState},
 };
 use egui_wgpu::wgpu;
+use egui_wgpu::wgpu::util::DeviceExt;
+use std::time::Duration;
 use std::{sync::Arc, time::Instant};
+use winit::event::MouseButton;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -61,18 +66,25 @@ impl AppState {
     }
 
     fn center_mouse(&mut self, window: &Window) {
-        if let Err(e) = window.set_cursor_grab(winit::window::CursorGrabMode::Locked) {
-            eprintln!("Failed to lock cursor: {}", e);
-        }
-        window.set_cursor_visible(false);
-        let window_size = window.inner_size().to_logical::<f64>(window.scale_factor());
+        if self.game_state.capture_mouse {
+            if let Err(e) = window.set_cursor_grab(winit::window::CursorGrabMode::Locked) {
+                eprintln!("Failed to lock cursor: {}", e);
+            }
+            window.set_cursor_visible(false);
+            let window_size = window.inner_size().to_logical::<f64>(window.scale_factor());
 
-        let center_x = window_size.width / 2.0;
-        let center_y = window_size.height / 2.0;
-        if let Err(e) =
-            window.set_cursor_position(winit::dpi::LogicalPosition::new(center_x, center_y))
-        {
-            eprintln!("Failed to center cursor: {}", e);
+            let center_x = window_size.width / 2.0;
+            let center_y = window_size.height / 2.0;
+            if let Err(e) =
+                window.set_cursor_position(winit::dpi::LogicalPosition::new(center_x, center_y))
+            {
+                eprintln!("Failed to center cursor: {}", e);
+            }
+        } else if !self.game_state.capture_mouse {
+            if let Err(e) = window.set_cursor_grab(winit::window::CursorGrabMode::None) {
+                eprintln!("Failed to unlock cursor: {}", e);
+            }
+            window.set_cursor_visible(true);
         }
     }
 }
@@ -172,6 +184,7 @@ impl App {
                 &mut encoder,
                 state.ui.start_time,
                 &state.game_state.player,
+                state.game_state.title_screen,
             ) {
                 Ok((surface_view, screen_descriptor, surface_texture)) => {
                     (surface_view, screen_descriptor, surface_texture)
@@ -192,6 +205,127 @@ impl App {
 
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
         surface_texture.present();
+
+        if state.game_state.title_screen {
+            let animation_speed = Duration::from_millis(10);
+            let fast_mode_speed = animation_speed / 20; // 20x faster in fast mode
+
+            let speed = if state
+                .wgpu_renderer
+                .title_screen_renderer
+                .generator
+                .fast_mode
+            {
+                fast_mode_speed
+            } else {
+                animation_speed
+            };
+
+            // Animation timing
+            if state
+                .wgpu_renderer
+                .title_screen_renderer
+                .last_update
+                .elapsed()
+                >= speed
+                && !state
+                    .wgpu_renderer
+                    .title_screen_renderer
+                    .generator
+                    .is_complete()
+            {
+                // Process multiple steps when in fast mode for better performance
+                let steps_per_frame = if state
+                    .wgpu_renderer
+                    .title_screen_renderer
+                    .generator
+                    .fast_mode
+                {
+                    30
+                } else {
+                    10
+                };
+
+                for _ in 0..steps_per_frame {
+                    if !state.wgpu_renderer.title_screen_renderer.generator.step() {
+                        break;
+                    }
+                }
+
+                let (current, total) = state
+                    .wgpu_renderer
+                    .title_screen_renderer
+                    .generator
+                    .get_progress();
+                if current % 50 == 0
+                    || state
+                        .wgpu_renderer
+                        .title_screen_renderer
+                        .generator
+                        .is_complete()
+                {
+                    let mode_indicator = "";
+
+                    println!(
+                        "Progress: {}/{} ({:.1}%){}",
+                        current,
+                        total,
+                        (current as f32 * 100.0 / total.max(1) as f32),
+                        mode_indicator
+                    );
+
+                    if state
+                        .wgpu_renderer
+                        .title_screen_renderer
+                        .generator
+                        .is_complete()
+                    {
+                        println!("Maze generation complete! Saving to file...");
+                        let maze_lock = state
+                            .wgpu_renderer
+                            .title_screen_renderer
+                            .maze
+                            .lock()
+                            .unwrap();
+                        state.game_state.maze_path = match maze_lock.save_to_file() {
+                            Ok(path) => Some(path),
+                            Err(err) => {
+                                eprintln!("Failed to save maze: {}", err);
+                                std::process::exit(1);
+                            }
+                        };
+
+                        let (mut floor_vertices, _floor_vertex_count) =
+                            Vertex::create_floor_vertices();
+
+                        if state.game_state.maze_path.is_some() {
+                            let maze_grid = parse_maze_file(
+                                state
+                                    .game_state
+                                    .maze_path
+                                    .as_mut()
+                                    .unwrap()
+                                    .to_str()
+                                    .unwrap(),
+                            );
+                            // Generate wall geometry
+                            let mut wall_vertices = Vertex::create_wall_vertices(&maze_grid);
+                            // Append wall vertices to floor
+                            floor_vertices.append(&mut wall_vertices);
+
+                            let vertex_buffer = state.wgpu_renderer.device.create_buffer_init(
+                                &wgpu::util::BufferInitDescriptor {
+                                    label: Some("Combined Vertex Buffer"),
+                                    contents: bytemuck::cast_slice(&floor_vertices),
+                                    usage: wgpu::BufferUsages::VERTEX,
+                                },
+                            );
+                            state.wgpu_renderer.vertex_buffer = vertex_buffer;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -301,9 +435,82 @@ impl ApplicationHandler for App {
                 }
             }
 
+            WindowEvent::MouseInput { state, button, .. } => match state {
+                ElementState::Pressed => {
+                    if let Some(app_state) = self.state.as_mut() {
+                        match button {
+                            MouseButton::Left => {
+                                app_state.key_state.press_key(GameKey::MouseButtonLeft);
+                            }
+                            MouseButton::Right => {
+                                app_state.key_state.press_key(GameKey::MouseButtonRight);
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                ElementState::Released => {
+                    if let Some(app_state) = self.state.as_mut() {
+                        match button {
+                            MouseButton::Left => {
+                                app_state.key_state.release_key(GameKey::MouseButtonLeft);
+                            }
+                            MouseButton::Right => {
+                                app_state.key_state.release_key(GameKey::MouseButtonRight);
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            },
+
             WindowEvent::RedrawRequested => {
                 self.handle_redraw();
                 if let Some(state) = self.state.as_mut() {
+                    if state.game_state.title_screen {
+                        let progress = state
+                            .wgpu_renderer
+                            .title_screen_renderer
+                            .generator
+                            .get_progress_ratio();
+                        let (maze_width, maze_height) = {
+                            let maze_lock = state
+                                .wgpu_renderer
+                                .title_screen_renderer
+                                .maze
+                                .lock()
+                                .unwrap();
+                            maze_lock.get_dimensions()
+                        };
+
+                        state
+                            .wgpu_renderer
+                            .title_screen_renderer
+                            .update_loading_bar(&state.wgpu_renderer.queue, progress);
+
+                        let maze_data = {
+                            let maze_lock = state
+                                .wgpu_renderer
+                                .title_screen_renderer
+                                .maze
+                                .lock()
+                                .unwrap();
+                            maze_lock.get_render_data(
+                                &state
+                                    .wgpu_renderer
+                                    .title_screen_renderer
+                                    .generator
+                                    .connected_cells,
+                            )
+                        };
+                        state.wgpu_renderer.title_screen_renderer.update_texture(
+                            &state.wgpu_renderer.queue,
+                            &maze_data,
+                            maze_width,
+                            maze_height,
+                        );
+                        state.wgpu_renderer.title_screen_renderer.last_update = Instant::now();
+                    }
                     state.ui.elapsed_time += 1.0;
                     state.game_state.frame_count += 1;
                     let current_time = Instant::now();

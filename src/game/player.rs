@@ -13,7 +13,7 @@ pub struct Player {
 impl Player {
     pub fn new() -> Self {
         Self {
-            position: [-670.0, 50.0, 770.0], // Start above and behind the floor
+            position: [-1475.0, 50.0, 1475.0], // Start above and behind the floor
             pitch: 0.0,
             yaw: 0.0,
             fov: 100.0,

@@ -4,6 +4,8 @@ use winit::keyboard;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameKey {
+    MouseButtonLeft,
+    MouseButtonRight,
     MoveForward,
     MoveBackward,
     MoveLeft,
@@ -12,6 +14,7 @@ pub enum GameKey {
     Jump,
     ToggleSliders,
     Quit,
+    Escape,
 }
 
 #[derive(Debug)]
@@ -67,6 +70,12 @@ impl KeyState {
         if self.is_pressed(GameKey::MoveRight) {
             game_state.player.move_right(game_state.delta_time);
         }
+        if self.is_pressed(GameKey::MouseButtonLeft) && game_state.maze_path.is_some() {
+            game_state.title_screen = false;
+        }
+        if self.is_pressed(GameKey::Escape) {
+            game_state.capture_mouse = !game_state.capture_mouse;
+        }
     }
 }
 
@@ -102,6 +111,7 @@ pub fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
             ArrowRight => GameKey::MoveRight,
             Shift => GameKey::Sprint,
             Space => GameKey::Jump,
+            Escape => GameKey::Escape,
         }),
 
         keyboard::Key::Character(c) => match_char_key!(c, {

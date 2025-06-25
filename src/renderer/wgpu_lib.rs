@@ -1,7 +1,8 @@
 use crate::background::stars::{self, StarRenderer};
 use crate::game::player::Player;
 use crate::math::{deg_to_rad, mat::Mat4};
-use crate::maze::parse_maze_file;
+use crate::maze::title_screen::TitleScreenRenderer;
+use crate::maze::{parse_maze_file, title_screen};
 use crate::renderer::uniform::Uniforms;
 use crate::renderer::vertex::Vertex;
 use crate::ui::sliders::UiState;
@@ -21,6 +22,7 @@ pub struct WgpuRenderer {
     pub uniform_bind_group: wgpu::BindGroup,
     pub depth_texture: Option<wgpu::Texture>,
     pub background: StarRenderer,
+    pub title_screen_renderer: TitleScreenRenderer,
 }
 
 impl WgpuRenderer {
@@ -129,7 +131,7 @@ impl WgpuRenderer {
         let (mut floor_vertices, _floor_vertex_count) = Vertex::create_floor_vertices();
 
         // Load wall grid from file
-        let maze_grid = parse_maze_file("src/mazes/test.mz");
+        let maze_grid = parse_maze_file("src/maze/saved-mazes/test.mz");
 
         // Generate wall geometry
         let mut wall_vertices = Vertex::create_wall_vertices(&maze_grid);
@@ -144,7 +146,8 @@ impl WgpuRenderer {
         });
 
         let star_renderer = stars::create_star_renderer(&device, &surface_config, 100);
-
+        let title_screen_renderer =
+            title_screen::TitleScreenRenderer::new(&device, &surface_config);
         Self {
             surface,
             device,
@@ -157,6 +160,7 @@ impl WgpuRenderer {
             num_vertices: floor_vertices.len() as u32,
             depth_texture: None,
             background: star_renderer,
+            title_screen_renderer,
         }
     }
 
@@ -167,6 +171,7 @@ impl WgpuRenderer {
         encoder: &mut wgpu::CommandEncoder,
         start_time: std::time::Instant,
         player: &Player,
+        title: bool,
     ) -> Result<(TextureView, ScreenDescriptor, SurfaceTexture), String> {
         let surface_texture_obj = self.surface.get_current_texture();
 
@@ -226,7 +231,54 @@ impl WgpuRenderer {
                 .create_view(&wgpu::TextureViewDescriptor::default())
         };
 
-        {
+        if title {
+            {
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.1,
+                                g: 0.2,
+                                b: 0.3,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+
+                // Render maze
+                render_pass.set_pipeline(&self.title_screen_renderer.pipeline);
+                render_pass.set_bind_group(0, &self.title_screen_renderer.bind_group, &[]);
+                render_pass
+                    .set_vertex_buffer(0, self.title_screen_renderer.vertex_buffer.slice(..));
+                render_pass.draw(0..6, 0..1);
+
+                // Render loading bar
+                render_pass.set_pipeline(&self.title_screen_renderer.loading_bar_pipeline);
+                render_pass.set_bind_group(
+                    0,
+                    &self.title_screen_renderer.loading_bar_bind_group,
+                    &[],
+                );
+                render_pass.set_vertex_buffer(
+                    0,
+                    self.title_screen_renderer
+                        .loading_bar_vertex_buffer
+                        .slice(..),
+                );
+                render_pass.draw(0..6, 0..1);
+            }
+
+            return Ok((surface_view, screen_descriptor, surface_texture)); // <- This return was already there
+        }
+        if !title {
             let clear_pass_desc = wgpu::RenderPassDescriptor {
                 label: Some("Clear Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
