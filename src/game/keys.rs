@@ -36,6 +36,8 @@ pub enum GameKey {
     Quit,
     /// Escape key (toggle mouse capture).
     Escape,
+    /// Toggle Bounding Boxes (B).
+    ToggleBoundingBoxes,
 }
 
 /// Tracks the set of currently pressed game keys.
@@ -86,26 +88,32 @@ impl KeyState {
             println!("omg she jumped")
         }
 
+        // Handle sprint speed changes
         if self.is_pressed(GameKey::Sprint) {
             game_state.player.speed = 90.0;
         }
-
         if !self.is_pressed(GameKey::Sprint) {
             game_state.player.speed = 60.0;
         }
 
-        if self.is_pressed(GameKey::MoveForward) {
-            game_state.player.move_forward(game_state.delta_time);
-        }
-        if self.is_pressed(GameKey::MoveBackward) {
-            game_state.player.move_backward(game_state.delta_time);
-        }
-        if self.is_pressed(GameKey::MoveLeft) {
-            game_state.player.move_left(game_state.delta_time);
-        }
-        if self.is_pressed(GameKey::MoveRight) {
-            game_state.player.move_right(game_state.delta_time);
-        }
+        // NEW: Replace individual movement calls with collision-aware movement
+        let forward = self.is_pressed(GameKey::MoveForward);
+        let backward = self.is_pressed(GameKey::MoveBackward);
+        let left = self.is_pressed(GameKey::MoveLeft);
+        let right = self.is_pressed(GameKey::MoveRight);
+
+        // Use the new collision-aware movement function
+        // Note: You'll need to add collision_system to your GameState
+        game_state.player.move_with_collision(
+            &game_state.collision_system, // You'll need to add this to GameState
+            game_state.delta_time,
+            forward,
+            backward,
+            left,
+            right,
+        );
+
+        // Handle non-movement keys
         if self.is_pressed(GameKey::MouseButtonLeft) && game_state.maze_path.is_some() {
             game_state.title_screen = false;
         }
@@ -166,6 +174,7 @@ pub fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
             "d" => GameKey::MoveRight,
             "c" => GameKey::ToggleSliders,
             "q" => GameKey::Quit,
+            "b" => GameKey::ToggleBoundingBoxes,
         }),
 
         _ => None,

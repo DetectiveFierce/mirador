@@ -3,13 +3,14 @@
 //! This module defines the [`GameState`] struct, which tracks all mutable state for the game loop,
 //! including the player, timing, UI state, and maze path.
 
+pub mod collision;
 pub mod keys;
 pub mod player;
 
+use self::collision::CollisionSystem;
 use self::player::Player;
 use std::path::PathBuf;
 use std::time::Instant;
-
 /// Represents the entire mutable state of the game.
 ///
 /// This struct is updated every frame and contains:
@@ -37,6 +38,8 @@ pub struct GameState {
     pub maze_path: Option<PathBuf>,
     /// Whether the mouse is captured for camera movement.
     pub capture_mouse: bool,
+    /// Handles collisions between game entities.
+    pub collision_system: CollisionSystem,
 }
 
 impl Default for GameState {
@@ -60,6 +63,10 @@ impl GameState {
             title_screen: true,
             maze_path: None,
             capture_mouse: true,
+            collision_system: CollisionSystem::new(
+                10.0,  // player_radius (adjust based on your player size)
+                100.0, // player_height (adjust based on your player size)),
+            ),
         }
     }
 }

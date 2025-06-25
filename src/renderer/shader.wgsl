@@ -1,8 +1,10 @@
 //! # Maze Renderer Shader
 //!
 //! This WGSL shader is used for rendering the 3D maze and floor in the game.
-//! It supports two materials: walls and floor. Walls are rendered with a solid maroon color,
-//! while the floor uses a checkerboard pattern with tan and purple tiles.
+//! It supports three materials: walls, floor, and debug bounding boxes.
+//! - Walls are rendered with a solid maroon color
+//! - The floor uses a checkerboard pattern with tan and purple tiles
+//! - Debug bounding boxes are rendered as semitransparent red wireframes
 //!
 //! ## Structs
 //! - `VertexInput`: Input structure for the vertex shader, containing position, color, and material ID.
@@ -15,15 +17,16 @@
 //!   uses a checkerboard pattern based on world position.
 //!
 //! ## Material Logic
-//! - `material == 1`: Wall cell, colored maroon (`vec4<f32>(0.102, 0.027, 0.035, 1.0)`).
 //! - `material == 0`: Floor cell, colored with a checkerboard pattern alternating between tan and purple.
+//! - `material == 1`: Wall cell, colored maroon (`vec4<f32>(0.102, 0.027, 0.035, 1.0)`).
+//! - `material == 2`: Bounding box wireframe, colored semitransparent red.
 
 struct VertexInput {
     /// Vertex position in model space.
     @location(0) position: vec3<f32>,
     /// Vertex color (unused in current fragment logic).
     @location(1) color: vec4<f32>,
-    /// Material ID: 0 = floor, 1 = wall.
+    /// Material ID: 0 = floor, 1 = wall, 2 = bounding box.
     @location(2) material: u32,
 };
 
@@ -34,7 +37,7 @@ struct VertexOutput {
     @location(0) fragment_color: vec4<f32>,
     /// World-space XZ position, used for floor checkerboard.
     @location(1) world_position: vec2<f32>,
-    /// Material ID: 0 = floor, 1 = wall.
+    /// Material ID: 0 = floor, 1 = wall, 2 = bounding box.
     @location(2) material: u32,
 };
 
@@ -55,12 +58,16 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 /// Fragment shader entry point.
-/// Applies material-based coloring: walls are maroon, floor is a checkerboard of tan and purple.
+/// Applies material-based coloring: walls are maroon, floor is a checkerboard, bounding boxes are red.
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Material-based coloring
     if (in.material == 1u) {
-        return vec4<f32>(0.102, 0.027, 0.035, 1.0); // Wall: Maroon
+        // Wall: Maroon
+        return vec4<f32>(0.102, 0.027, 0.035, 1.0);
+    } else if (in.material == 2u) {
+        // Bounding box: Semitransparent red
+        return vec4<f32>(1.0, 0.0, 0.0, 0.3);
     }
 
     // Floor: checkerboard

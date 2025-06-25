@@ -14,12 +14,13 @@
 //! # Usage
 //! Create a [`WgpuRenderer`] via [`WgpuRenderer::new`] and call [`WgpuRenderer::update_canvas`]
 //! each frame to render the current game state.
-
 use crate::background::stars::{self, StarRenderer};
+use crate::game::collision::CollisionSystem;
 use crate::game::player::Player;
 use crate::math::{deg_to_rad, mat::Mat4};
 use crate::maze::title_screen::TitleScreenRenderer;
 use crate::maze::{parse_maze_file, title_screen};
+use crate::renderer::debug_renderer::collect_wall_face_debug_vertices;
 use crate::renderer::uniform::Uniforms;
 use crate::renderer::vertex::Vertex;
 use crate::ui::ui_panel::UiState;
@@ -27,6 +28,7 @@ use egui_wgpu::ScreenDescriptor;
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
 use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
+
 /// Main WGPU renderer for the Mirador game.
 ///
 /// This struct manages all GPU resources, pipelines, and rendering logic for the game scene,
@@ -70,6 +72,12 @@ pub struct WgpuRenderer {
     pub background: StarRenderer,
     /// Renderer for the title screen maze and loading bar.
     pub title_screen_renderer: TitleScreenRenderer,
+    /// Renderer for debug information.
+    /// Whether to render bounding boxes for debugging.
+    pub debug_render_bounding_boxes: bool,
+    /// Vertex buffer for the debug renderer
+    pub debug_vertex_buffer: Option<wgpu::Buffer>,
+    pub debug_vertex_count: usize,
 }
 
 impl WgpuRenderer {
@@ -150,6 +158,19 @@ impl WgpuRenderer {
             push_constant_ranges: &[],
         });
 
+        let color_target = wgpu::ColorTargetState {
+            format: surface_config.format,
+            blend: Some(wgpu::BlendState {
+                color: wgpu::BlendComponent {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha: wgpu::BlendComponent::OVER,
+            }),
+            write_mask: wgpu::ColorWrites::ALL,
+        };
+
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Main Pipeline"),
             layout: Some(&pipeline_layout),
@@ -162,11 +183,7 @@ impl WgpuRenderer {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: *swapchain_format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
+                targets: &[Some(color_target)],
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState {
@@ -205,6 +222,10 @@ impl WgpuRenderer {
         let star_renderer = stars::create_star_renderer(&device, &surface_config, 100);
         let title_screen_renderer =
             title_screen::TitleScreenRenderer::new(&device, &surface_config);
+
+        let debug_render_bounding_boxes = false;
+        let debug_vertex_buffer = None;
+        let debug_vertex_count = 0;
         Self {
             surface,
             device,
@@ -218,6 +239,9 @@ impl WgpuRenderer {
             depth_texture: None,
             background: star_renderer,
             title_screen_renderer,
+            debug_render_bounding_boxes,
+            debug_vertex_buffer,
+            debug_vertex_count,
         }
     }
 
@@ -473,6 +497,38 @@ impl WgpuRenderer {
         main_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
         main_pass.draw(0..self.num_vertices, 0..1);
 
+        // Inside your render method:
+        if self.debug_render_bounding_boxes && self.debug_vertex_count > 0 {
+            if let Some(debug_buffer) = &self.debug_vertex_buffer {
+                main_pass.set_vertex_buffer(0, debug_buffer.slice(..));
+                main_pass.draw(0..self.debug_vertex_count as u32, 0..1);
+            }
+        }
+
         Ok((surface_view, screen_descriptor, surface_texture))
+    }
+
+    pub fn update_debug_vertices(&mut self, collision_system: &CollisionSystem) {
+        // Skip if debug rendering is disabled
+        if !self.debug_render_bounding_boxes {
+            self.debug_vertex_count = 0;
+            return;
+        }
+
+        // Collect only wall face AABBs, not the entire BVH hierarchy
+        let debug_vertices = collect_wall_face_debug_vertices(&collision_system.bvh);
+
+        // Create or update the debug vertex buffer
+        self.debug_vertex_count = debug_vertices.len();
+        if self.debug_vertex_count > 0 {
+            let debug_buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Debug Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&debug_vertices),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+            self.debug_vertex_buffer = Some(debug_buffer);
+        }
     }
 }

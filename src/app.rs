@@ -339,6 +339,9 @@ impl App {
 
             state.game_state.delta_time = delta_time;
             state.game_state.last_frame_time = current_time;
+            state
+                .wgpu_renderer
+                .update_debug_vertices(&state.game_state.collision_system);
         }
     }
 
@@ -403,6 +406,11 @@ impl App {
                                 contents: bytemuck::cast_slice(&floor_vertices),
                                 usage: wgpu::BufferUsages::VERTEX,
                             });
+
+                        state
+                            .game_state
+                            .collision_system
+                            .build_from_maze(&maze_grid);
                     }
                 }
             }
@@ -488,6 +496,10 @@ impl ApplicationHandler for App {
                                 GameKey::Quit => event_loop.exit(),
                                 GameKey::ToggleSliders => {
                                     state.ui.show_sliders = !state.ui.show_sliders
+                                }
+                                GameKey::ToggleBoundingBoxes => {
+                                    state.wgpu_renderer.debug_render_bounding_boxes =
+                                        !state.wgpu_renderer.debug_render_bounding_boxes;
                                 }
                                 _ => {} // Movement keys are handled in process_movement
                             }
