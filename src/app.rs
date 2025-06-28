@@ -259,6 +259,15 @@ impl App {
             screen_descriptor,
         );
 
+        state.game_state.player.update_cell(
+            &state
+                .wgpu_renderer
+                .animation_renderer
+                .maze
+                .lock()
+                .unwrap()
+                .walls,
+        );
         // Submit commands and present
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
         surface_texture.present();
@@ -274,50 +283,52 @@ impl App {
         if let Some(state) = self.state.as_mut() {
             let progress = state
                 .wgpu_renderer
-                .title_screen_renderer
+                .animation_renderer
                 .generator
                 .get_progress_ratio();
 
-            let (maze_width, maze_height) =
-                match state.wgpu_renderer.title_screen_renderer.maze.lock() {
-                    Ok(maze_lock) => maze_lock.get_dimensions(),
-                    Err(err) => {
-                        eprintln!("Failed to acquire maze lock for dimensions: {}", err);
-                        return;
-                    }
-                };
+            let (maze_width, maze_height) = match state.wgpu_renderer.animation_renderer.maze.lock()
+            {
+                Ok(maze_lock) => maze_lock.get_dimensions(),
+
+                Err(err) => {
+                    eprintln!("Failed to acquire maze lock for dimensions: {}", err);
+                    return;
+                }
+            };
 
             state
                 .wgpu_renderer
-                .title_screen_renderer
+                .animation_renderer
                 .update_loading_bar(&state.wgpu_renderer.queue, progress);
 
             state
                 .wgpu_renderer
-                .title_screen_renderer
+                .animation_renderer
                 .update_exit_shader(&state.wgpu_renderer.queue, window);
 
-            let maze_data = match state.wgpu_renderer.title_screen_renderer.maze.lock() {
+            let maze_data = match state.wgpu_renderer.animation_renderer.maze.lock() {
                 Ok(maze_lock) => maze_lock.get_render_data(
                     &state
                         .wgpu_renderer
-                        .title_screen_renderer
+                        .animation_renderer
                         .generator
                         .connected_cells,
                 ),
+
                 Err(err) => {
                     eprintln!("Failed to acquire maze lock: {}", err);
                     return;
                 }
             };
 
-            state.wgpu_renderer.title_screen_renderer.update_texture(
+            state.wgpu_renderer.animation_renderer.update_texture(
                 &state.wgpu_renderer.queue,
                 &maze_data,
                 maze_width,
                 maze_height,
             );
-            state.wgpu_renderer.title_screen_renderer.last_update = Instant::now();
+            state.wgpu_renderer.animation_renderer.last_update = Instant::now();
         }
     }
 
@@ -353,7 +364,7 @@ impl App {
     /// Advances the maze generation animation and uploads new geometry when complete.
     pub fn handle_maze_generation(&mut self) {
         if let Some(state) = self.state.as_mut() {
-            let renderer = &mut state.wgpu_renderer.title_screen_renderer;
+            let renderer = &mut state.wgpu_renderer.animation_renderer;
 
             // Calculate update timing
             let speed = if renderer.generator.fast_mode {
@@ -413,6 +424,10 @@ impl App {
                                 contents: bytemuck::cast_slice(&floor_vertices),
                                 usage: wgpu::BufferUsages::VERTEX,
                             });
+
+                        if let Some(exit_cell_position) = exit_cell {
+                            state.game_state.exit_cell = exit_cell_position;
+                        }
 
                         state
                             .game_state

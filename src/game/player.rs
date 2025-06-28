@@ -4,6 +4,7 @@
 //! and movement parameters, and provides methods for movement and view matrix calculation.
 
 use crate::math::mat::Mat4;
+use crate::maze::generator::Cell;
 
 /// Represents the player character's state in the world.
 ///
@@ -24,19 +25,22 @@ pub struct Player {
     pub speed: f32,
     /// Mouse sensitivity multiplier.
     pub mouse_sensitivity: f32,
+    /// Current Cell
+    pub current_cell: Cell,
 }
 
 impl Player {
     /// Creates a new [`Player`] with default starting position and parameters.
     pub fn new() -> Self {
         Self {
-            position: [-1475.0, 50.0, 1475.0], // Start above and behind the floor
+            position: [1475.0, 50.0, 1475.0], // Start above and behind the floor
             pitch: 3.0,
             yaw: 316.0,
             fov: 100.0,
             base_speed: 100.0,
             speed: 100.0,
             mouse_sensitivity: 1.0,
+            current_cell: Cell::default(),
         }
     }
 
@@ -104,5 +108,24 @@ impl Player {
         let right_z = self.yaw.to_radians().sin();
         self.position[0] += right_x * self.speed * delta_time;
         self.position[2] -= right_z * self.speed * delta_time;
+    }
+
+    pub fn update_cell(&mut self, maze_grid: &[Vec<bool>]) {
+        let floor_size = 3000.0;
+        let maze_width = maze_grid[0].len();
+        let maze_height = maze_grid.len();
+
+        // Calculate cell size to match wall generation logic
+        let max_dimension = maze_width.max(maze_height) as f32;
+        let cell_size = floor_size / max_dimension;
+        let half_maze = 1500.0;
+
+        let x = ((self.position[0] + half_maze) / cell_size).floor() as i32;
+        let z = ((self.position[2] + half_maze) / cell_size).floor() as i32;
+
+        self.current_cell = Cell {
+            row: z as usize,
+            col: x as usize,
+        };
     }
 }

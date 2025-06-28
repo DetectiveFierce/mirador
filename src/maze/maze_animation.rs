@@ -1,7 +1,7 @@
-//! Title screen maze renderer module.
+//! Maze generation animation renderer module.
 //!
-//! This module provides [`TitleScreenRenderer`], which handles rendering a maze and a loading bar
-//! for the game's title screen using `wgpu`. It manages GPU resources for the maze texture, pipelines,
+//! This module provides [`AnimationRenderer`], which handles rendering a maze and a loading bar
+//! for the maze's animation screen using `wgpu`. It manages GPU resources for the maze texture, pipelines,
 //! and loading bar, and provides methods to update the maze texture and loading bar progress.
 
 use crate::maze::generator::Maze;
@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use winit::window::Window;
 
-/// Handles rendering of the maze and loading bar on the title screen.
+/// Handles rendering of the maze and loading bar on the maze generation animation screen.
 ///
 /// This struct manages GPU resources for the maze texture, pipelines, vertex buffers, and loading bar.
 /// It also holds a [`MazeGenerator`] and a shared [`Maze`] instance for generating and displaying the maze.
@@ -22,20 +22,12 @@ use winit::window::Window;
 /// # Fields
 /// - `generator`: Maze generator for producing new mazes.
 /// - `maze`: Shared, thread-safe reference to the current maze.
-/// - `vertex_buffer`: Vertex buffer for the maze quad.
-/// - `pipeline`: Render pipeline for the maze.
+/// - `maze_renderer`: Maze renderer for displaying the maze.
+/// - `loading_bar_renderer`: Loading bar renderer for displaying the loading progress.
+/// - `exit_shader_renderer`: Exit shader renderer for displaying the exit shader.
 /// - `texture`: Texture containing the maze image.
-/// - `bind_group`: Bind group for the maze texture and sampler.
-/// - `loading_bar_pipeline`: Render pipeline for the loading bar.
-/// - `loading_bar_vertex_buffer`: Vertex buffer for the loading bar quad.
-/// - `loading_bar_uniform_buffer`: Uniform buffer for loading bar progress.
-/// - `loading_bar_bind_group`: Bind group for the loading bar uniform.
-/// - `exit_shader_pipeline`: Render pipeline for the exit cell shader effect.
-/// - `exit_shader_uniform_buffer`: Uniform buffer for exit shader (time and resolution).
-/// - `exit_shader_bind_group`: Bind group for the exit shader uniform.
-/// - `exit_shader_vertex_buffer`: Vertex buffer for the exit shader quad.
 /// - `last_update`: Timestamp of the last update (for animation/timing).
-pub struct TitleScreenRenderer {
+pub struct AnimationRenderer {
     /// Maze generator for producing new mazes.
     pub generator: MazeGenerator,
     /// Shared, thread-safe reference to the current maze.
@@ -52,8 +44,8 @@ pub struct TitleScreenRenderer {
     pub last_update: Instant,
 }
 
-impl TitleScreenRenderer {
-    /// Creates a new simplified title screen renderer.
+impl AnimationRenderer {
+    /// Creates a new simplified maze generation animation screen renderer.
     pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
         // Initialize maze generation
         let maze_width = 25;
@@ -137,7 +129,7 @@ impl TitleScreenRenderer {
     /// - `cell_size`: Size of each cell in pixels.
     /// - `screen_size`: Screen dimensions.
     ///
-    /// Renders all components for the title screen.
+    /// Renders all components for the maze generation animation.
     pub fn render(&self, render_pass: &mut wgpu::RenderPass, window: &Window) {
         // Render maze background
         self.maze_renderer.render(render_pass);
@@ -155,17 +147,6 @@ impl TitleScreenRenderer {
                 );
             }
         }
-    }
-
-    /// Legacy method for rendering exit cell - now delegates to main render method
-    pub fn render_exit_cell(
-        &self,
-        render_pass: &mut wgpu::RenderPass,
-        window: &Window,
-        exit_cell: (usize, usize),
-    ) {
-        self.exit_shader_renderer
-            .render_to_cell(render_pass, window, exit_cell);
     }
 
     /// Convenience method to get maze progress for loading bar.

@@ -18,8 +18,8 @@ use crate::background::stars::{self, StarRenderer};
 use crate::game::collision::CollisionSystem;
 use crate::game::player::Player;
 use crate::math::{deg_to_rad, mat::Mat4};
-use crate::maze::title_screen::TitleScreenRenderer;
-use crate::maze::{parse_maze_file, title_screen};
+use crate::maze::maze_animation::AnimationRenderer;
+use crate::maze::{maze_animation, parse_maze_file};
 use crate::renderer::debug_renderer::collect_wall_face_debug_vertices;
 use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::uniform::Uniforms;
@@ -47,7 +47,7 @@ use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
 /// - `uniform_bind_group`: Bind group for the uniform buffer.
 /// - `depth_texture`: Optional depth texture for depth testing.
 /// - `background`: StarRenderer for animated starfield background.
-/// - `title_screen_renderer`: Renderer for the title screen maze and loading bar.
+/// - `animation_renderer`: Renderer for the title screen maze and loading bar.
 pub struct WgpuRenderer {
     /// The WGPU surface for presenting rendered frames.
     pub surface: wgpu::Surface<'static>,
@@ -72,7 +72,7 @@ pub struct WgpuRenderer {
     /// StarRenderer for animated starfield background.
     pub background: StarRenderer,
     /// Renderer for the title screen maze and loading bar.
-    pub title_screen_renderer: TitleScreenRenderer,
+    pub animation_renderer: AnimationRenderer,
     /// Renderer for debug information.
     /// Whether to render bounding boxes for debugging.
     pub debug_render_bounding_boxes: bool,
@@ -189,8 +189,7 @@ impl WgpuRenderer {
         });
 
         let star_renderer = stars::create_star_renderer(&device, &surface_config, 100);
-        let title_screen_renderer =
-            title_screen::TitleScreenRenderer::new(&device, &surface_config);
+        let animation_renderer = maze_animation::AnimationRenderer::new(&device, &surface_config);
 
         let debug_render_bounding_boxes = false;
         let debug_vertex_buffer = None;
@@ -207,7 +206,7 @@ impl WgpuRenderer {
             num_vertices: floor_vertices.len() as u32,
             depth_texture: None,
             background: star_renderer,
-            title_screen_renderer,
+            animation_renderer,
             debug_render_bounding_boxes,
             debug_vertex_buffer,
             debug_vertex_count,
@@ -317,7 +316,7 @@ impl WgpuRenderer {
                 });
 
                 // Render title screen using new component architecture
-                self.title_screen_renderer.render(&mut render_pass, window);
+                self.animation_renderer.render(&mut render_pass, window);
             }
 
             return Ok((surface_view, screen_descriptor, surface_texture)); // <- This return was already there

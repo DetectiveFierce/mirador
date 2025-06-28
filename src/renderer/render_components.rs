@@ -1,4 +1,4 @@
-//! # Maze Rendering System
+//! # Maze Generation Animation Rendering System
 //!
 //! This module provides specialized renderers for different aspects of a maze visualization
 //! application. It includes renderers for the maze itself, loading progress indicators,

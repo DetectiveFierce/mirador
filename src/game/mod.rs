@@ -6,9 +6,9 @@
 pub mod collision;
 pub mod keys;
 pub mod player;
-
 use self::collision::CollisionSystem;
 use self::player::Player;
+use crate::maze::generator::Cell;
 use std::path::PathBuf;
 use std::time::Instant;
 /// Represents the entire mutable state of the game.
@@ -40,6 +40,11 @@ pub struct GameState {
     pub capture_mouse: bool,
     /// Handles collisions between game entities.
     pub collision_system: CollisionSystem,
+    /// Current level number.
+    pub level: u32,
+    /// Whether the exit has been reached.
+    pub exit_reached: bool,
+    pub exit_cell: Cell,
 }
 
 impl Default for GameState {
@@ -67,6 +72,9 @@ impl GameState {
                 10.0,  // player_radius (adjust based on your player size)
                 100.0, // player_height (adjust based on your player size)),
             ),
+            level: 1,
+            exit_reached: false,
+            exit_cell: Cell::default(),
         }
     }
 }

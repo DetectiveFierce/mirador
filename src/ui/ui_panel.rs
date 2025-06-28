@@ -90,6 +90,11 @@ impl AppState {
                             // Display key state (assuming Debug is implemented for KeyState)
                             ui.label(format!("KeyState: {:?}", self.key_state.pressed_keys));
 
+                            ui.label(format!(
+                                "Player Cell: {:?}",
+                                self.game_state.player.current_cell
+                            ));
+                            ui.label(format!("Exit Cell: {:?}", self.game_state.exit_cell));
                             ui.label(format!("FPS: {}", self.game_state.current_fps));
                             ui.label(format!("Maze Path: {:?}", self.game_state.maze_path));
 
