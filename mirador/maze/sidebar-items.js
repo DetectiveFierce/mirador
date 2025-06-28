@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["parse_maze_file"],"mod":["generator","maze_animation"]};

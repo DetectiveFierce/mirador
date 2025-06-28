@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["create_fullscreen_vertices","create_uniform_buffer","create_vertex_2d_layout"],"struct":["BindGroupLayoutBuilder","PipelineBuilder"]};

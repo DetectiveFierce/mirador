@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["deg_to_rad","rad_to_deg"],"mod":["mat","vec"]};

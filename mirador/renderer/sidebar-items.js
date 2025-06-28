@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["debug_renderer","pipeline_builder","render_components","uniform","vertex","wgpu_lib"]};

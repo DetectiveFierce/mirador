@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BOUNDING_BOX_MATERIAL"],"fn":["collect_wall_face_debug_vertices","collect_wall_faces_recursive","create_aabb_box_vertices"]};

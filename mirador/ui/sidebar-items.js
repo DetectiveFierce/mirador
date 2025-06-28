@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["egui_lib","ui_panel"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["GameKey"],"fn":["winit_key_to_game_key"],"macro":["match_char_key","match_named_key"],"struct":["KeyState"]};

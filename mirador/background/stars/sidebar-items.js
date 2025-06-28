@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["create_star_pipeline","create_star_renderer"],"struct":["Star","StarRenderer"]};

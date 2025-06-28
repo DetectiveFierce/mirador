@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Create a vertex buffer containing a fullscreen quad."><title>create_fullscreen_vertices in mirador::renderer::pipeline_builder - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0 (17067e9ac 2025-05-09)" data-channel="1.87.0" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-82c7156e.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-fb8c74a8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../mirador/index.html">mirador</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">create_<wbr>fullscreen_<wbr>vertices</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#vertex-data" title="Vertex Data">Vertex Data</a></li><li><a href="#usage-with-shaders" title="Usage with Shaders">Usage with Shaders</a></li><li><a href="#rendering" title="Rendering">Rendering</a></li><li><a href="#parameters" title="Parameters">Parameters</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#example" title="Example">Example</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In mirador::<wbr>renderer::<wbr>pipeline_<wbr>builder</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">mirador</a>::<wbr><a href="../index.html">renderer</a>::<wbr><a href="index.html">pipeline_builder</a></div><h1>Function <span class="fn">create_fullscreen_vertices</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/mirador/renderer/pipeline_builder.rs.html#784-794">Source</a> </span></div><pre class="rust item-decl"><code>pub fn create_fullscreen_vertices(device: &amp;<a class="struct" href="../../../wgpu/api/device/struct.Device.html" title="struct wgpu::api::device::Device">Device</a>) -&gt; <a class="struct" href="../../../wgpu/api/buffer/struct.Buffer.html" title="struct wgpu::api::buffer::Buffer">Buffer</a></code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Create a vertex buffer containing a fullscreen quad.</p>
+<p>This creates a vertex buffer with 6 vertices forming two triangles that
+cover the entire screen in normalized device coordinates (-1 to 1).
+The quad is suitable for fullscreen effects, post-processing, or
+screen-space rendering.</p>
+<h3 id="vertex-data"><a class="doc-anchor" href="#vertex-data">§</a>Vertex Data</h3>
+<p>The buffer contains 6 vertices in triangle list format:</p>
+<ul>
+<li>Triangle 1: (-1,-1), (1,-1), (1,1)</li>
+<li>Triangle 2: (-1,-1), (1,1), (-1,1)</li>
+</ul>
+<p>This covers the entire NDC space from (-1,-1) to (1,1).</p>
+<h3 id="usage-with-shaders"><a class="doc-anchor" href="#usage-with-shaders">§</a>Usage with Shaders</h3>
+<p>Vertex shaders can use these positions directly:</p>
+<div class="example-wrap"><pre class="language-wgsl"><code>@vertex
+fn vs_main(@location(0) position: vec2&lt;f32&gt;) -&gt; @builtin(position) vec4&lt;f32&gt; {
+    return vec4&lt;f32&gt;(position, 0.0, 1.0);
+}</code></pre></div>
+<p>For UV coordinates, convert from NDC:</p>
+<div class="example-wrap"><pre class="language-wgsl"><code>let uv = position * 0.5 + 0.5; // Convert from [-1,1] to [0,1]</code></pre></div><h3 id="rendering"><a class="doc-anchor" href="#rendering">§</a>Rendering</h3>
+<p>Draw with:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>render_pass.set_vertex_buffer(<span class="number">0</span>, vertex_buffer.slice(..));
+render_pass.draw(<span class="number">0</span>..<span class="number">6</span>, <span class="number">0</span>..<span class="number">1</span>); <span class="comment">// Draw 6 vertices as triangle list</span></code></pre></div>
+<h2 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h2>
+<ul>
+<li><code>device</code> - The WGPU device used to create the buffer</li>
+</ul>
+<h2 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h2>
+<p>A <code>wgpu::Buffer</code> containing the fullscreen quad vertices, ready for use
+as a vertex buffer.</p>
+<h2 id="example"><a class="doc-anchor" href="#example">§</a>Example</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::renderer::pipeline_builder::create_fullscreen_vertices;
+
+<span class="kw">let </span>vertex_buffer = create_fullscreen_vertices(<span class="kw-2">&amp;</span>device);
+
+<span class="comment">// In render loop:
+</span>render_pass.set_vertex_buffer(<span class="number">0</span>, vertex_buffer.slice(..));
+render_pass.draw(<span class="number">0</span>..<span class="number">6</span>, <span class="number">0</span>..<span class="number">1</span>);</code></pre></div>
+</div></details></section></div></main></body></html>
