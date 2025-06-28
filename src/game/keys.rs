@@ -84,16 +84,12 @@ impl KeyState {
     /// - Moves the player according to pressed movement keys.
     /// - Handles mouse and escape key actions.
     pub fn update(&mut self, game_state: &mut GameState) {
-        if self.is_pressed(GameKey::Jump) {
-            println!("omg she jumped")
-        }
-
         // Handle sprint speed changes
         if self.is_pressed(GameKey::Sprint) {
-            game_state.player.speed = 90.0;
+            game_state.player.speed = game_state.player.base_speed * 2.0;
         }
         if !self.is_pressed(GameKey::Sprint) {
-            game_state.player.speed = 60.0;
+            game_state.player.speed = game_state.player.base_speed;
         }
 
         // NEW: Replace individual movement calls with collision-aware movement
@@ -114,7 +110,10 @@ impl KeyState {
         );
 
         // Handle non-movement keys
-        if self.is_pressed(GameKey::MouseButtonLeft) && game_state.maze_path.is_some() {
+        if self.is_pressed(GameKey::MouseButtonLeft)
+            && game_state.maze_path.is_some()
+            && game_state.capture_mouse
+        {
             game_state.title_screen = false;
         }
         if self.is_pressed(GameKey::Escape) {

@@ -3,6 +3,7 @@
 //! This module provides the [`Vertex`] struct, which describes the layout of vertex data for the renderer,
 //! and utility functions for generating floor and wall geometry from maze data.
 
+use crate::maze::generator::Cell;
 use egui_wgpu::wgpu;
 
 /// Vertex data for rendering maze and floor geometry.
@@ -59,9 +60,12 @@ impl Vertex {
     ///
     /// # Returns
     /// A tuple containing a vector of [`Vertex`] and the number of vertices.
-    pub fn create_floor_vertices() -> (Vec<Vertex>, usize) {
+    pub fn create_floor_vertices(maze_grid: &[Vec<bool>], exit_cell: Option<Cell>) -> Vec<Vertex> {
         let floor_size = 3000.0; // Size of the square floor
         let half_size = floor_size / 2.0;
+
+        // Create base floor vertices
+        let mut vertices = Vec::new();
 
         // Define the four corners of the square floor centered at origin
         let positions: Vec<f32> = vec![
@@ -73,48 +77,47 @@ impl Vertex {
         ];
 
         // Two triangles to form the square floor
-        // Triangle 1: vertices 0, 1, 2
-        // Triangle 2: vertices 0, 2, 3
         let indices: Vec<usize> = vec![
             0, 1, 2, // First triangle
             0, 2, 3, // Second triangle
         ];
 
-        // Colors for each triangle (can be the same or different)
-        let triangle_colors: Vec<[u8; 3]> = vec![
+        // Colors for base floor triangles
+        let base_triangle_colors: Vec<[u8; 3]> = vec![
             [120, 80, 160],  // Purple-ish for first triangle
             [100, 120, 180], // Blue-ish for second triangle
         ];
 
-        let num_vertices = indices.len();
-        let vertex_data: Vec<Vertex> = (0..num_vertices)
-            .map(|i| {
-                let position_idx = indices[i] * 3;
-                let position = [
-                    positions[position_idx],
-                    positions[position_idx + 1],
-                    positions[position_idx + 2],
-                ];
+        // Add base floor vertices
+        for (i, &index) in indices.iter().enumerate() {
+            let position_idx = index * 3;
+            let position = [
+                positions[position_idx],
+                positions[position_idx + 1],
+                positions[position_idx + 2],
+            ];
+            let triangle_idx = i / 3;
+            let color = [
+                base_triangle_colors[triangle_idx][0],
+                base_triangle_colors[triangle_idx][1],
+                base_triangle_colors[triangle_idx][2],
+                255,
+            ];
+            vertices.push(Vertex {
+                position,
+                color,
+                material: 0,
+            });
+        }
 
-                let triangle_idx = i / 3; // Which triangle (0 or 1)
-                let color = [
-                    triangle_colors[triangle_idx][0],
-                    triangle_colors[triangle_idx][1],
-                    triangle_colors[triangle_idx][2],
-                    255, // Alpha
-                ];
+        // Add green exit cell floor patch if exit exists
+        if let Some(exit) = exit_cell {
+            let exit_vertices = create_exit_cell_floor_patch(maze_grid, exit);
+            vertices.extend(exit_vertices);
+        }
 
-                Vertex {
-                    position,
-                    color,
-                    material: 0,
-                }
-            })
-            .collect();
-
-        (vertex_data, num_vertices)
+        vertices
     }
-
     /// Generates wall geometry for a maze grid.
     ///
     /// For each wall cell (`true`), creates the necessary wall faces (as quads) to form the maze.
@@ -271,6 +274,71 @@ pub fn create_x_facing_wall(x: f32, y: f32, z: f32, depth: f32, height: f32) -> 
             position: [x, y + height, z],
             color,
             material: 1,
+        },
+    ]
+}
+
+fn create_exit_cell_floor_patch(maze_grid: &[Vec<bool>], exit_cell: Cell) -> Vec<Vertex> {
+    let floor_size = 3000.0;
+    let maze_width = maze_grid[0].len();
+    let maze_height = maze_grid.len();
+
+    // Calculate cell size to match wall generation logic
+    let max_dimension = maze_width.max(maze_height) as f32;
+    let cell_size = floor_size / max_dimension;
+
+    // Calculate origin to center the maze (same as wall generation)
+    let origin_x = -(maze_width as f32 * cell_size) / 2.0;
+    let origin_z = -(maze_height as f32 * cell_size) / 2.0;
+
+    // Convert maze cell coordinates to world coordinates
+    // Note: exit_cell uses maze coordinates (not wall grid coordinates)
+    let world_x = origin_x + exit_cell.col as f32 * cell_size;
+    let world_z = origin_z + exit_cell.row as f32 * cell_size;
+
+    let green_color = [0, 255, 0, 255]; // Bright green
+
+    // Define the four corners of the exit cell square
+    let corners = [
+        [world_x, 1.0, world_z],                         // Bottom-left
+        [world_x + cell_size, 1.0, world_z],             // Bottom-right
+        [world_x + cell_size, 1.0, world_z + cell_size], // Top-right
+        [world_x, 1.0, world_z + cell_size],             // Top-left
+    ];
+
+    // Create two triangles for the green square
+    vec![
+        // First triangle: 0, 1, 2
+        Vertex {
+            position: corners[0],
+            color: green_color,
+            material: 4,
+        },
+        Vertex {
+            position: corners[1],
+            color: green_color,
+            material: 4,
+        },
+        Vertex {
+            position: corners[2],
+            color: green_color,
+            material: 4,
+        },
+        // Second triangle: 0, 2, 3
+        Vertex {
+            position: corners[0],
+            color: green_color,
+            material: 4,
+        },
+        Vertex {
+            position: corners[2],
+            color: green_color,
+            material: 4,
+        },
+        Vertex {
+            position: corners[3],
+            color: green_color,
+            material: 4,
         },
     ]
 }

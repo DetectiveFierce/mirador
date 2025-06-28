@@ -1,0 +1,690 @@
+//! # Maze Rendering System
+//!
+//! This module provides specialized renderers for different aspects of a maze visualization
+//! application. It includes renderers for the maze itself, loading progress indicators,
+//! and animated exit effects.
+//!
+//! ## Architecture Overview
+//!
+//! The rendering system is built on top of the pipeline builder utilities and provides
+//! three main renderer types:
+//!
+//! - [`MazeRenderer`] - Renders the maze texture to screen
+//! - [`LoadingBarRenderer`] - Shows loading progress with a progress bar
+//! - [`ExitShaderRenderer`] - Creates animated effects for the maze exit
+//!
+//! ## Coordinate System
+//!
+//! The maze uses a grid-based coordinate system where (0,0) is typically the top-left
+//! corner. The renderers handle conversion between grid coordinates and screen space.
+//!
+//! ## Usage Pattern
+//!
+//! 1. Create renderers during initialization with device and surface configuration
+//! 2. Update renderer state each frame (progress, time, etc.)
+//! 3. Render during the render pass
+//!
+//! ## Example Setup
+//!
+//! ```rust,no_run
+//! use crate::renderer::maze_renderer::{MazeRenderer, LoadingBarRenderer, MazeRenderConfig};
+//! # let device: egui_wgpu::wgpu::Device = unimplemented!();
+//! # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+//!
+//! // Create maze texture
+//! let config = MazeRenderConfig::new(50, 50); // 50x50 maze
+//! let (texture, texture_view, sampler) = config.create_maze_texture(&device);
+//!
+//! // Create renderers
+//! let maze_renderer = MazeRenderer::new(&device, &surface_config, &texture_view, &sampler);
+//! let loading_renderer = LoadingBarRenderer::new(&device, &surface_config);
+//! ```
+
+use crate::renderer::pipeline_builder::{
+    BindGroupLayoutBuilder, PipelineBuilder, create_fullscreen_vertices, create_uniform_buffer,
+    create_vertex_2d_layout,
+};
+use egui_wgpu::wgpu;
+use std::time::Instant;
+
+/// Uniform data structure for the loading bar shader.
+///
+/// This structure is uploaded to the GPU and used by the loading bar fragment shader
+/// to determine how much of the progress bar to fill.
+///
+/// ## Memory Layout
+///
+/// The structure uses `#[repr(C)]` to ensure consistent memory layout between
+/// Rust and WGSL. The padding ensures 16-byte alignment as required by WGSL
+/// uniform buffer rules.
+///
+/// ## Shader Usage
+///
+/// In WGSL, this corresponds to:
+/// ```wgsl
+/// struct LoadingBarUniforms {
+///     progress: f32,
+///     // Implicit padding in WGSL
+/// }
+/// @group(0) @binding(0) var<uniform> uniforms: LoadingBarUniforms;
+/// ```
+///
+/// # Fields
+///
+/// - `progress` - Loading progress from 0.0 (0%) to 1.0 (100%)
+/// - `_padding` - Ensures proper WGSL alignment (16 bytes total)
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct LoadingBarUniforms {
+    pub progress: f32,
+    pub _padding: [f32; 3],
+}
+
+/// Uniform data structure for the exit shader effects.
+///
+/// This structure provides time and screen resolution information to the
+/// exit shader for creating animated procedural effects.
+///
+/// ## Memory Layout
+///
+/// Uses `#[repr(C)]` for consistent layout. The resolution is stored as a 2-component
+/// vector for easy use in shader calculations.
+///
+/// ## Shader Usage
+///
+/// In WGSL, this corresponds to:
+/// ```wgsl
+/// struct ExitShaderUniforms {
+///     time: f32,
+///     resolution: vec2<f32>,
+///     // Implicit padding in WGSL
+/// }
+/// @group(0) @binding(0) var<uniform> uniforms: ExitShaderUniforms;
+/// ```
+///
+/// # Fields
+///
+/// - `time` - Elapsed time in seconds since shader start (for animation)
+/// - `resolution` - Screen/viewport resolution as [width, height]
+/// - `_padding` - Ensures proper WGSL alignment
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ExitShaderUniforms {
+    pub time: f32,
+    pub resolution: [f32; 2],
+    pub _padding: [f32; 3],
+}
+
+/// Renders a maze texture to the screen with proper scaling and filtering.
+///
+/// This renderer takes a pre-generated maze texture and displays it fullscreen
+/// or in a specified viewport. It handles texture sampling and can apply
+/// various filtering modes.
+///
+/// ## Rendering Pipeline
+///
+/// 1. Uses a fullscreen quad vertex buffer
+/// 2. Samples the maze texture with the provided sampler
+/// 3. Outputs directly to the framebuffer
+///
+/// ## Texture Requirements
+///
+/// - Format: `Rgba8UnormSrgb` (or compatible)
+/// - Usage: Must include `TEXTURE_BINDING`
+/// - The texture should contain the pre-rendered maze data
+///
+/// ## Performance Notes
+///
+/// This renderer is very efficient as it only performs texture sampling
+/// without complex computations. It's suitable for real-time rendering
+/// of static or infrequently updated maze textures.
+///
+/// ## Example Usage
+///
+/// ```rust,no_run
+/// # use crate::renderer::maze_renderer::MazeRenderer;
+/// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+/// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+/// # let texture_view: egui_wgpu::wgpu::TextureView = unimplemented!();
+/// # let sampler: egui_wgpu::wgpu::Sampler = unimplemented!();
+/// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+///
+/// let renderer = MazeRenderer::new(&device, &surface_config, &texture_view, &sampler);
+///
+/// // In render loop:
+/// renderer.render(&mut render_pass);
+/// ```
+pub struct MazeRenderer {
+    /// The render pipeline configured for maze texture rendering
+    pub pipeline: wgpu::RenderPipeline,
+    /// Vertex buffer containing fullscreen quad vertices
+    pub vertex_buffer: wgpu::Buffer,
+    /// Bind group containing the maze texture and sampler
+    pub bind_group: wgpu::BindGroup,
+}
+
+impl MazeRenderer {
+    /// Create a new maze renderer.
+    ///
+    /// This sets up the complete rendering pipeline for displaying a maze texture,
+    /// including the render pipeline, vertex buffer, and bind group.
+    ///
+    /// ## Shader Requirements
+    ///
+    /// The maze shader should be located at `../maze/2D-maze-shader.wgsl` relative
+    /// to this module and should expect:
+    /// - Vertex input: `@location(0) position: vec2<f32>`
+    /// - Texture binding: `@group(0) @binding(0) var maze_texture: texture_2d<f32>;`
+    /// - Sampler binding: `@group(0) @binding(1) var maze_sampler: sampler;`
+    ///
+    /// # Parameters
+    ///
+    /// - `device` - WGPU device for creating GPU resources
+    /// - `surface_config` - Surface configuration (provides target format)
+    /// - `texture_view` - View of the maze texture to render
+    /// - `sampler` - Sampler for texture filtering (typically nearest neighbor for pixel art)
+    ///
+    /// # Returns
+    ///
+    /// A configured `MazeRenderer` ready for rendering.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::{MazeRenderer, MazeRenderConfig};
+    /// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+    /// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+    ///
+    /// // Create maze texture
+    /// let config = MazeRenderConfig::new(25, 25);
+    /// let (texture, texture_view, sampler) = config.create_maze_texture(&device);
+    ///
+    /// let renderer = MazeRenderer::new(&device, &surface_config, &texture_view, &sampler);
+    /// ```
+    pub fn new(
+        device: &wgpu::Device,
+        surface_config: &wgpu::SurfaceConfiguration,
+        texture_view: &wgpu::TextureView,
+        sampler: &wgpu::Sampler,
+    ) -> Self {
+        let bind_group_layout = BindGroupLayoutBuilder::new(device)
+            .with_label("Maze Texture Bind Group Layout")
+            .with_texture(0, wgpu::ShaderStages::FRAGMENT)
+            .with_sampler(1, wgpu::ShaderStages::FRAGMENT)
+            .build();
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(sampler),
+                },
+            ],
+            label: Some("Maze Texture Bind Group"),
+        });
+
+        let pipeline = PipelineBuilder::new(device, surface_config.format)
+            .with_label("Maze Render Pipeline")
+            .with_shader(include_str!("../maze/2D-maze-shader.wgsl"))
+            .with_vertex_buffer(create_vertex_2d_layout())
+            .with_bind_group_layout(&bind_group_layout)
+            .build();
+
+        let vertex_buffer = create_fullscreen_vertices(device);
+
+        Self {
+            pipeline,
+            vertex_buffer,
+            bind_group,
+        }
+    }
+
+    /// Render the maze to the current render pass.
+    ///
+    /// This method performs the actual rendering by setting up the pipeline,
+    /// bind groups, and vertex buffer, then issuing a draw call for the
+    /// fullscreen quad.
+    ///
+    /// ## Render State
+    ///
+    /// This method assumes:
+    /// - A render pass is active
+    /// - The render pass targets are compatible with the pipeline
+    /// - No scissor test or viewport restrictions (renders fullscreen)
+    ///
+    /// ## Performance
+    ///
+    /// Very fast - only 6 vertices and simple texture sampling.
+    /// Suitable for real-time rendering at high frame rates.
+    ///
+    /// # Parameters
+    ///
+    /// - `render_pass` - Active render pass to render into
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::MazeRenderer;
+    /// # let renderer: MazeRenderer = unimplemented!();
+    /// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+    ///
+    /// // In render loop:
+    /// renderer.render(&mut render_pass);
+    /// ```
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.draw(0..6, 0..1);
+    }
+}
+
+/// Renders an animated progress bar for loading operations.
+///
+/// This renderer displays a customizable loading bar that shows progress
+/// from 0% to 100%. It uses alpha blending to overlay on top of other
+/// content and can be styled through the shader.
+///
+/// ## Visual Design
+///
+/// The loading bar appearance is defined in the shader and typically includes:
+/// - Background bar (usually semi-transparent)
+/// - Filled portion indicating progress (usually opaque, colored)
+/// - Smooth progress animation
+/// - Optional decorative elements (borders, gradients, etc.)
+///
+/// ## Blending
+///
+/// Uses alpha blending to overlay on existing content. This allows the
+/// loading bar to appear on top of other UI elements or the maze background.
+///
+/// ## Performance
+///
+/// Very lightweight - only updates uniform buffer when progress changes
+/// and renders a simple fullscreen quad.
+///
+/// ## Example Usage
+///
+/// ```rust,no_run
+/// # use crate::renderer::maze_renderer::LoadingBarRenderer;
+/// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+/// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+/// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+/// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+///
+/// let mut renderer = LoadingBarRenderer::new(&device, &surface_config);
+///
+/// // Update progress (0.0 to 1.0)
+/// renderer.update_progress(&queue, 0.5); // 50% complete
+///
+/// // Render the loading bar
+/// renderer.render(&mut render_pass);
+/// ```
+pub struct LoadingBarRenderer {
+    /// The render pipeline configured for loading bar rendering with alpha blending
+    pub pipeline: wgpu::RenderPipeline,
+    /// Vertex buffer containing fullscreen quad vertices
+    pub vertex_buffer: wgpu::Buffer,
+    /// Uniform buffer storing the current progress value
+    pub uniform_buffer: wgpu::Buffer,
+    /// Bind group containing the uniform buffer
+    pub bind_group: wgpu::BindGroup,
+}
+
+impl LoadingBarRenderer {
+    /// Create a new loading bar renderer.
+    ///
+    /// This sets up the complete rendering pipeline for displaying a progress bar,
+    /// including alpha blending support for overlay rendering.
+    ///
+    /// ## Shader Requirements
+    ///
+    /// The loading bar shader should be located at `../maze/loading-bar-shader.wgsl`
+    /// and should expect:
+    /// - Vertex input: `@location(0) position: vec2<f32>`
+    /// - Uniform binding: `@group(0) @binding(0) var<uniform> uniforms: LoadingBarUniforms;`
+    ///
+    /// ## Initial State
+    ///
+    /// The renderer starts with 0% progress. Use [`update_progress()`](LoadingBarRenderer::update_progress)
+    /// to change the progress value.
+    ///
+    /// # Parameters
+    ///
+    /// - `device` - WGPU device for creating GPU resources
+    /// - `surface_config` - Surface configuration (provides target format)
+    ///
+    /// # Returns
+    ///
+    /// A configured `LoadingBarRenderer` ready for rendering.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::LoadingBarRenderer;
+    /// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+    /// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+    ///
+    /// let renderer = LoadingBarRenderer::new(&device, &surface_config);
+    /// ```
+    pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
+        let uniforms = LoadingBarUniforms {
+            progress: 0.0,
+            _padding: [0.0; 3],
+        };
+
+        let uniform_buffer = create_uniform_buffer(device, &uniforms, "Loading Bar Uniform Buffer");
+
+        let bind_group_layout = BindGroupLayoutBuilder::new(device)
+            .with_label("Loading Bar Bind Group Layout")
+            .with_uniform_buffer(0, wgpu::ShaderStages::FRAGMENT)
+            .build();
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+            label: Some("Loading Bar Bind Group"),
+        });
+
+        let pipeline = PipelineBuilder::new(device, surface_config.format)
+            .with_label("Loading Bar Pipeline")
+            .with_shader(include_str!("../maze/loading-bar-shader.wgsl"))
+            .with_vertex_buffer(create_vertex_2d_layout())
+            .with_bind_group_layout(&bind_group_layout)
+            .with_alpha_blending()
+            .build();
+
+        let vertex_buffer = create_fullscreen_vertices(device);
+
+        Self {
+            pipeline,
+            vertex_buffer,
+            uniform_buffer,
+            bind_group,
+        }
+    }
+
+    /// Update the loading progress.
+    ///
+    /// This method uploads new progress data to the GPU uniform buffer.
+    /// The progress value is automatically clamped to the valid range [0.0, 1.0].
+    ///
+    /// ## Performance Notes
+    ///
+    /// This operation involves a GPU buffer write, so avoid calling it
+    /// unnecessarily frequently (e.g., every frame with the same value).
+    /// It's designed for periodic updates as loading progresses.
+    ///
+    /// # Parameters
+    ///
+    /// - `queue` - WGPU queue for buffer uploads
+    /// - `progress` - Progress value from 0.0 (0%) to 1.0 (100%)
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::LoadingBarRenderer;
+    /// # let renderer: LoadingBarRenderer = unimplemented!();
+    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+    ///
+    /// // Update progress to 75%
+    /// renderer.update_progress(&queue, 0.75);
+    ///
+    /// // Values outside [0,1] are automatically clamped
+    /// renderer.update_progress(&queue, 1.5); // Becomes 1.0
+    /// renderer.update_progress(&queue, -0.1); // Becomes 0.0
+    /// ```
+    pub fn update_progress(&self, queue: &wgpu::Queue, progress: f32) {
+        let uniforms = LoadingBarUniforms {
+            progress: progress.clamp(0.0, 1.0),
+            _padding: [0.0; 3],
+        };
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
+
+    /// Render the loading bar to the current render pass.
+    ///
+    /// This method renders the loading bar as an overlay using alpha blending.
+    /// The bar will appear on top of any previously rendered content.
+    ///
+    /// ## Render State
+    ///
+    /// This method assumes:
+    /// - A render pass is active
+    /// - Alpha blending is desired (the pipeline enables it)
+    /// - The loading bar should cover the full viewport
+    ///
+    /// # Parameters
+    ///
+    /// - `render_pass` - Active render pass to render into
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::LoadingBarRenderer;
+    /// # let renderer: LoadingBarRenderer = unimplemented!();
+    /// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+    ///
+    /// // Render background content first
+    /// // ... other rendering ...
+    ///
+    /// // Render loading bar on top
+    /// renderer.render(&mut render_pass);
+    /// ```
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.draw(0..6, 0..1);
+    }
+}
+
+/// Renders animated procedural effects for the maze exit cell.
+///
+/// This renderer creates dynamic visual effects specifically for the exit cell
+/// of the maze. It uses a full-screen triangle technique for efficiency and
+/// applies scissor testing to limit rendering to only the exit cell area.
+///
+/// ## Rendering Technique
+///
+/// Uses the "full-screen triangle" technique instead of a quad:
+/// - Single triangle with vertices outside the viewport
+/// - GPU clips to viewport automatically
+/// - More efficient than quad (fewer vertices, no diagonal edge)
+/// - Combined with scissor test for precise cell targeting
+///
+/// ## Coordinate System
+///
+/// The renderer expects maze coordinates where:
+/// - (0,0) is the top-left cell
+/// - Coordinates increase right (x) and down (y)
+/// - Grid size is assumed to be 25x25 cells
+/// - Cell rendering includes shrinking for visual borders
+///
+/// ## Animation
+///
+/// The shader receives time and resolution uniforms for creating
+/// time-based animations. The internal timer starts when the renderer
+/// is created.
+///
+/// ## Example Usage
+///
+/// ```rust,no_run
+/// # use crate::renderer::maze_renderer::ExitShaderRenderer;
+/// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+/// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+/// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+/// # let window: &winit::window::Window = unimplemented!();
+/// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+///
+/// let mut renderer = ExitShaderRenderer::new(&device, &surface_config);
+///
+/// // In render loop:
+/// let elapsed = renderer.start_time.elapsed().as_secs_f32();
+/// renderer.update_uniforms(&queue, [800.0, 600.0], elapsed);
+/// renderer.render_to_cell(&mut render_pass, window, (24, 24)); // Bottom-right exit
+/// ```
+pub struct ExitShaderRenderer {
+    pub pipeline: wgpu::RenderPipeline,
+    pub uniform_buffer: wgpu::Buffer,
+    pub bind_group: wgpu::BindGroup,
+    pub start_time: Instant,
+}
+
+impl ExitShaderRenderer {
+    pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
+        let uniforms = ExitShaderUniforms {
+            time: 0.0,
+            resolution: [800.0, 600.0], // Default resolution, will be updated
+            _padding: [0.0; 3],
+        };
+
+        let uniform_buffer = create_uniform_buffer(device, &uniforms, "Exit Shader Uniform Buffer");
+
+        let bind_group_layout = BindGroupLayoutBuilder::new(device)
+            .with_label("Exit Shader Bind Group Layout")
+            .with_uniform_buffer(0, wgpu::ShaderStages::VERTEX_FRAGMENT)
+            .build();
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+            label: Some("Exit Shader Bind Group"),
+        });
+
+        // Exit shader uses a full-screen triangle trick, so no vertex buffer needed
+        let pipeline = PipelineBuilder::new(device, surface_config.format)
+            .with_label("Exit Shader Pipeline")
+            .with_shader(include_str!("../maze/exit_shader.wgsl"))
+            .with_bind_group_layout(&bind_group_layout)
+            .build();
+
+        Self {
+            pipeline,
+            uniform_buffer,
+            bind_group,
+            start_time: Instant::now(),
+        }
+    }
+
+    pub fn update_uniforms(&self, queue: &wgpu::Queue, resolution: [f32; 2], time: f32) {
+        let uniforms = ExitShaderUniforms {
+            time,
+            resolution,
+            _padding: [0.0; 3],
+        };
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
+
+    pub fn render_to_cell(
+        &self,
+        render_pass: &mut wgpu::RenderPass,
+        window: &winit::window::Window,
+        exit_cell: (usize, usize),
+    ) {
+        // Calculate scissor rectangle for the exit cell
+        let grid_size = 25.0;
+        let shrink_factor = 0.845;
+        let border = 3.0;
+
+        let window_size = window.inner_size();
+        let total_width = window_size.width as f32;
+        let total_height = window_size.height as f32;
+
+        let usable_width = total_width - 2.0 * border;
+        let usable_height = total_height - 2.0 * border;
+
+        let cell_width = usable_width / grid_size;
+        let cell_height = usable_height / grid_size;
+
+        let full_x = border + exit_cell.0 as f32 * cell_width;
+        let full_y = border + exit_cell.1 as f32 * cell_height;
+
+        let shrunk_width = cell_width * shrink_factor;
+        let shrunk_height = cell_height * shrink_factor;
+
+        let offset_x = (cell_width - shrunk_width) / 2.0;
+        let offset_y = (cell_height - shrunk_height) / 2.0;
+
+        let scissor_x = (full_x + offset_x).round() as u32;
+        let scissor_y = (full_y + offset_y).round() as u32;
+        let scissor_width = shrunk_width.round() as u32;
+        let scissor_height = shrunk_height.round() as u32;
+
+        // Set scissor rect and render
+        render_pass.set_scissor_rect(scissor_x, scissor_y, scissor_width, scissor_height);
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.draw(0..3, 0..1); // Full-screen triangle
+    }
+}
+
+/// Configuration for maze rendering setup
+pub struct MazeRenderConfig {
+    pub maze_width: u32,
+    pub maze_height: u32,
+    pub render_width: u32,
+    pub render_height: u32,
+}
+
+impl MazeRenderConfig {
+    pub fn new(maze_width: u32, maze_height: u32) -> Self {
+        // Calculate render dimensions (assuming 5x scale factor + 1 for borders)
+        let render_width = maze_width * 5 + 1;
+        let render_height = maze_height * 5 + 1;
+
+        Self {
+            maze_width,
+            maze_height,
+            render_width,
+            render_height,
+        }
+    }
+
+    pub fn create_maze_texture(
+        &self,
+        device: &wgpu::Device,
+    ) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
+        let texture_size = wgpu::Extent3d {
+            width: self.render_width,
+            height: self.render_height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Maze Texture"),
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        (texture, texture_view, sampler)
+    }
+}

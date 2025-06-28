@@ -6,10 +6,13 @@
 
 use crate::maze::generator::Maze;
 use crate::maze::generator::MazeGenerator;
+use crate::renderer::render_components::{
+    ExitShaderRenderer, LoadingBarRenderer, MazeRenderConfig, MazeRenderer,
+};
 use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use winit::window::Window;
 
 /// Handles rendering of the maze and loading bar on the title screen.
 ///
@@ -27,310 +30,52 @@ use std::time::Instant;
 /// - `loading_bar_vertex_buffer`: Vertex buffer for the loading bar quad.
 /// - `loading_bar_uniform_buffer`: Uniform buffer for loading bar progress.
 /// - `loading_bar_bind_group`: Bind group for the loading bar uniform.
+/// - `exit_shader_pipeline`: Render pipeline for the exit cell shader effect.
+/// - `exit_shader_uniform_buffer`: Uniform buffer for exit shader (time and resolution).
+/// - `exit_shader_bind_group`: Bind group for the exit shader uniform.
+/// - `exit_shader_vertex_buffer`: Vertex buffer for the exit shader quad.
 /// - `last_update`: Timestamp of the last update (for animation/timing).
 pub struct TitleScreenRenderer {
     /// Maze generator for producing new mazes.
     pub generator: MazeGenerator,
     /// Shared, thread-safe reference to the current maze.
     pub maze: Arc<Mutex<Maze>>,
-    /// Vertex buffer for the maze quad.
-    pub vertex_buffer: wgpu::Buffer,
-    /// Render pipeline for the maze.
-    pub pipeline: wgpu::RenderPipeline,
+
+    // Rendering components
+    pub maze_renderer: MazeRenderer,
+    pub loading_bar_renderer: LoadingBarRenderer,
+    pub exit_shader_renderer: ExitShaderRenderer,
+
     /// Texture containing the maze image.
     pub texture: wgpu::Texture,
-    /// Bind group for the maze texture and sampler.
-    pub bind_group: wgpu::BindGroup,
-    // Loading bar resources
-    /// Render pipeline for the loading bar.
-    pub loading_bar_pipeline: wgpu::RenderPipeline,
-    /// Vertex buffer for the loading bar quad.
-    pub loading_bar_vertex_buffer: wgpu::Buffer,
-    /// Uniform buffer for loading bar progress.
-    pub loading_bar_uniform_buffer: wgpu::Buffer,
-    /// Bind group for the loading bar uniform.
-    pub loading_bar_bind_group: wgpu::BindGroup,
     /// Timestamp of the last update (for animation/timing).
     pub last_update: Instant,
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-/// Uniforms for the loading bar, passed to the GPU.
-///
-/// - `progress`: Loading progress (0.0 to 1.0).
-/// - `_padding`: Padding for alignment.
-struct LoadingBarUniforms {
-    progress: f32,
-    _padding: [f32; 3],
-}
-
 impl TitleScreenRenderer {
-    /// Creates a new [`TitleScreenRenderer`] with all GPU resources initialized.
-    ///
-    /// # Arguments
-    /// - `device`: The wgpu device to create buffers, textures, and pipelines.
-    /// - `surface_config`: The surface configuration (for color format).
-    ///
-    /// # Returns
-    /// A fully initialized [`TitleScreenRenderer`] ready for rendering the title screen maze and loading bar.
+    /// Creates a new simplified title screen renderer.
     pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
+        // Initialize maze generation
         let maze_width = 25;
         let maze_height = 25;
-
         let (generator, maze) = MazeGenerator::new(maze_width, maze_height);
 
-        // Get the actual render dimensions instead of using maze dimensions directly
-        let (render_width, render_height) = {
-            let maze_lock = maze.lock().unwrap();
-            maze_lock.get_dimensions()
-        };
+        // Get render dimensions
+        let config = MazeRenderConfig::new(maze_width as u32, maze_height as u32);
+        let (texture, texture_view, sampler) = config.create_maze_texture(device);
 
-        // Create texture for maze with correct render dimensions
-        let texture_size = wgpu::Extent3d {
-            width: render_width as u32,   // Now uses actual render width (126)
-            height: render_height as u32, // Now uses actual render height (126)
-            depth_or_array_layers: 1,
-        };
-
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Maze Texture"),
-            size: texture_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-            label: Some("texture_bind_group_layout"),
-        });
-
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
-                },
-            ],
-            label: Some("texture_bind_group"),
-        });
-
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("2D Maze Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("2D-maze-shader.wgsl").into()),
-        });
-
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
-                    step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: &[wgpu::VertexAttribute {
-                        offset: 0,
-                        shader_location: 0,
-                        format: wgpu::VertexFormat::Float32x2,
-                    }],
-                }],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: surface_config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-            cache: None,
-        });
-
-        let vertices: &[f32] = &[
-            -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-        ];
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(vertices),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        // Create loading bar resources
-        let loading_bar_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Loading Bar Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("loading-bar-shader.wgsl").into()),
-        });
-
-        let loading_bar_uniform_buffer =
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Loading Bar Uniform Buffer"),
-                contents: bytemuck::cast_slice(&[LoadingBarUniforms {
-                    progress: 0.0,
-                    _padding: [0.0; 3],
-                }]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            });
-
-        let loading_bar_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("loading_bar_bind_group_layout"),
-            });
-
-        let loading_bar_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &loading_bar_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: loading_bar_uniform_buffer.as_entire_binding(),
-            }],
-            label: Some("loading_bar_bind_group"),
-        });
-
-        let loading_bar_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Loading Bar Pipeline Layout"),
-                bind_group_layouts: &[&loading_bar_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
-        let loading_bar_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Loading Bar Pipeline"),
-            layout: Some(&loading_bar_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &loading_bar_shader,
-                entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
-                    step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: &[wgpu::VertexAttribute {
-                        offset: 0,
-                        shader_location: 0,
-                        format: wgpu::VertexFormat::Float32x2,
-                    }],
-                }],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &loading_bar_shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: surface_config.format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-            cache: None,
-        });
-
-        let loading_bar_vertex_buffer =
-            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Loading Bar Vertex Buffer"),
-                contents: bytemuck::cast_slice(vertices),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
+        // Create rendering components
+        let maze_renderer = MazeRenderer::new(device, surface_config, &texture_view, &sampler);
+        let loading_bar_renderer = LoadingBarRenderer::new(device, surface_config);
+        let exit_shader_renderer = ExitShaderRenderer::new(device, surface_config);
 
         Self {
             generator,
             maze,
+            maze_renderer,
+            loading_bar_renderer,
+            exit_shader_renderer,
             texture,
-            bind_group,
-            pipeline,
-            vertex_buffer,
-            loading_bar_pipeline,
-            loading_bar_vertex_buffer,
-            loading_bar_uniform_buffer,
-            loading_bar_bind_group,
             last_update: Instant::now(),
         }
     }
@@ -371,19 +116,75 @@ impl TitleScreenRenderer {
     }
 
     /// Updates the loading bar progress.
+    pub fn update_loading_bar(&self, queue: &wgpu::Queue, progress: f32) {
+        self.loading_bar_renderer.update_progress(queue, progress);
+    }
+
+    /// Updates the exit shader animation.
+    pub fn update_exit_shader(&self, queue: &wgpu::Queue, window: &Window) {
+        let window_size = window.inner_size();
+        let resolution = [window_size.width as f32, window_size.height as f32];
+        let time = self.exit_shader_renderer.start_time.elapsed().as_secs_f32();
+        self.exit_shader_renderer
+            .update_uniforms(queue, resolution, time);
+    }
+
+    /// Renders the exit cell with the special shader effect.
     ///
     /// # Arguments
-    /// - `queue`: The wgpu queue to write to the uniform buffer.
-    /// - `progress`: Loading progress (0.0 = empty, 1.0 = full).
-    pub fn update_loading_bar(&self, queue: &wgpu::Queue, progress: f32) {
-        let uniforms = LoadingBarUniforms {
-            progress: progress.clamp(0.0, 1.0),
-            _padding: [0.0; 3],
-        };
-        queue.write_buffer(
-            &self.loading_bar_uniform_buffer,
-            0,
-            bytemuck::cast_slice(&[uniforms]),
-        );
+    /// - `render_pass`: The render pass to draw into.
+    /// - `exit_cell`: The exit cell coordinates.
+    /// - `cell_size`: Size of each cell in pixels.
+    /// - `screen_size`: Screen dimensions.
+    ///
+    /// Renders all components for the title screen.
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, window: &Window) {
+        // Render maze background
+        self.maze_renderer.render(render_pass);
+
+        // Render loading bar overlay
+        self.loading_bar_renderer.render(render_pass);
+
+        // Render exit cell effect if maze has an exit
+        if let Ok(maze_guard) = self.maze.lock() {
+            if let Some(exit_cell) = maze_guard.exit_cell {
+                self.exit_shader_renderer.render_to_cell(
+                    render_pass,
+                    window,
+                    (exit_cell.col, exit_cell.row),
+                );
+            }
+        }
+    }
+
+    /// Legacy method for rendering exit cell - now delegates to main render method
+    pub fn render_exit_cell(
+        &self,
+        render_pass: &mut wgpu::RenderPass,
+        window: &Window,
+        exit_cell: (usize, usize),
+    ) {
+        self.exit_shader_renderer
+            .render_to_cell(render_pass, window, exit_cell);
+    }
+
+    /// Convenience method to get maze progress for loading bar.
+    pub fn get_generation_progress(&self) -> f32 {
+        self.generator.get_progress_ratio()
+    }
+
+    /// Check if maze generation is complete.
+    pub fn is_generation_complete(&self) -> bool {
+        self.generator.is_complete()
+    }
+
+    /// Get maze dimensions for texture updates.
+    pub fn get_maze_dimensions(&self) -> (u32, u32) {
+        if let Ok(maze_guard) = self.maze.lock() {
+            let (width, height) = maze_guard.get_dimensions();
+            (width as u32, height as u32)
+        } else {
+            (126, 126) // Default fallback
+        }
     }
 }

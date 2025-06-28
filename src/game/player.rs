@@ -18,7 +18,9 @@ pub struct Player {
     pub yaw: f32,
     /// Field of view (degrees).
     pub fov: f32,
-    /// Movement speed (units per second).
+    /// Base movement speed (units per second).
+    pub base_speed: f32,
+    /// Current movement speed (units per second).
     pub speed: f32,
     /// Mouse sensitivity multiplier.
     pub mouse_sensitivity: f32,
@@ -32,7 +34,8 @@ impl Player {
             pitch: 3.0,
             yaw: 316.0,
             fov: 100.0,
-            speed: 60.0,
+            base_speed: 100.0,
+            speed: 100.0,
             mouse_sensitivity: 1.0,
         }
     }

@@ -62,13 +62,17 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Material-based coloring
+
     if (in.material == 1u) {
         // Wall: Maroon
         return vec4<f32>(0.102, 0.027, 0.035, 1.0);
     } else if (in.material == 2u) {
         // Bounding box: Semitransparent red
         return vec4<f32>(1.0, 0.0, 0.0, 0.3);
+    } else if (in.material == 4u){
+        return vec4<f32>(0.0, 1.0, 0.0, 1.0);
     }
+
 
     // Floor: checkerboard
     let tan = vec4<f32>(0.941, 0.875, 0.62, 1.0);

@@ -139,6 +139,8 @@ pub struct Maze {
     pub total_edges: usize,
     /// Number of edges processed during generation
     pub processed_edges: usize,
+    /// Exit cell of the maze (if set)
+    pub exit_cell: Option<Cell>,
 }
 
 impl Maze {
@@ -151,17 +153,24 @@ impl Maze {
             walls,
             total_edges: 0,
             processed_edges: 0,
+            exit_cell: None,
         }
+    }
+
+    /// Sets a random cell as the exit
+    pub fn set_random_exit(&mut self) {
+        let mut rng = thread_rng();
+        let row = rng.gen_range(0..self.height);
+        let col = rng.gen_range(0..self.width);
+        self.exit_cell = Some(Cell::new(row, col));
     }
 
     /// Generates pixel data for rendering the maze
     pub fn get_render_data(&self, connected: &HashSet<Cell>) -> Vec<u8> {
         let cell_px = 4;
         let wall_px = 1;
-
         let render_width = self.width * cell_px + (self.width + 1) * wall_px;
         let render_height = self.height * cell_px + (self.height + 1) * wall_px;
-
         let mut data = vec![0u8; render_width * render_height * 4];
 
         for row in 0..self.walls.len() {
@@ -169,12 +178,9 @@ impl Maze {
                 let is_wall = self.walls[row][col];
                 let px_row = row / 2;
                 let px_col = col / 2;
-
                 let x = px_col * (cell_px + wall_px) + if col % 2 == 0 { 0 } else { wall_px };
                 let y = px_row * (cell_px + wall_px) + if row % 2 == 0 { 0 } else { wall_px };
-
                 let w = if col % 2 == 0 { wall_px } else { cell_px };
-
                 let h = if row % 2 == 0 { wall_px } else { cell_px };
 
                 let color = if is_wall {
@@ -183,7 +189,9 @@ impl Maze {
                     // Identify if this is a cell (not wall row/col)
                     if row % 2 == 1 && col % 2 == 1 {
                         let cell = Cell::new(row / 2, col / 2);
-                        if connected.contains(&cell) {
+                        if Some(cell) == self.exit_cell {
+                            [255, 0, 0, 255] // exit cell = red
+                        } else if connected.contains(&cell) {
                             [255, 255, 255, 255] // connected cell = white
                         } else {
                             [0, 0, 0, 255] // unconnected cell = black
@@ -197,7 +205,6 @@ impl Maze {
                     for dx in 0..w {
                         let xi = x + dx;
                         let yi = y + dy;
-
                         if xi < render_width && yi < render_height {
                             let idx = (yi * render_width + xi) * 4;
                             data[idx..idx + 4].copy_from_slice(&color);
@@ -214,10 +221,8 @@ impl Maze {
     pub fn get_dimensions(&self) -> (usize, usize) {
         let cell_px = 4;
         let wall_px = 1;
-
         let width = self.width * cell_px + (self.width + 1) * wall_px;
         let height = self.height * cell_px + (self.height + 1) * wall_px;
-
         (width, height)
     }
 
@@ -230,7 +235,8 @@ impl Maze {
     /// # File Format
     /// The maze is saved as a plain text file, where each cell is represented by either:
     /// - `#` for a wall cell (`true` in `self.walls`)
-    /// - ` ` (space) for an open cell (`false` in `self.walls`)
+    /// - ` `(space) for an open cell (`false` in `self.walls`)
+    /// - `*` for the exit cell (if one is set)
     ///
     /// Each row of the maze is written on a new line, preserving the maze's 2D structure.
     ///
@@ -256,7 +262,7 @@ impl Maze {
     /// ### ### # # # ### # # ### # ##### # # ### # ### # #
     /// #   #   # #     #     #   #   #     # #     #     #
     /// # ##### # # ####### # ### ### # ####### ##### # # #
-    /// #     #   # #   #   #       #   # # # # # #   # # #
+    /// #  *  #   # #   #   #       #   # # # # # #   # # #
     /// ##### # # # # ####### ##### ### # # # # # # # #####
     /// # #     # #         # #       # # #     #   #     #
     /// ###################################################
@@ -268,7 +274,7 @@ impl Maze {
         let timestamp = Local::now().format("Maze_%m-%d-%y_%I-%M%p.mz").to_string();
         let output_path = Path::new("src/maze/saved-mazes/generated").join(timestamp);
 
-        if let Err(e) = fs::create_dir_all("output") {
+        if let Err(e) = fs::create_dir_all("src/maze/saved-mazes/generated") {
             eprintln!("Failed to create output directory: {}", e);
             return Err(e);
         }
@@ -281,9 +287,25 @@ impl Maze {
             }
         };
 
-        for row in &self.walls {
-            for &cell in row {
-                let symbol = if cell { b'#' } else { b' ' };
+        for (row_idx, row) in self.walls.iter().enumerate() {
+            for (col_idx, &cell) in row.iter().enumerate() {
+                let symbol = if cell {
+                    b'#' // Wall
+                } else if row_idx % 2 == 1 && col_idx % 2 == 1 {
+                    // This is a maze cell position
+                    let maze_row = row_idx / 2;
+                    let maze_col = col_idx / 2;
+                    let current_cell = Cell::new(maze_row, maze_col);
+
+                    if Some(current_cell) == self.exit_cell {
+                        b'*' // Exit cell
+                    } else {
+                        b' ' // Regular open cell
+                    }
+                } else {
+                    b' ' // Passage
+                };
+
                 if let Err(e) = file.write_all(&[symbol]) {
                     eprintln!("Failed to write to file: {}", e);
                     return Err(e);
@@ -296,6 +318,9 @@ impl Maze {
         }
 
         println!("Maze saved to: {}", output_path.display());
+        if let Some(exit) = self.exit_cell {
+            println!("Exit marked at: row {}, col {}", exit.row, exit.col);
+        }
         Ok(output_path)
     }
 }
@@ -323,7 +348,6 @@ impl MazeGenerator {
     pub fn new(width: usize, height: usize) -> (Self, Arc<Mutex<Maze>>) {
         let maze = Arc::new(Mutex::new(Maze::new(width, height)));
         let maze_clone = Arc::clone(&maze);
-
         let mut rng = thread_rng();
         let mut union_find = UnionFind::new();
         let mut edges = Vec::new();
@@ -344,12 +368,10 @@ impl MazeGenerator {
         for row in 0..height {
             for col in 0..width {
                 let current = Cell::new(row, col);
-
                 if col + 1 < width {
                     let right = Cell::new(row, col + 1);
                     edges.push(Edge::new(current, right));
                 }
-
                 if row + 1 < height {
                     let bottom = Cell::new(row + 1, col);
                     edges.push(Edge::new(current, bottom));
@@ -372,7 +394,7 @@ impl MazeGenerator {
             current_edge: 0,
             generation_complete: false,
             connected_cells: HashSet::new(),
-            fast_threshold: 600, // Switch to fast mode when 200 edges remain
+            fast_threshold: 600, // Switch to fast mode when 600 edges remain
             fast_mode: false,
         };
 
@@ -383,7 +405,12 @@ impl MazeGenerator {
     /// Returns true if a wall was removed in this step
     pub fn step(&mut self) -> bool {
         if self.generation_complete || self.current_edge >= self.edges.len() {
-            self.generation_complete = true;
+            if !self.generation_complete {
+                // Mark generation as complete and set random exit
+                self.generation_complete = true;
+                let mut maze = self.maze.lock().unwrap();
+                maze.set_random_exit();
+            }
             return false;
         }
 
@@ -405,7 +432,6 @@ impl MazeGenerator {
 
             self.connected_cells.insert(edge.cell1);
             self.connected_cells.insert(edge.cell2);
-
             return true;
         }
 

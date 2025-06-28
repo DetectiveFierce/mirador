@@ -21,6 +21,7 @@ use crate::math::{deg_to_rad, mat::Mat4};
 use crate::maze::title_screen::TitleScreenRenderer;
 use crate::maze::{parse_maze_file, title_screen};
 use crate::renderer::debug_renderer::collect_wall_face_debug_vertices;
+use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::uniform::Uniforms;
 use crate::renderer::vertex::Vertex;
 use crate::ui::ui_panel::UiState;
@@ -142,70 +143,38 @@ impl WgpuRenderer {
 
         surface.configure(&device, &surface_config);
 
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Main Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
-
         let uniforms = Uniforms::new();
         let uniform_buffer = uniforms.create_buffer(&device);
         let (uniform_bind_group, uniform_bind_group_layout) =
             uniforms.create_bind_group(&uniform_buffer, &device);
 
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        let color_target = wgpu::ColorTargetState {
-            format: surface_config.format,
-            blend: Some(wgpu::BlendState {
+        let pipeline = PipelineBuilder::new(&device, surface_config.format)
+            .with_label("Main Pipeline")
+            .with_shader(include_str!("shader.wgsl"))
+            .with_vertex_buffer(Vertex::desc())
+            .with_bind_group_layout(&uniform_bind_group_layout)
+            .with_blend_state(wgpu::BlendState {
                 color: wgpu::BlendComponent {
                     src_factor: wgpu::BlendFactor::SrcAlpha,
                     dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                     operation: wgpu::BlendOperation::Add,
                 },
                 alpha: wgpu::BlendComponent::OVER,
-            }),
-            write_mask: wgpu::ColorWrites::ALL,
-        };
-
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Main Pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[Vertex::desc()],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(color_target)],
-                compilation_options: Default::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                cull_mode: None,
-                ..Default::default()
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
+            })
+            .with_no_culling()
+            .with_depth_stencil(wgpu::DepthStencilState {
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Less,
                 format: wgpu::TextureFormat::Depth24Plus,
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-            cache: None,
-        });
-
-        let (mut floor_vertices, _floor_vertex_count) = Vertex::create_floor_vertices();
+            })
+            .build();
 
         // Load wall grid from file
-        let maze_grid = parse_maze_file("src/maze/saved-mazes/test.mz");
+        let (maze_grid, exit_cell) = parse_maze_file("src/maze/saved-mazes/test.mz");
+
+        let mut floor_vertices = Vertex::create_floor_vertices(&maze_grid, exit_cell);
 
         // Generate wall geometry
         let mut wall_vertices = Vertex::create_wall_vertices(&maze_grid);
@@ -347,27 +316,8 @@ impl WgpuRenderer {
                     timestamp_writes: None,
                 });
 
-                // Render maze
-                render_pass.set_pipeline(&self.title_screen_renderer.pipeline);
-                render_pass.set_bind_group(0, &self.title_screen_renderer.bind_group, &[]);
-                render_pass
-                    .set_vertex_buffer(0, self.title_screen_renderer.vertex_buffer.slice(..));
-                render_pass.draw(0..6, 0..1);
-
-                // Render loading bar
-                render_pass.set_pipeline(&self.title_screen_renderer.loading_bar_pipeline);
-                render_pass.set_bind_group(
-                    0,
-                    &self.title_screen_renderer.loading_bar_bind_group,
-                    &[],
-                );
-                render_pass.set_vertex_buffer(
-                    0,
-                    self.title_screen_renderer
-                        .loading_bar_vertex_buffer
-                        .slice(..),
-                );
-                render_pass.draw(0..6, 0..1);
+                // Render title screen using new component architecture
+                self.title_screen_renderer.render(&mut render_pass, window);
             }
 
             return Ok((surface_view, screen_descriptor, surface_texture)); // <- This return was already there

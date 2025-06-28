@@ -10,6 +10,8 @@ pub struct UiState {
     pub b: f32,
     pub start_time: std::time::Instant,
     pub elapsed_time: f32,
+    pub slider_1: f32,
+    pub slider_2: f32,
 }
 impl Default for UiState {
     fn default() -> Self {
@@ -26,12 +28,14 @@ impl UiState {
             b: 0.007,
             start_time: std::time::Instant::now(),
             elapsed_time: 0.0,
+            slider_1: 0.0,
+            slider_2: 6.0,
             // FOV in radians, ~100 degrees
         }
     }
 }
 
-fn _custom_slider(
+fn custom_slider(
     ui: &mut egui::Ui,
     label: &str,
     value: &mut f32,
@@ -88,6 +92,42 @@ impl AppState {
 
                             ui.label(format!("FPS: {}", self.game_state.current_fps));
                             ui.label(format!("Maze Path: {:?}", self.game_state.maze_path));
+
+                            custom_slider(
+                                ui,
+                                "player height",
+                                &mut self.game_state.player.position[1],
+                                50.0..=300.0,
+                                0.1,
+                                2,
+                            );
+
+                            custom_slider(
+                                ui,
+                                "player height",
+                                &mut self.game_state.player.base_speed,
+                                100.0..=500.0,
+                                0.1,
+                                2,
+                            );
+
+                            custom_slider(
+                                ui,
+                                "Slider 1",
+                                &mut self.ui.slider_1,
+                                0.0..=10.0,
+                                0.1,
+                                2,
+                            );
+
+                            custom_slider(
+                                ui,
+                                "Slider 2",
+                                &mut self.ui.slider_2,
+                                20.0..=30.0,
+                                0.1,
+                                2,
+                            );
                         })
                     });
             }

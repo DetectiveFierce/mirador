@@ -1071,16 +1071,17 @@ impl CollisionSystem {
     /// ```text
     ///                   Wall
     ///                    |
-    ///                    |  normal
-    ///                    |  ↑
-    ///                    |  |
-    /// original movement  |  |
-    ///         →→→→→→→→→→→|  |
-    ///                    |  |
-    ///                    |  |
-    ///                    |  |
-    ///          slide movement
-    ///         →→→→→→→→→→→→→→→→
+    ///                    |
+    ///  wall              |
+    /// normal <-----------|
+    ///                 ↑  |
+    ///                 ┊  |
+    ///          slide  ┊  |
+    ///         movement┊  |
+    ///                 ┊  |
+    /// original --------->|
+    /// movement           |
+    ///                    |
     /// ```
     fn resolve_wall_collision(
         &self,

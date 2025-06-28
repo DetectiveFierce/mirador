@@ -4,6 +4,8 @@
 //! implementation. It provides the core rendering infrastructure for the application.
 
 pub mod debug_renderer;
+pub mod pipeline_builder;
+pub mod render_components;
 pub mod uniform;
 pub mod vertex;
 pub mod wgpu_lib;

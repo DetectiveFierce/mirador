@@ -270,7 +270,7 @@ impl App {
     }
 
     /// Updates the title screen maze and loading bar, and uploads new texture data.
-    pub fn handle_title_screen(&mut self) {
+    pub fn handle_title_screen(&mut self, window: &winit::window::Window) {
         if let Some(state) = self.state.as_mut() {
             let progress = state
                 .wgpu_renderer
@@ -291,6 +291,11 @@ impl App {
                 .wgpu_renderer
                 .title_screen_renderer
                 .update_loading_bar(&state.wgpu_renderer.queue, progress);
+
+            state
+                .wgpu_renderer
+                .title_screen_renderer
+                .update_exit_shader(&state.wgpu_renderer.queue, window);
 
             let maze_data = match state.wgpu_renderer.title_screen_renderer.maze.lock() {
                 Ok(maze_lock) => maze_lock.get_render_data(
@@ -394,8 +399,10 @@ impl App {
 
                     // Generate geometry if maze was saved successfully
                     if let Some(maze_path) = &state.game_state.maze_path {
-                        let mut floor_vertices = Vertex::create_floor_vertices().0;
-                        let maze_grid = parse_maze_file(maze_path.to_str().unwrap());
+                        let (maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
+                        let mut floor_vertices =
+                            Vertex::create_floor_vertices(&maze_grid, exit_cell);
+
                         floor_vertices.append(&mut Vertex::create_wall_vertices(&maze_grid));
 
                         state.wgpu_renderer.vertex_buffer = state
@@ -501,6 +508,10 @@ impl ApplicationHandler for App {
                                     state.wgpu_renderer.debug_render_bounding_boxes =
                                         !state.wgpu_renderer.debug_render_bounding_boxes;
                                 }
+                                GameKey::Escape => {
+                                    state.game_state.capture_mouse =
+                                        !state.game_state.capture_mouse;
+                                }
                                 _ => {} // Movement keys are handled in process_movement
                             }
                         }
@@ -549,7 +560,17 @@ impl ApplicationHandler for App {
                 };
 
                 if state.game_state.title_screen {
-                    self.handle_title_screen();
+                    match &self.window {
+                        Some(window) => {
+                            // Clone the window reference to avoid borrowing issues
+                            let window_ref = window.clone();
+                            self.handle_title_screen(&window_ref);
+                        }
+                        None => {
+                            eprintln!("Warning: Cannot handle title screen - window not available");
+                            return;
+                        }
+                    }
                 }
 
                 let current_time = Instant::now();
