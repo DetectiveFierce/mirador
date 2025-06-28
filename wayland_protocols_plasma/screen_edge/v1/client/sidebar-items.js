@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["__interfaces","kde_auto_hide_screen_edge_v1","kde_screen_edge_manager_v1"]};

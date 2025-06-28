@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"static":["KDE_EXTERNAL_BRIGHTNESS_DEVICE_V1_INTERFACE","KDE_EXTERNAL_BRIGHTNESS_V1_INTERFACE","kde_external_brightness_device_v1_interface","kde_external_brightness_v1_interface"]};

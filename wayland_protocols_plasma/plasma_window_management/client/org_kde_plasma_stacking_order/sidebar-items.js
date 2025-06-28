@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["EVT_DONE_OPCODE","EVT_DONE_SINCE","EVT_WINDOW_OPCODE","EVT_WINDOW_SINCE"],"enum":["Event","Request"],"struct":["OrgKdePlasmaStackingOrder"]};

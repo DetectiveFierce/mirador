@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"static":["KDE_LOCKSCREEN_OVERLAY_V1_INTERFACE","kde_lockscreen_overlay_v1_interface"]};

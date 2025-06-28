@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"static":["KDE_OUTPUT_ORDER_V1_INTERFACE","kde_output_order_v1_interface"]};
