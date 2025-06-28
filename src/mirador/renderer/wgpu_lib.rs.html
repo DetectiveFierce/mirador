@@ -14,12 +14,12 @@
 <a href=#14 id=14 data-nosnippet>14</a>//! # Usage
 <a href=#15 id=15 data-nosnippet>15</a>//! Create a [`WgpuRenderer`] via [`WgpuRenderer::new`] and call [`WgpuRenderer::update_canvas`]
 <a href=#16 id=16 data-nosnippet>16</a>//! each frame to render the current game state.
-<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">use </span><span class="kw">crate</span>::background::stars::{<span class="self">self</span>, StarRenderer};
-<a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">crate</span>::game::collision::CollisionSystem;
-<a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
-<a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span><span class="kw">crate</span>::math::{deg_to_rad, mat::Mat4};
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span><span class="kw">crate</span>::maze::maze_animation::AnimationRenderer;
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span><span class="kw">crate</span>::maze::{maze_animation, parse_maze_file};
+<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">use </span><span class="kw">crate</span>::game::collision::CollisionSystem;
+<a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+<a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span><span class="kw">crate</span>::math::{deg_to_rad, mat::Mat4};
+<a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span><span class="kw">crate</span>::maze::maze_animation::AnimationRenderer;
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span><span class="kw">crate</span>::maze::{maze_animation, parse_maze_file};
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span><span class="kw">crate</span>::renderer::background::stars::{<span class="self">self</span>, StarRenderer};
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::renderer::debug_renderer::collect_wall_face_debug_vertices;
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::renderer::pipeline_builder::PipelineBuilder;
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use </span><span class="kw">crate</span>::renderer::uniform::Uniforms;
