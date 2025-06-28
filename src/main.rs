@@ -1,5 +1,4 @@
 pub mod app;
-pub mod background;
 pub mod game;
 pub mod math;
 pub mod maze;

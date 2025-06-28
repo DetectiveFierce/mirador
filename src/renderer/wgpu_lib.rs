@@ -14,12 +14,12 @@
 //! # Usage
 //! Create a [`WgpuRenderer`] via [`WgpuRenderer::new`] and call [`WgpuRenderer::update_canvas`]
 //! each frame to render the current game state.
-use crate::background::stars::{self, StarRenderer};
 use crate::game::collision::CollisionSystem;
 use crate::game::player::Player;
 use crate::math::{deg_to_rad, mat::Mat4};
 use crate::maze::maze_animation::AnimationRenderer;
 use crate::maze::{maze_animation, parse_maze_file};
+use crate::renderer::background::stars::{self, StarRenderer};
 use crate::renderer::debug_renderer::collect_wall_face_debug_vertices;
 use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::uniform::Uniforms;
