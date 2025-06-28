@@ -103,6 +103,55 @@ impl AppState {
         );
     }
 
+    /// Updates the title screen maze and loading bar, and uploads new texture data.
+    pub fn handle_title_screen(&mut self, window: &winit::window::Window) {
+        let progress = self
+            .wgpu_renderer
+            .animation_renderer
+            .generator
+            .get_progress_ratio();
+
+        let (maze_width, maze_height) = match self.wgpu_renderer.animation_renderer.maze.lock() {
+            Ok(maze_lock) => maze_lock.get_dimensions(),
+
+            Err(err) => {
+                eprintln!("Failed to acquire maze lock for dimensions: {}", err);
+                return;
+            }
+        };
+
+        self.wgpu_renderer
+            .animation_renderer
+            .update_loading_bar(&self.wgpu_renderer.queue, progress);
+
+        self.wgpu_renderer
+            .animation_renderer
+            .update_exit_shader(&self.wgpu_renderer.queue, window);
+
+        let maze_data = match self.wgpu_renderer.animation_renderer.maze.lock() {
+            Ok(maze_lock) => maze_lock.get_render_data(
+                &self
+                    .wgpu_renderer
+                    .animation_renderer
+                    .generator
+                    .connected_cells,
+            ),
+
+            Err(err) => {
+                eprintln!("Failed to acquire maze lock: {}", err);
+                return;
+            }
+        };
+
+        self.wgpu_renderer.animation_renderer.update_texture(
+            &self.wgpu_renderer.queue,
+            &maze_data,
+            maze_width,
+            maze_height,
+        );
+        self.wgpu_renderer.animation_renderer.last_update = Instant::now();
+    }
+
     /// Handles mouse capture and cursor visibility based on game state.
     ///
     /// Locks/unlocks the cursor and centers it if mouse capture is enabled.
@@ -220,6 +269,19 @@ impl App {
             .as_mut()
             .expect("State must be initialized before use");
 
+        if state.game_state.title_screen {
+            state.handle_title_screen(window);
+        } else {
+            state.game_state.player.update_cell(
+                &state
+                    .wgpu_renderer
+                    .animation_renderer
+                    .maze
+                    .lock()
+                    .unwrap()
+                    .walls,
+            );
+        }
         // Update game state and UI
         state.key_state.update(&mut state.game_state);
         state.update_ui(window);
@@ -259,15 +321,8 @@ impl App {
             screen_descriptor,
         );
 
-        state.game_state.player.update_cell(
-            &state
-                .wgpu_renderer
-                .animation_renderer
-                .maze
-                .lock()
-                .unwrap()
-                .walls,
-        );
+        window.request_redraw();
+
         // Submit commands and present
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
         surface_texture.present();
@@ -275,60 +330,6 @@ impl App {
         // Handle title screen animation if needed
         if state.game_state.title_screen {
             self.handle_maze_generation();
-        }
-    }
-
-    /// Updates the title screen maze and loading bar, and uploads new texture data.
-    pub fn handle_title_screen(&mut self, window: &winit::window::Window) {
-        if let Some(state) = self.state.as_mut() {
-            let progress = state
-                .wgpu_renderer
-                .animation_renderer
-                .generator
-                .get_progress_ratio();
-
-            let (maze_width, maze_height) = match state.wgpu_renderer.animation_renderer.maze.lock()
-            {
-                Ok(maze_lock) => maze_lock.get_dimensions(),
-
-                Err(err) => {
-                    eprintln!("Failed to acquire maze lock for dimensions: {}", err);
-                    return;
-                }
-            };
-
-            state
-                .wgpu_renderer
-                .animation_renderer
-                .update_loading_bar(&state.wgpu_renderer.queue, progress);
-
-            state
-                .wgpu_renderer
-                .animation_renderer
-                .update_exit_shader(&state.wgpu_renderer.queue, window);
-
-            let maze_data = match state.wgpu_renderer.animation_renderer.maze.lock() {
-                Ok(maze_lock) => maze_lock.get_render_data(
-                    &state
-                        .wgpu_renderer
-                        .animation_renderer
-                        .generator
-                        .connected_cells,
-                ),
-
-                Err(err) => {
-                    eprintln!("Failed to acquire maze lock: {}", err);
-                    return;
-                }
-            };
-
-            state.wgpu_renderer.animation_renderer.update_texture(
-                &state.wgpu_renderer.queue,
-                &maze_data,
-                maze_width,
-                maze_height,
-            );
-            state.wgpu_renderer.animation_renderer.last_update = Instant::now();
         }
     }
 
@@ -568,35 +569,6 @@ impl ApplicationHandler for App {
 
             WindowEvent::RedrawRequested => {
                 self.handle_redraw();
-
-                let Some(state) = self.state.as_mut() else {
-                    eprintln!("Warning: Cannot update elapsed time - state not initialized");
-                    return;
-                };
-
-                if state.game_state.title_screen {
-                    match &self.window {
-                        Some(window) => {
-                            // Clone the window reference to avoid borrowing issues
-                            let window_ref = window.clone();
-                            self.handle_title_screen(&window_ref);
-                        }
-                        None => {
-                            eprintln!("Warning: Cannot handle title screen - window not available");
-                            return;
-                        }
-                    }
-                }
-
-                let current_time = Instant::now();
-                self.handle_frame_timing(current_time);
-
-                let Some(window) = self.window.as_ref() else {
-                    eprintln!("Warning: Cannot request redraw - window not available");
-                    return;
-                };
-
-                window.request_redraw();
             }
 
             _ => (),
