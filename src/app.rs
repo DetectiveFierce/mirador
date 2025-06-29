@@ -356,9 +356,22 @@ impl App {
 
             state.game_state.delta_time = delta_time;
             state.game_state.last_frame_time = current_time;
-            state
+
+            if state
                 .wgpu_renderer
-                .update_debug_vertices(&state.game_state.collision_system);
+                .game_renderer
+                .debug_renderer
+                .debug_render_bounding_boxes
+            {
+                state
+                    .wgpu_renderer
+                    .game_renderer
+                    .debug_renderer
+                    .update_debug_vertices(
+                        &state.wgpu_renderer.device,
+                        &state.game_state.collision_system,
+                    );
+            }
         }
     }
 
@@ -417,7 +430,7 @@ impl App {
 
                         floor_vertices.append(&mut Vertex::create_wall_vertices(&maze_grid));
 
-                        state.wgpu_renderer.vertex_buffer = state
+                        state.wgpu_renderer.game_renderer.vertex_buffer = state
                             .wgpu_renderer
                             .device
                             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -521,8 +534,15 @@ impl ApplicationHandler for App {
                                     state.ui.show_sliders = !state.ui.show_sliders
                                 }
                                 GameKey::ToggleBoundingBoxes => {
-                                    state.wgpu_renderer.debug_render_bounding_boxes =
-                                        !state.wgpu_renderer.debug_render_bounding_boxes;
+                                    state
+                                        .wgpu_renderer
+                                        .game_renderer
+                                        .debug_renderer
+                                        .debug_render_bounding_boxes = !state
+                                        .wgpu_renderer
+                                        .game_renderer
+                                        .debug_renderer
+                                        .debug_render_bounding_boxes;
                                 }
                                 GameKey::Escape => {
                                     state.game_state.capture_mouse =
@@ -568,6 +588,8 @@ impl ApplicationHandler for App {
             },
 
             WindowEvent::RedrawRequested => {
+                let current_time = Instant::now();
+                self.handle_frame_timing(current_time);
                 self.handle_redraw();
             }
 

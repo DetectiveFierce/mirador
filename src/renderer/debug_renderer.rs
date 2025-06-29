@@ -3,11 +3,49 @@
 //! This module provides tools for rendering debug elements like bounding boxes,
 //! which are useful for understanding and debugging the collision system.
 
+use crate::game::collision::CollisionSystem;
 use crate::game::collision::{AABB, BVH, BVHNode};
 use crate::renderer::vertex::Vertex;
-
+use egui_wgpu::wgpu;
+use egui_wgpu::wgpu::util::DeviceExt;
 /// Material ID for debug bounding boxes
 pub const BOUNDING_BOX_MATERIAL: u32 = 2;
+
+pub struct DebugRenderer {
+    /// Whether to render bounding boxes for debugging.
+    pub debug_render_bounding_boxes: bool,
+    /// Vertex buffer for the debug renderer
+    pub debug_vertex_buffer: Option<wgpu::Buffer>,
+    pub debug_vertex_count: usize,
+}
+
+impl DebugRenderer {
+    pub fn update_debug_vertices(
+        &mut self,
+        device: &wgpu::Device,
+        collision_system: &CollisionSystem,
+    ) {
+        // Skip if debug rendering is disabled
+        if !self.debug_render_bounding_boxes {
+            self.debug_vertex_count = 0;
+            return;
+        }
+
+        // Collect only wall face AABBs, not the entire BVH hierarchy
+        let debug_vertices = collect_wall_face_debug_vertices(&collision_system.bvh);
+
+        // Create or update the debug vertex buffer
+        self.debug_vertex_count = debug_vertices.len();
+        if self.debug_vertex_count > 0 {
+            let debug_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Debug Vertex Buffer"),
+                contents: bytemuck::cast_slice(&debug_vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+            self.debug_vertex_buffer = Some(debug_buffer);
+        }
+    }
+}
 
 /// Generates vertices for rendering an AABB as a solid semitransparent box.
 ///
