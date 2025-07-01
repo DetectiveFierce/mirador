@@ -478,7 +478,7 @@
 <a href=#478 id=478 data-nosnippet>478</a>        </span><span class="kw">let </span>text_height = <span class="number">90.0</span>;
 <a href=#479 id=479 data-nosnippet>479</a>
 <a href=#480 id=480 data-nosnippet>480</a>        <span class="kw">let </span>game_over_position = TextPosition {
-<a href=#481 id=481 data-nosnippet>481</a>            x: (width <span class="kw">as </span>f32 / <span class="number">2.0</span>) - (text_width / <span class="number">2.0</span>),
+<a href=#481 id=481 data-nosnippet>481</a>            x: (width <span class="kw">as </span>f32 / <span class="number">2.0</span>) - (text_width),
 <a href=#482 id=482 data-nosnippet>482</a>            y: (height <span class="kw">as </span>f32 / <span class="number">2.0</span>) - (text_height / <span class="number">2.0</span>) - <span class="number">50.0</span>, <span class="comment">// Offset up a bit
 <a href=#483 id=483 data-nosnippet>483</a>            </span>max_width: <span class="prelude-val">Some</span>(text_width),
 <a href=#484 id=484 data-nosnippet>484</a>            max_height: <span class="prelude-val">Some</span>(text_height),
@@ -506,7 +506,7 @@
 <a href=#506 id=506 data-nosnippet>506</a>        </span><span class="kw">let </span>restart_text_height = <span class="number">30.0</span>;
 <a href=#507 id=507 data-nosnippet>507</a>
 <a href=#508 id=508 data-nosnippet>508</a>        <span class="kw">let </span>restart_position = TextPosition {
-<a href=#509 id=509 data-nosnippet>509</a>            x: (width <span class="kw">as </span>f32 / <span class="number">2.0</span>) - (restart_text_width / <span class="number">2.0</span>),
+<a href=#509 id=509 data-nosnippet>509</a>            x: (width <span class="kw">as </span>f32 / <span class="number">2.0</span>) - (restart_text_width),
 <a href=#510 id=510 data-nosnippet>510</a>            y: (height <span class="kw">as </span>f32 / <span class="number">2.0</span>) + <span class="number">40.0</span>, <span class="comment">// Below the main text
 <a href=#511 id=511 data-nosnippet>511</a>            </span>max_width: <span class="prelude-val">Some</span>(restart_text_width),
 <a href=#512 id=512 data-nosnippet>512</a>            max_height: <span class="prelude-val">Some</span>(restart_text_height),
