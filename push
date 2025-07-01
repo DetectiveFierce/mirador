@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Ensure a commit message is provided
+if [ -z "$1" ]; then
+  echo "Usage: push \"commit message\""
+  exit 1
+fi
+
+# Store the commit message
+message="$1"
+
+# Clean and regenerate docs
+cargo clean --doc
+cargo doc --no-deps --release
+
+# Deploy docs to GitHub Pages
+ghp-import -n -p -f target/doc
+
+# Remove all but the most recent file in the generated maze folder
+cd ./src/maze/saved-mazes/generated || exit
+ls -tp | grep -v '/$' | tail -n +2 | xargs -d '\n' rm --
+cd - || exit
+
+# Stage, commit, and push code changes
+git add .
+git commit -m "$message"
+git push -u origin main

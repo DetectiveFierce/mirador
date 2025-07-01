@@ -16,9 +16,7 @@
 //! - Orchestrate maze generation and title screen animation
 //! - Integrate with the winit event loop
 use crate::maze::parse_maze_file;
-use crate::renderer::text::TextPosition;
-use crate::renderer::text::TextRenderer;
-use crate::renderer::text::TextStyle;
+use crate::renderer::text::{TextRenderer, TimerConfig};
 use crate::renderer::vertex::Vertex;
 use crate::{
     game::{
@@ -31,8 +29,6 @@ use crate::{
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
 use glyphon::Color;
-use glyphon::Style;
-use glyphon::Weight;
 use std::time::Duration;
 use std::{sync::Arc, time::Instant};
 use winit::event::MouseButton;
@@ -43,11 +39,6 @@ use winit::{
     event_loop::ActiveEventLoop,
     window::{Window, WindowId},
 };
-
-pub struct Timer {
-    start_time: Instant,
-    duration: Duration,
-}
 
 /// Holds all state required for a running Mirador game session.
 ///
@@ -63,8 +54,8 @@ pub struct AppState {
     pub game_state: GameState,
     /// The current input state (pressed keys, etc.).
     pub key_state: KeyState,
+    /// The text renderer for all game UI text elements.
     pub text_renderer: TextRenderer,
-    pub timer: Option<Timer>,
 }
 
 impl AppState {
@@ -107,54 +98,8 @@ impl AppState {
             println!("Loaded fonts: {:?}", text_renderer.loaded_fonts);
         }
 
-        // Create multiple text buffers with different styles and positions
-
-        // Main timer - large, centered
-        let timer_style = TextStyle {
-            font_family: "HankenGrotesk".to_string(),
-            font_size: 48.0,
-            line_height: 60.0,
-            color: Color::rgb(100, 255, 100),
-            weight: Weight::BOLD,
-            style: Style::Normal,
-        };
-        let timer_position = TextPosition {
-            x: (width as f32 / 2.0) - 50.0,
-            y: 0.0,
-            max_width: Some(300.0),
-            max_height: Some(100.0),
-        };
-        println!(
-            "Creating main_timer at position: ({}, {})",
-            timer_position.x, timer_position.y
-        );
-        text_renderer.create_text_buffer(
-            "main_timer",
-            "60.00",
-            Some(timer_style),
-            Some(timer_position),
-        );
-
-        // Level Count - Top Left
-        let fps_style = TextStyle {
-            font_family: "HankenGrotesk".to_string(),
-            font_size: 16.0,
-            line_height: 20.0,
-            color: Color::rgb(255, 255, 150),
-            weight: Weight::NORMAL,
-            style: Style::Normal,
-        };
-        let fps_position = TextPosition {
-            x: 20.0,
-            y: 20.0,
-            max_width: Some(100.0),
-            max_height: Some(25.0),
-        };
-        println!(
-            "Creating fps at position: ({}, {})",
-            fps_position.x, fps_position.y
-        );
-        text_renderer.create_text_buffer("level", "Level: 1", Some(fps_style), Some(fps_position));
+        // Initialize all game UI elements
+        text_renderer.initialize_game_ui(width, height);
 
         Self {
             wgpu_renderer,
@@ -163,7 +108,6 @@ impl AppState {
             game_state: GameState::new(),
             key_state: KeyState::new(),
             text_renderer,
-            timer: None,
         }
     }
 
@@ -256,78 +200,45 @@ impl AppState {
         }
     }
 
-    pub fn update_text_buffers(&mut self) {
-        // Update main timer
-        if self.timer.is_none() && !self.game_state.title_screen {
-            self.timer = Some(Timer {
-                start_time: Instant::now(),
+    /// Updates all game UI elements including timer, level, and score displays.
+    pub fn update_game_ui(&mut self) {
+        // Start timer when game begins (not on title screen)
+        if !self.game_state.title_screen && self.text_renderer.game_ui.timer.is_none() {
+            // Configure timer with custom settings
+            let timer_config = TimerConfig {
                 duration: Duration::from_secs(60),
-            })
+                warning_threshold: Duration::from_secs(30),
+                critical_threshold: Duration::from_secs(15),
+                normal_color: Color::rgb(100, 255, 100),
+                warning_color: Color::rgb(255, 255, 100),
+                critical_color: Color::rgb(255, 100, 100),
+            };
+            self.text_renderer.start_game_timer(Some(timer_config));
         }
 
-        if let Some(timer) = &mut self.timer {
-            let elapsed = timer.start_time.elapsed();
-            let remaining = timer
-                .duration
-                .checked_sub(elapsed)
-                .unwrap_or(Duration::ZERO);
+        // Update UI and check if timer expired
+        let timer_expired = self.text_renderer.update_game_ui();
 
-            // Check if timer has expired
-            if remaining.is_zero() {
-                // Timer expired - handle game over or whatever logic you need
-                self.timer = None; // Remove the timer
-                // You might want to set a game over state here
-                // self.game_state.game_over = true;
-
-                // Update display to show 00.00
-                if let Err(e) = self.text_renderer.update_text("main_timer", "00.00") {
-                    println!("Failed to update main_timer text: {}", e);
-                }
-            } else {
-                // Timer is still running - display remaining time
-                let seconds = remaining.as_secs_f64();
-                let timer_text = format!("{:05.2}", seconds);
-                if let Err(e) = self.text_renderer.update_text("main_timer", &timer_text) {
-                    println!("Failed to update main_timer text: {}", e);
-                }
-
-                // Change timer color when time is running low (< 30 seconds)
-                if remaining.as_secs() < 30 && remaining.as_secs() > 15 {
-                    let timer_style = TextStyle {
-                        font_family: "HankenGrotesk".to_string(),
-                        font_size: 48.0,
-                        line_height: 60.0,
-                        color: Color::rgb(255, 255, 100), // Yellow when getting low
-                        weight: Weight::BOLD,
-                        style: Style::Normal,
-                    };
-                    if let Err(e) = self.text_renderer.update_style("main_timer", timer_style) {
-                        println!("Failed to update main_timer style: {}", e);
-                    }
-                }
-                // Change timer color to red when very low (< 15 seconds)
-                else if remaining.as_secs() < 15 && remaining.as_secs() > 0 {
-                    let timer_style = TextStyle {
-                        font_family: "HankenGrotesk".to_string(),
-                        font_size: 48.0,
-                        line_height: 60.0,
-                        color: Color::rgb(255, 100, 100), // Red when very low
-                        weight: Weight::BOLD,
-                        style: Style::Normal,
-                    };
-                    if let Err(e) = self.text_renderer.update_style("main_timer", timer_style) {
-                        println!("Failed to update main_timer style: {}", e);
-                    }
-                }
-            }
+        if timer_expired {
+            // Handle timer expiration - you can add game over logic here
+            println!("Timer expired! Game over.");
+            // Example: self.game_state.game_over = true;
         }
+
+        // Update level display if needed (example usage)
+        // You can call this when the level changes:
+        // self.text_renderer.set_level(new_level);
+
+        // Update score display if needed (example usage)
+        // You can call this when the score changes:
+        // self.text_renderer.set_score(new_score);
     }
 }
 
 /// Main application object for Mirador.
 ///
 /// Manages the WGPU instance, window, and application state, and implements
-/// [`winit::application::ApplicationHandler`] for event-driven operation.
+/// [`winit::application::ApplicationHandler`] for cross-platform event handling.
 #[derive(Default)]
 pub struct App {
     /// The WGPU instance for the application.
@@ -427,9 +338,10 @@ impl App {
                     .walls,
             );
         }
+
         // Update game state and UI
         state.key_state.update(&mut state.game_state);
-        state.update_text_buffers(); // Add this line!
+        state.update_game_ui(); // Updated to use the new method
         state.update_ui(window);
 
         // Prepare rendering commands
