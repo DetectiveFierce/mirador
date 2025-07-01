@@ -5,9 +5,7 @@
 //! It also includes utilities for mapping from winit key events to game actions.
 
 use crate::game::{CurrentScreen, GameState};
-use crate::game::{GameTimer, TimerConfig};
 use std::collections::HashSet;
-use std::time::Duration;
 use winit::keyboard;
 /// Enum representing all possible in-game actions that can be triggered by keyboard or mouse input.
 ///
