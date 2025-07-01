@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["collision","keys","player"],"struct":["GameState"]};
+window.SIDEBAR_ITEMS = {"mod":["collision","keys","player"],"struct":["GameState","GameTimer","GameUIManager","TimerConfig"]};
