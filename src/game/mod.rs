@@ -9,8 +9,10 @@ pub mod player;
 use self::collision::CollisionSystem;
 use self::player::Player;
 use crate::maze::generator::Cell;
+use crate::renderer::text::TextRenderer;
+use glyphon::Color;
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 /// Represents the entire mutable state of the game.
 ///
 /// This struct is updated every frame and contains:
@@ -18,7 +20,6 @@ use std::time::Instant;
 /// - Timing information for frame updates and FPS calculation.
 /// - UI state (title screen, mouse capture).
 /// - The currently loaded maze path, if any.
-#[derive(Debug, Clone)]
 pub struct GameState {
     /// The player character.
     pub player: Player,
@@ -45,6 +46,7 @@ pub struct GameState {
     /// Whether the exit has been reached.
     pub exit_reached: bool,
     pub exit_cell: Cell,
+    pub game_ui: GameUIManager,
 }
 
 impl Default for GameState {
@@ -75,6 +77,240 @@ impl GameState {
             level: 1,
             exit_reached: false,
             exit_cell: Cell::default(),
+            game_ui: GameUIManager::new(),
         }
+    }
+
+    /// Start the game timer
+    pub fn start_game_timer(&mut self, config: Option<TimerConfig>) {
+        self.game_ui.start_timer(config);
+    }
+
+    /// Stop the game timer
+    pub fn stop_game_timer(&mut self) {
+        self.game_ui.stop_timer();
+    }
+
+    /// Reset the game timer
+    pub fn reset_game_timer(&mut self) {
+        self.game_ui.reset_timer();
+    }
+
+    /// Check if the game timer is expired
+    pub fn is_game_timer_expired(&self) -> bool {
+        self.game_ui.is_timer_expired()
+    }
+
+    /// Update game level
+    pub fn set_level(&mut self, text_renderer: &mut TextRenderer, level: u32) {
+        self.game_ui.set_level(level);
+        if let Err(e) = text_renderer.update_text("level", &self.game_ui.get_level_text()) {
+            println!("Failed to update level text: {}", e);
+        }
+    }
+
+    /// Update game score
+    pub fn set_score(&mut self, text_renderer: &mut TextRenderer, score: u32) {
+        self.game_ui.set_score(score);
+        if let Err(e) = text_renderer.update_text("score", &self.game_ui.get_score_text()) {
+            println!("Failed to update score text: {}", e);
+        }
+    }
+}
+
+/// Timer configuration for game elements
+#[derive(Debug, Clone)]
+pub struct TimerConfig {
+    pub duration: Duration,
+    pub warning_threshold: Duration,  // When to turn yellow
+    pub critical_threshold: Duration, // When to turn red
+    pub normal_color: Color,
+    pub warning_color: Color,
+    pub critical_color: Color,
+}
+
+impl Default for TimerConfig {
+    fn default() -> Self {
+        Self {
+            duration: Duration::from_secs(60),
+            warning_threshold: Duration::from_secs(30),
+            critical_threshold: Duration::from_secs(15),
+            normal_color: Color::rgb(100, 255, 100),
+            warning_color: Color::rgb(255, 255, 100),
+            critical_color: Color::rgb(255, 100, 100),
+        }
+    }
+}
+
+/// Game timer state
+#[derive(Debug)]
+pub struct GameTimer {
+    start_time: Instant,
+    config: TimerConfig,
+    is_running: bool,
+    is_expired: bool,
+}
+
+impl GameTimer {
+    pub fn new(config: TimerConfig) -> Self {
+        Self {
+            start_time: Instant::now(),
+            config,
+            is_running: false,
+            is_expired: false,
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.start_time = Instant::now();
+        self.is_running = true;
+        self.is_expired = false;
+    }
+
+    pub fn stop(&mut self) {
+        self.is_running = false;
+    }
+
+    pub fn reset(&mut self) {
+        self.start_time = Instant::now();
+        self.is_expired = false;
+    }
+
+    pub fn get_remaining_time(&self) -> Duration {
+        if !self.is_running || self.is_expired {
+            return Duration::ZERO;
+        }
+
+        let elapsed = self.start_time.elapsed();
+        self.config
+            .duration
+            .checked_sub(elapsed)
+            .unwrap_or(Duration::ZERO)
+    }
+
+    pub fn is_expired(&self) -> bool {
+        self.is_expired || (!self.is_running && self.get_remaining_time().is_zero())
+    }
+
+    pub fn update(&mut self) -> bool {
+        if !self.is_running {
+            return false;
+        }
+
+        let remaining = self.get_remaining_time();
+        let was_expired = self.is_expired;
+        self.is_expired = remaining.is_zero();
+
+        // Return true if timer just expired (transition from running to expired)
+        !was_expired && self.is_expired
+    }
+
+    pub fn get_current_color(&self) -> Color {
+        let remaining = self.get_remaining_time();
+
+        if remaining <= self.config.critical_threshold {
+            self.config.critical_color
+        } else if remaining <= self.config.warning_threshold {
+            self.config.warning_color
+        } else {
+            self.config.normal_color
+        }
+    }
+
+    pub fn format_time(&self) -> String {
+        let remaining = self.get_remaining_time();
+        let seconds = remaining.as_secs_f64();
+        format!("{:05.2}", seconds)
+    }
+}
+
+/// Manages game-specific UI elements like timers, scores, levels, etc.
+pub struct GameUIManager {
+    pub timer: Option<GameTimer>,
+    pub level: u32,
+    pub score: u32,
+}
+
+impl Default for GameUIManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GameUIManager {
+    pub fn new() -> Self {
+        Self {
+            timer: None,
+            level: 1,
+            score: 0,
+        }
+    }
+
+    pub fn start_timer(&mut self, config: Option<TimerConfig>) {
+        let config = config.unwrap_or_default();
+        let mut timer = GameTimer::new(config);
+        timer.start();
+        self.timer = Some(timer);
+    }
+
+    pub fn stop_timer(&mut self) {
+        if let Some(timer) = &mut self.timer {
+            timer.stop();
+        }
+    }
+
+    pub fn reset_timer(&mut self) {
+        if let Some(timer) = &mut self.timer {
+            timer.reset();
+            timer.start();
+        }
+    }
+
+    pub fn update_timer(&mut self) -> bool {
+        if let Some(timer) = &mut self.timer {
+            timer.update()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_timer_expired(&self) -> bool {
+        self.timer.as_ref().map(|t| t.is_expired()).unwrap_or(false)
+    }
+
+    pub fn get_timer_text(&self) -> String {
+        self.timer
+            .as_ref()
+            .map_or("00.00".to_string(), |t| t.format_time())
+    }
+
+    pub fn get_timer_color(&self) -> Color {
+        self.timer
+            .as_ref()
+            .map_or(Color::rgb(255, 255, 255), |t| t.get_current_color())
+    }
+
+    pub fn set_level(&mut self, level: u32) {
+        self.level = level;
+    }
+
+    pub fn get_level(&self) -> u32 {
+        self.level
+    }
+
+    pub fn get_level_text(&self) -> String {
+        format!("Level: {}", self.level)
+    }
+
+    pub fn set_score(&mut self, score: u32) {
+        self.score = score;
+    }
+
+    pub fn get_score(&self) -> u32 {
+        self.score
+    }
+
+    pub fn get_score_text(&self) -> String {
+        format!("Score: {}", self.score)
     }
 }

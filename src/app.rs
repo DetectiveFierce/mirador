@@ -15,8 +15,9 @@
 //! - Handle window events, resizing, and redraws
 //! - Orchestrate maze generation and title screen animation
 //! - Integrate with the winit event loop
+use crate::game::TimerConfig;
 use crate::maze::parse_maze_file;
-use crate::renderer::text::{TextRenderer, TimerConfig};
+use crate::renderer::text::TextRenderer;
 use crate::renderer::vertex::Vertex;
 use crate::{
     game::{
@@ -98,14 +99,15 @@ impl AppState {
             println!("Loaded fonts: {:?}", text_renderer.loaded_fonts);
         }
 
+        let game_state = GameState::new();
         // Initialize all game UI elements
-        text_renderer.initialize_game_ui(width, height);
+        text_renderer.initialize_game_ui(&game_state.game_ui, width, height);
 
         Self {
             wgpu_renderer,
             egui_renderer,
             ui: UiState::new(),
-            game_state: GameState::new(),
+            game_state,
             key_state: KeyState::new(),
             text_renderer,
         }
@@ -203,7 +205,7 @@ impl AppState {
     /// Updates all game UI elements including timer, level, and score displays.
     pub fn update_game_ui(&mut self) {
         // Start timer when game begins (not on title screen)
-        if !self.game_state.title_screen && self.text_renderer.game_ui.timer.is_none() {
+        if !self.game_state.title_screen && self.game_state.game_ui.timer.is_none() {
             // Configure timer with custom settings
             let timer_config = TimerConfig {
                 duration: Duration::from_secs(60),
@@ -213,11 +215,13 @@ impl AppState {
                 warning_color: Color::rgb(255, 255, 100),
                 critical_color: Color::rgb(255, 100, 100),
             };
-            self.text_renderer.start_game_timer(Some(timer_config));
+            self.game_state.start_game_timer(Some(timer_config));
         }
 
         // Update UI and check if timer expired
-        let timer_expired = self.text_renderer.update_game_ui();
+        let timer_expired = self
+            .text_renderer
+            .update_game_ui(&mut self.game_state.game_ui);
 
         if timer_expired {
             // Handle timer expiration - you can add game over logic here
