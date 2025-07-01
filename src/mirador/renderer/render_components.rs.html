@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/renderer/render_components.rs`."><title>render_components.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0 (17067e9ac 2025-05-09)" data-channel="1.87.0" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-82c7156e.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-fb8c74a8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">mirador/renderer/</div>render_components.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! # Maze Generation Animation Rendering System
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/renderer/render_components.rs`."><title>render_components.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0 (17067e9ac 2025-05-09)" data-channel="1.87.0" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-82c7156e.js"></script><script defer src="../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-fb8c74a8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">mirador/renderer/</div>render_components.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! # Maze Generation Animation Rendering System
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! This module provides specialized renderers for different aspects of a maze visualization
 <a href=#4 id=4 data-nosnippet>4</a>//! application. It includes renderers for the maze itself, loading progress indicators,
@@ -914,4 +914,170 @@
 <a href=#914 id=914 data-nosnippet>914</a>
 <a href=#915 id=915 data-nosnippet>915</a>        (texture, texture_view, sampler)
 <a href=#916 id=916 data-nosnippet>916</a>    }
-<a href=#917 id=917 data-nosnippet>917</a>}</code></pre></div></section></main></body></html>
+<a href=#917 id=917 data-nosnippet>917</a>}
+<a href=#918 id=918 data-nosnippet>918</a>
+<a href=#919 id=919 data-nosnippet>919</a><span class="attr">#[repr(C)]
+<a href=#920 id=920 data-nosnippet>920</a>#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+<a href=#921 id=921 data-nosnippet>921</a></span><span class="kw">struct </span>GameOverUniforms {
+<a href=#922 id=922 data-nosnippet>922</a>    time: f32,
+<a href=#923 id=923 data-nosnippet>923</a>    _padding: [f32; <span class="number">3</span>],
+<a href=#924 id=924 data-nosnippet>924</a>}
+<a href=#925 id=925 data-nosnippet>925</a>
+<a href=#926 id=926 data-nosnippet>926</a><span class="kw">pub struct </span>GameOverRenderer {
+<a href=#927 id=927 data-nosnippet>927</a>    pipeline: wgpu::RenderPipeline,
+<a href=#928 id=928 data-nosnippet>928</a>    vertex_buffer: wgpu::Buffer,
+<a href=#929 id=929 data-nosnippet>929</a>    uniform_buffer: wgpu::Buffer,
+<a href=#930 id=930 data-nosnippet>930</a>    bind_group: wgpu::BindGroup,
+<a href=#931 id=931 data-nosnippet>931</a>}
+<a href=#932 id=932 data-nosnippet>932</a>
+<a href=#933 id=933 data-nosnippet>933</a><span class="kw">impl </span>GameOverRenderer {
+<a href=#934 id=934 data-nosnippet>934</a>    <span class="doccomment">/// Create a new game over renderer.
+<a href=#935 id=935 data-nosnippet>935</a>    ///
+<a href=#936 id=936 data-nosnippet>936</a>    /// This sets up the complete rendering pipeline for displaying a game over overlay,
+<a href=#937 id=937 data-nosnippet>937</a>    /// including alpha blending support for semitransparent rendering over the game scene.
+<a href=#938 id=938 data-nosnippet>938</a>    ///
+<a href=#939 id=939 data-nosnippet>939</a>    /// ## Shader Requirements
+<a href=#940 id=940 data-nosnippet>940</a>    ///
+<a href=#941 id=941 data-nosnippet>941</a>    /// The game over shader should be located at `../maze/game-over.wgsl`
+<a href=#942 id=942 data-nosnippet>942</a>    /// and should expect:
+<a href=#943 id=943 data-nosnippet>943</a>    /// - Vertex input: `@location(0) position: vec2&lt;f32&gt;`
+<a href=#944 id=944 data-nosnippet>944</a>    /// - Uniform binding: `@group(0) @binding(0) var&lt;uniform&gt; uniforms: GameOverUniforms;`
+<a href=#945 id=945 data-nosnippet>945</a>    ///
+<a href=#946 id=946 data-nosnippet>946</a>    /// ## Initial State
+<a href=#947 id=947 data-nosnippet>947</a>    ///
+<a href=#948 id=948 data-nosnippet>948</a>    /// The renderer starts with time = 0.0. Use [`update_time()`](GameOverRenderer::update_time)
+<a href=#949 id=949 data-nosnippet>949</a>    /// to animate the overlay effect.
+<a href=#950 id=950 data-nosnippet>950</a>    ///
+<a href=#951 id=951 data-nosnippet>951</a>    /// # Parameters
+<a href=#952 id=952 data-nosnippet>952</a>    ///
+<a href=#953 id=953 data-nosnippet>953</a>    /// - `device` - WGPU device for creating GPU resources
+<a href=#954 id=954 data-nosnippet>954</a>    /// - `surface_config` - Surface configuration (provides target format)
+<a href=#955 id=955 data-nosnippet>955</a>    ///
+<a href=#956 id=956 data-nosnippet>956</a>    /// # Returns
+<a href=#957 id=957 data-nosnippet>957</a>    ///
+<a href=#958 id=958 data-nosnippet>958</a>    /// A configured `GameOverRenderer` ready for rendering.
+<a href=#959 id=959 data-nosnippet>959</a>    ///
+<a href=#960 id=960 data-nosnippet>960</a>    /// # Example
+<a href=#961 id=961 data-nosnippet>961</a>    ///
+<a href=#962 id=962 data-nosnippet>962</a>    /// ```rust,no_run
+<a href=#963 id=963 data-nosnippet>963</a>    /// # use crate::renderer::maze_renderer::GameOverRenderer;
+<a href=#964 id=964 data-nosnippet>964</a>    /// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+<a href=#965 id=965 data-nosnippet>965</a>    /// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+<a href=#966 id=966 data-nosnippet>966</a>    ///
+<a href=#967 id=967 data-nosnippet>967</a>    /// let renderer = GameOverRenderer::new(&amp;device, &amp;surface_config);
+<a href=#968 id=968 data-nosnippet>968</a>    /// ```
+<a href=#969 id=969 data-nosnippet>969</a>    </span><span class="kw">pub fn </span>new(device: <span class="kw-2">&amp;</span>wgpu::Device, surface_config: <span class="kw-2">&amp;</span>wgpu::SurfaceConfiguration) -&gt; <span class="self">Self </span>{
+<a href=#970 id=970 data-nosnippet>970</a>        <span class="kw">let </span>uniforms = GameOverUniforms {
+<a href=#971 id=971 data-nosnippet>971</a>            time: <span class="number">0.0</span>,
+<a href=#972 id=972 data-nosnippet>972</a>            _padding: [<span class="number">0.0</span>; <span class="number">3</span>],
+<a href=#973 id=973 data-nosnippet>973</a>        };
+<a href=#974 id=974 data-nosnippet>974</a>
+<a href=#975 id=975 data-nosnippet>975</a>        <span class="kw">let </span>uniform_buffer = create_uniform_buffer(device, <span class="kw-2">&amp;</span>uniforms, <span class="string">"Game Over Uniform Buffer"</span>);
+<a href=#976 id=976 data-nosnippet>976</a>
+<a href=#977 id=977 data-nosnippet>977</a>        <span class="kw">let </span>bind_group_layout = BindGroupLayoutBuilder::new(device)
+<a href=#978 id=978 data-nosnippet>978</a>            .with_label(<span class="string">"Game Over Bind Group Layout"</span>)
+<a href=#979 id=979 data-nosnippet>979</a>            .with_uniform_buffer(<span class="number">0</span>, wgpu::ShaderStages::FRAGMENT)
+<a href=#980 id=980 data-nosnippet>980</a>            .build();
+<a href=#981 id=981 data-nosnippet>981</a>
+<a href=#982 id=982 data-nosnippet>982</a>        <span class="kw">let </span>bind_group = device.create_bind_group(<span class="kw-2">&amp;</span>wgpu::BindGroupDescriptor {
+<a href=#983 id=983 data-nosnippet>983</a>            layout: <span class="kw-2">&amp;</span>bind_group_layout,
+<a href=#984 id=984 data-nosnippet>984</a>            entries: <span class="kw-2">&amp;</span>[wgpu::BindGroupEntry {
+<a href=#985 id=985 data-nosnippet>985</a>                binding: <span class="number">0</span>,
+<a href=#986 id=986 data-nosnippet>986</a>                resource: uniform_buffer.as_entire_binding(),
+<a href=#987 id=987 data-nosnippet>987</a>            }],
+<a href=#988 id=988 data-nosnippet>988</a>            label: <span class="prelude-val">Some</span>(<span class="string">"Game Over Bind Group"</span>),
+<a href=#989 id=989 data-nosnippet>989</a>        });
+<a href=#990 id=990 data-nosnippet>990</a>
+<a href=#991 id=991 data-nosnippet>991</a>        <span class="kw">let </span>pipeline = PipelineBuilder::new(device, surface_config.format)
+<a href=#992 id=992 data-nosnippet>992</a>            .with_label(<span class="string">"Game Over Pipeline"</span>)
+<a href=#993 id=993 data-nosnippet>993</a>            .with_shader(<span class="macro">include_str!</span>(<span class="string">"../renderer/game-over.wgsl"</span>))
+<a href=#994 id=994 data-nosnippet>994</a>            .with_vertex_buffer(create_vertex_2d_layout())
+<a href=#995 id=995 data-nosnippet>995</a>            .with_bind_group_layout(<span class="kw-2">&amp;</span>bind_group_layout)
+<a href=#996 id=996 data-nosnippet>996</a>            .with_alpha_blending()
+<a href=#997 id=997 data-nosnippet>997</a>            .build();
+<a href=#998 id=998 data-nosnippet>998</a>
+<a href=#999 id=999 data-nosnippet>999</a>        <span class="kw">let </span>vertex_buffer = create_fullscreen_vertices(device);
+<a href=#1000 id=1000 data-nosnippet>1000</a>
+<a href=#1001 id=1001 data-nosnippet>1001</a>        <span class="self">Self </span>{
+<a href=#1002 id=1002 data-nosnippet>1002</a>            pipeline,
+<a href=#1003 id=1003 data-nosnippet>1003</a>            vertex_buffer,
+<a href=#1004 id=1004 data-nosnippet>1004</a>            uniform_buffer,
+<a href=#1005 id=1005 data-nosnippet>1005</a>            bind_group,
+<a href=#1006 id=1006 data-nosnippet>1006</a>        }
+<a href=#1007 id=1007 data-nosnippet>1007</a>    }
+<a href=#1008 id=1008 data-nosnippet>1008</a>
+<a href=#1009 id=1009 data-nosnippet>1009</a>    <span class="doccomment">/// Update the animation time for the game over overlay.
+<a href=#1010 id=1010 data-nosnippet>1010</a>    ///
+<a href=#1011 id=1011 data-nosnippet>1011</a>    /// This method uploads new time data to the GPU uniform buffer to enable
+<a href=#1012 id=1012 data-nosnippet>1012</a>    /// animated effects like pulsing, fading, or other time-based animations
+<a href=#1013 id=1013 data-nosnippet>1013</a>    /// in the game over shader.
+<a href=#1014 id=1014 data-nosnippet>1014</a>    ///
+<a href=#1015 id=1015 data-nosnippet>1015</a>    /// ## Performance Notes
+<a href=#1016 id=1016 data-nosnippet>1016</a>    ///
+<a href=#1017 id=1017 data-nosnippet>1017</a>    /// This operation involves a GPU buffer write. It's typically called once
+<a href=#1018 id=1018 data-nosnippet>1018</a>    /// per frame during the game over state to maintain smooth animations.
+<a href=#1019 id=1019 data-nosnippet>1019</a>    ///
+<a href=#1020 id=1020 data-nosnippet>1020</a>    /// # Parameters
+<a href=#1021 id=1021 data-nosnippet>1021</a>    ///
+<a href=#1022 id=1022 data-nosnippet>1022</a>    /// - `queue` - WGPU queue for buffer uploads
+<a href=#1023 id=1023 data-nosnippet>1023</a>    /// - `time` - Time value in seconds (typically elapsed time since game over)
+<a href=#1024 id=1024 data-nosnippet>1024</a>    ///
+<a href=#1025 id=1025 data-nosnippet>1025</a>    /// # Example
+<a href=#1026 id=1026 data-nosnippet>1026</a>    ///
+<a href=#1027 id=1027 data-nosnippet>1027</a>    /// ```rust,no_run
+<a href=#1028 id=1028 data-nosnippet>1028</a>    /// # use crate::renderer::maze_renderer::GameOverRenderer;
+<a href=#1029 id=1029 data-nosnippet>1029</a>    /// # let renderer: GameOverRenderer = unimplemented!();
+<a href=#1030 id=1030 data-nosnippet>1030</a>    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+<a href=#1031 id=1031 data-nosnippet>1031</a>    ///
+<a href=#1032 id=1032 data-nosnippet>1032</a>    /// // Update with elapsed time for animations
+<a href=#1033 id=1033 data-nosnippet>1033</a>    /// let elapsed = start_time.elapsed().as_secs_f32();
+<a href=#1034 id=1034 data-nosnippet>1034</a>    /// renderer.update_time(&amp;queue, elapsed);
+<a href=#1035 id=1035 data-nosnippet>1035</a>    /// ```
+<a href=#1036 id=1036 data-nosnippet>1036</a>    </span><span class="kw">pub fn </span>update_time(<span class="kw-2">&amp;</span><span class="self">self</span>, queue: <span class="kw-2">&amp;</span>wgpu::Queue, time: f32) {
+<a href=#1037 id=1037 data-nosnippet>1037</a>        <span class="kw">let </span>uniforms = GameOverUniforms {
+<a href=#1038 id=1038 data-nosnippet>1038</a>            time,
+<a href=#1039 id=1039 data-nosnippet>1039</a>            _padding: [<span class="number">0.0</span>; <span class="number">3</span>],
+<a href=#1040 id=1040 data-nosnippet>1040</a>        };
+<a href=#1041 id=1041 data-nosnippet>1041</a>        queue.write_buffer(<span class="kw-2">&amp;</span><span class="self">self</span>.uniform_buffer, <span class="number">0</span>, bytemuck::cast_slice(<span class="kw-2">&amp;</span>[uniforms]));
+<a href=#1042 id=1042 data-nosnippet>1042</a>    }
+<a href=#1043 id=1043 data-nosnippet>1043</a>
+<a href=#1044 id=1044 data-nosnippet>1044</a>    <span class="doccomment">/// Render the game over overlay to the current render pass.
+<a href=#1045 id=1045 data-nosnippet>1045</a>    ///
+<a href=#1046 id=1046 data-nosnippet>1046</a>    /// This method renders a semitransparent red overlay that covers the entire
+<a href=#1047 id=1047 data-nosnippet>1047</a>    /// screen using alpha blending. The overlay appears on top of the frozen
+<a href=#1048 id=1048 data-nosnippet>1048</a>    /// game scene underneath.
+<a href=#1049 id=1049 data-nosnippet>1049</a>    ///
+<a href=#1050 id=1050 data-nosnippet>1050</a>    /// ## Render State
+<a href=#1051 id=1051 data-nosnippet>1051</a>    ///
+<a href=#1052 id=1052 data-nosnippet>1052</a>    /// This method assumes:
+<a href=#1053 id=1053 data-nosnippet>1053</a>    /// - A render pass is active
+<a href=#1054 id=1054 data-nosnippet>1054</a>    /// - Alpha blending is desired (the pipeline enables it)
+<a href=#1055 id=1055 data-nosnippet>1055</a>    /// - The game scene has already been rendered
+<a href=#1056 id=1056 data-nosnippet>1056</a>    /// - The overlay should cover the full viewport
+<a href=#1057 id=1057 data-nosnippet>1057</a>    ///
+<a href=#1058 id=1058 data-nosnippet>1058</a>    /// # Parameters
+<a href=#1059 id=1059 data-nosnippet>1059</a>    ///
+<a href=#1060 id=1060 data-nosnippet>1060</a>    /// - `render_pass` - Active render pass to render into
+<a href=#1061 id=1061 data-nosnippet>1061</a>    /// - `window` - Window reference for potential window-specific adjustments
+<a href=#1062 id=1062 data-nosnippet>1062</a>    ///
+<a href=#1063 id=1063 data-nosnippet>1063</a>    /// # Example
+<a href=#1064 id=1064 data-nosnippet>1064</a>    ///
+<a href=#1065 id=1065 data-nosnippet>1065</a>    /// ```rust,no_run
+<a href=#1066 id=1066 data-nosnippet>1066</a>    /// # use crate::renderer::maze_renderer::GameOverRenderer;
+<a href=#1067 id=1067 data-nosnippet>1067</a>    /// # let renderer: GameOverRenderer = unimplemented!();
+<a href=#1068 id=1068 data-nosnippet>1068</a>    /// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+<a href=#1069 id=1069 data-nosnippet>1069</a>    /// # let window: &amp;winit::window::Window = unimplemented!();
+<a href=#1070 id=1070 data-nosnippet>1070</a>    ///
+<a href=#1071 id=1071 data-nosnippet>1071</a>    /// // Render game scene first
+<a href=#1072 id=1072 data-nosnippet>1072</a>    /// // ... render background, stars, game objects ...
+<a href=#1073 id=1073 data-nosnippet>1073</a>    ///
+<a href=#1074 id=1074 data-nosnippet>1074</a>    /// // Render game over overlay on top
+<a href=#1075 id=1075 data-nosnippet>1075</a>    /// renderer.render(&amp;mut render_pass, window);
+<a href=#1076 id=1076 data-nosnippet>1076</a>    /// ```
+<a href=#1077 id=1077 data-nosnippet>1077</a>    </span><span class="kw">pub fn </span>render(<span class="kw-2">&amp;</span><span class="self">self</span>, render_pass: <span class="kw-2">&amp;mut </span>wgpu::RenderPass, _window: <span class="kw-2">&amp;</span>winit::window::Window) {
+<a href=#1078 id=1078 data-nosnippet>1078</a>        render_pass.set_pipeline(<span class="kw-2">&amp;</span><span class="self">self</span>.pipeline);
+<a href=#1079 id=1079 data-nosnippet>1079</a>        render_pass.set_bind_group(<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.bind_group, <span class="kw-2">&amp;</span>[]);
+<a href=#1080 id=1080 data-nosnippet>1080</a>        render_pass.set_vertex_buffer(<span class="number">0</span>, <span class="self">self</span>.vertex_buffer.slice(..));
+<a href=#1081 id=1081 data-nosnippet>1081</a>        render_pass.draw(<span class="number">0</span>..<span class="number">6</span>, <span class="number">0</span>..<span class="number">1</span>);
+<a href=#1082 id=1082 data-nosnippet>1082</a>    }
+<a href=#1083 id=1083 data-nosnippet>1083</a>}</code></pre></div></section></main></body></html>
