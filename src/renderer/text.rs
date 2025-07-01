@@ -478,7 +478,7 @@ impl TextRenderer {
         let text_height = 90.0;
 
         let game_over_position = TextPosition {
-            x: (width as f32 / 2.0) - (text_width / 2.0),
+            x: (width as f32 / 2.0) - (text_width),
             y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0, // Offset up a bit
             max_width: Some(text_width),
             max_height: Some(text_height),
@@ -506,7 +506,7 @@ impl TextRenderer {
         let restart_text_height = 30.0;
 
         let restart_position = TextPosition {
-            x: (width as f32 / 2.0) - (restart_text_width / 2.0),
+            x: (width as f32 / 2.0) - (restart_text_width),
             y: (height as f32 / 2.0) + 40.0, // Below the main text
             max_width: Some(restart_text_width),
             max_height: Some(restart_text_height),
