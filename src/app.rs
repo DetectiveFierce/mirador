@@ -16,6 +16,9 @@
 //! - Orchestrate maze generation and title screen animation
 //! - Integrate with the winit event loop
 use crate::maze::parse_maze_file;
+use crate::renderer::text::TextPosition;
+use crate::renderer::text::TextRenderer;
+use crate::renderer::text::TextStyle;
 use crate::renderer::vertex::Vertex;
 use crate::{
     game::{
@@ -27,6 +30,9 @@ use crate::{
 };
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
+use glyphon::Color;
+use glyphon::Style;
+use glyphon::Weight;
 use std::time::Duration;
 use std::{sync::Arc, time::Instant};
 use winit::event::MouseButton;
@@ -37,6 +43,11 @@ use winit::{
     event_loop::ActiveEventLoop,
     window::{Window, WindowId},
 };
+
+pub struct Timer {
+    start_time: Instant,
+    duration: Duration,
+}
 
 /// Holds all state required for a running Mirador game session.
 ///
@@ -52,6 +63,8 @@ pub struct AppState {
     pub game_state: GameState,
     /// The current input state (pressed keys, etc.).
     pub key_state: KeyState,
+    pub text_renderer: TextRenderer,
+    pub timer: Option<Timer>,
 }
 
 impl AppState {
@@ -80,12 +93,77 @@ impl AppState {
             window,
         );
 
+        let mut text_renderer = TextRenderer::new(
+            &wgpu_renderer.device,
+            &wgpu_renderer.queue,
+            wgpu_renderer.surface_config.format,
+            window,
+        );
+
+        // Check if font loading was successful
+        if text_renderer.loaded_fonts.is_empty() {
+            println!("WARNING: No fonts loaded! Text may not render properly.");
+        } else {
+            println!("Loaded fonts: {:?}", text_renderer.loaded_fonts);
+        }
+
+        // Create multiple text buffers with different styles and positions
+
+        // Main timer - large, centered
+        let timer_style = TextStyle {
+            font_family: "HankenGrotesk".to_string(),
+            font_size: 48.0,
+            line_height: 60.0,
+            color: Color::rgb(100, 255, 100),
+            weight: Weight::BOLD,
+            style: Style::Normal,
+        };
+        let timer_position = TextPosition {
+            x: (width as f32 / 2.0) - 50.0,
+            y: 0.0,
+            max_width: Some(300.0),
+            max_height: Some(100.0),
+        };
+        println!(
+            "Creating main_timer at position: ({}, {})",
+            timer_position.x, timer_position.y
+        );
+        text_renderer.create_text_buffer(
+            "main_timer",
+            "60.00",
+            Some(timer_style),
+            Some(timer_position),
+        );
+
+        // Level Count - Top Left
+        let fps_style = TextStyle {
+            font_family: "HankenGrotesk".to_string(),
+            font_size: 16.0,
+            line_height: 20.0,
+            color: Color::rgb(255, 255, 150),
+            weight: Weight::NORMAL,
+            style: Style::Normal,
+        };
+        let fps_position = TextPosition {
+            x: 20.0,
+            y: 20.0,
+            max_width: Some(100.0),
+            max_height: Some(25.0),
+        };
+        println!(
+            "Creating fps at position: ({}, {})",
+            fps_position.x, fps_position.y
+        );
+        text_renderer.create_text_buffer("level", "Level: 1", Some(fps_style), Some(fps_position));
+
         Self {
             wgpu_renderer,
             egui_renderer,
             ui: UiState::new(),
             game_state: GameState::new(),
             key_state: KeyState::new(),
+            text_renderer,
+            timer: None,
         }
     }
 
@@ -175,6 +253,73 @@ impl AppState {
                 eprintln!("Failed to unlock cursor: {}", e);
             }
             window.set_cursor_visible(true);
+        }
+    }
+
+    pub fn update_text_buffers(&mut self) {
+        // Update main timer
+        if self.timer.is_none() && !self.game_state.title_screen {
+            self.timer = Some(Timer {
+                start_time: Instant::now(),
+                duration: Duration::from_secs(60),
+            })
+        }
+
+        if let Some(timer) = &mut self.timer {
+            let elapsed = timer.start_time.elapsed();
+            let remaining = timer
+                .duration
+                .checked_sub(elapsed)
+                .unwrap_or(Duration::ZERO);
+
+            // Check if timer has expired
+            if remaining.is_zero() {
+                // Timer expired - handle game over or whatever logic you need
+                self.timer = None; // Remove the timer
+                // You might want to set a game over state here
+                // self.game_state.game_over = true;
+
+                // Update display to show 00.00
+                if let Err(e) = self.text_renderer.update_text("main_timer", "00.00") {
+                    println!("Failed to update main_timer text: {}", e);
+                }
+            } else {
+                // Timer is still running - display remaining time
+                let seconds = remaining.as_secs_f64();
+                let timer_text = format!("{:05.2}", seconds);
+                if let Err(e) = self.text_renderer.update_text("main_timer", &timer_text) {
+                    println!("Failed to update main_timer text: {}", e);
+                }
+
+                // Change timer color when time is running low (< 30 seconds)
+                if remaining.as_secs() < 30 && remaining.as_secs() > 15 {
+                    let timer_style = TextStyle {
+                        font_family: "HankenGrotesk".to_string(),
+                        font_size: 48.0,
+                        line_height: 60.0,
+                        color: Color::rgb(255, 255, 100), // Yellow when getting low
+                        weight: Weight::BOLD,
+                        style: Style::Normal,
+                    };
+                    if let Err(e) = self.text_renderer.update_style("main_timer", timer_style) {
+                        println!("Failed to update main_timer style: {}", e);
+                    }
+                }
+                // Change timer color to red when very low (< 15 seconds)
+                else if remaining.as_secs() < 15 && remaining.as_secs() > 0 {
+                    let timer_style = TextStyle {
+                        font_family: "HankenGrotesk".to_string(),
+                        font_size: 48.0,
+                        line_height: 60.0,
+                        color: Color::rgb(255, 100, 100), // Red when very low
+                        weight: Weight::BOLD,
+                        style: Style::Normal,
+                    };
+                    if let Err(e) = self.text_renderer.update_style("main_timer", timer_style) {
+                        println!("Failed to update main_timer style: {}", e);
+                    }
+                }
+            }
         }
     }
 }
@@ -284,6 +429,7 @@ impl App {
         }
         // Update game state and UI
         state.key_state.update(&mut state.game_state);
+        state.update_text_buffers(); // Add this line!
         state.update_ui(window);
 
         // Prepare rendering commands
@@ -301,6 +447,7 @@ impl App {
                 state.ui.start_time,
                 &state.game_state.player,
                 state.game_state.title_screen,
+                &mut state.text_renderer,
             ) {
                 Ok(result) => result,
                 Err(err) => {

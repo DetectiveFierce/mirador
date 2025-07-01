@@ -17,6 +17,7 @@
 use crate::game::player::Player;
 use crate::maze::maze_animation::AnimationRenderer;
 use crate::renderer::render_components::GameRenderer;
+use crate::renderer::text::TextRenderer;
 use crate::ui::ui_panel::UiState;
 use egui_wgpu::ScreenDescriptor;
 use egui_wgpu::wgpu;
@@ -137,6 +138,7 @@ impl WgpuRenderer {
     /// # Returns
     /// - `Ok((TextureView, ScreenDescriptor, SurfaceTexture))` on success.
     /// - `Err(String)` if the surface is outdated or unavailable.
+    #[allow(clippy::too_many_arguments)]
     pub fn update_canvas(
         &mut self,
         window: &winit::window::Window,
@@ -145,6 +147,7 @@ impl WgpuRenderer {
         start_time: std::time::Instant,
         player: &Player,
         title: bool,
+        text_renderer: &mut TextRenderer,
     ) -> Result<(TextureView, ScreenDescriptor, SurfaceTexture), String> {
         let surface_texture_obj = self.surface.get_current_texture();
 
@@ -304,6 +307,41 @@ impl WgpuRenderer {
             let mut main_pass = encoder.begin_render_pass(&main_pass_desc);
             self.game_renderer
                 .render_game(&self.queue, player, &mut main_pass, aspect);
+        }
+
+        {
+            text_renderer.resize(
+                &self.queue,
+                glyphon::Resolution {
+                    width: self.surface_config.width,
+                    height: self.surface_config.height,
+                },
+            );
+            match text_renderer.prepare(&self.device, &self.queue, &self.surface_config) {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("Failed to prepare Glyphon: {:?}", e);
+                }
+            }
+
+            let mut text_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Main Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &surface_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            match text_renderer.render(&mut text_pass) {
+                Ok(_) => {}
+                Err(e) => println!("Glyphon render failed: {:?}", e),
+            }
         }
 
         Ok((surface_view, screen_descriptor, surface_texture))

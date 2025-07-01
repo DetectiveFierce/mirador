@@ -7,6 +7,7 @@ pub mod background;
 pub mod debug_renderer;
 pub mod pipeline_builder;
 pub mod render_components;
+pub mod text;
 pub mod uniform;
 pub mod vertex;
 pub mod wgpu_lib;
