@@ -98,6 +98,17 @@ impl AppState {
                             ui.label(format!("FPS: {}", self.game_state.current_fps));
                             ui.label(format!("Maze Path: {:?}", self.game_state.maze_path));
 
+                            ui.separator();
+
+                            ui.label(format!(
+                                "Current Screen: {:?}",
+                                self.game_state.current_screen
+                            ));
+                            ui.label(format!(
+                                "Capture Mouse: {:?}",
+                                self.game_state.capture_mouse
+                            ));
+
                             custom_slider(
                                 ui,
                                 "player height",

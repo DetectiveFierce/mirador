@@ -1,21 +1,22 @@
 //! WGPU-based renderer for the Mirador game.
 //!
 //! This module provides [`WgpuRenderer`], which manages all GPU resources, pipelines, and rendering
-//! logic for the main game scene, background, and title screen. It handles initialization of WGPU,
+//! logic for the main game scene, background, and loading screen. It handles initialization of WGPU,
 //! creation of vertex/uniform buffers, pipelines, and orchestrates the rendering of the maze, player,
 //! animated background, and UI overlays.
 //!
 //! # Features
 //! - Loads maze geometry and floor/wall vertices
-//! - Renders a starfield background and animated title screen
+//! - Renders a starfield background and animated loading screen
 //! - Handles depth buffering and uniform updates for camera/player movement
 //! - Integrates with egui for UI overlays
 //!
 //! # Usage
 //! Create a [`WgpuRenderer`] via [`WgpuRenderer::new`] and call [`WgpuRenderer::update_canvas`]
 //! each frame to render the current game state.
-use crate::game::player::Player;
-use crate::maze::maze_animation::AnimationRenderer;
+use crate::game::CurrentScreen;
+use crate::game::GameState;
+use crate::maze::maze_animation::LoadingRenderer;
 use crate::renderer::render_components::GameRenderer;
 use crate::renderer::text::TextRenderer;
 use crate::ui::ui_panel::UiState;
@@ -26,7 +27,7 @@ use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
 /// Main WGPU renderer for the Mirador game.
 ///
 /// This struct manages all GPU resources, pipelines, and rendering logic for the game scene,
-/// including the maze, player, animated background, and title screen.
+/// including the maze, player, animated background, and loading screen.
 ///
 /// # Fields
 /// - `surface`: The WGPU surface for presenting rendered frames.
@@ -34,7 +35,7 @@ use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
 /// - `device`: The WGPU device for resource creation.
 /// - `queue`: The WGPU queue for submitting commands.
 /// - `game_renderer`: Main render pipeline for the maze and floor.
-/// - `animation_renderer`: Renderer for the title screen maze and loading bar.
+/// - `loading_screen_renderer`: Renderer for the loading screen maze and loading bar.
 pub struct WgpuRenderer {
     /// The WGPU surface for presenting rendered frames.
     pub surface: wgpu::Surface<'static>,
@@ -46,8 +47,8 @@ pub struct WgpuRenderer {
     pub queue: wgpu::Queue,
     /// Main render pipeline for the maze and floor.
     pub game_renderer: GameRenderer,
-    /// Renderer for the title screen maze and loading bar.
-    pub animation_renderer: AnimationRenderer,
+    /// Renderer for the loading screen maze and loading bar.
+    pub loading_screen_renderer: LoadingRenderer,
 }
 
 impl WgpuRenderer {
@@ -113,7 +114,7 @@ impl WgpuRenderer {
         surface.configure(&device, &surface_config);
 
         let game_renderer = GameRenderer::new(&device, &surface_config);
-        let animation_renderer = AnimationRenderer::new(&device, &surface_config);
+        let loading_screen_renderer = LoadingRenderer::new(&device, &surface_config);
 
         Self {
             surface,
@@ -121,7 +122,7 @@ impl WgpuRenderer {
             device,
             queue,
             game_renderer,
-            animation_renderer,
+            loading_screen_renderer,
         }
     }
 
@@ -133,20 +134,17 @@ impl WgpuRenderer {
     /// - `encoder`: Command encoder for submitting draw commands.
     /// - `start_time`: Start time for animation timing.
     /// - `player`: Reference to the current player state.
-    /// - `title`: If true, renders the title screen; otherwise renders the main game scene.
+    /// - `loading`: If true, renders the loading screen; otherwise renders the main game scene.
     ///
     /// # Returns
     /// - `Ok((TextureView, ScreenDescriptor, SurfaceTexture))` on success.
     /// - `Err(String)` if the surface is outdated or unavailable.
-    #[allow(clippy::too_many_arguments)]
     pub fn update_canvas(
         &mut self,
         window: &winit::window::Window,
-        ui_state: &UiState,
         encoder: &mut wgpu::CommandEncoder,
-        start_time: std::time::Instant,
-        player: &Player,
-        title: bool,
+        ui_state: &UiState,
+        game_state: &GameState,
         text_renderer: &mut TextRenderer,
     ) -> Result<(TextureView, ScreenDescriptor, SurfaceTexture), String> {
         let surface_texture_obj = self.surface.get_current_texture();
@@ -180,7 +178,7 @@ impl WgpuRenderer {
             self.game_renderer
                 .update_depth_texture(&self.device, width, height);
 
-        if title {
+        if game_state.current_screen == CurrentScreen::Loading {
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Render Pass"),
@@ -202,13 +200,14 @@ impl WgpuRenderer {
                     timestamp_writes: None,
                 });
 
-                // Render title screen using new component architecture
-                self.animation_renderer.render(&mut render_pass, window);
+                // Render loading screen using new component architecture
+                self.loading_screen_renderer
+                    .render(&mut render_pass, window);
             }
 
             return Ok((surface_view, screen_descriptor, surface_texture)); // <- This return was already there
         }
-        if !title {
+        if game_state.current_screen == CurrentScreen::Game {
             let clear_pass_desc = wgpu::RenderPassDescriptor {
                 label: Some("Clear Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -242,7 +241,7 @@ impl WgpuRenderer {
         }
 
         {
-            let elapsed_time = start_time.elapsed().as_secs_f32();
+            let elapsed_time = ui_state.start_time.elapsed().as_secs_f32();
             self.game_renderer
                 .star_renderer
                 .update_background_color(&self.queue, [ui_state.r, ui_state.g, ui_state.b, 1.0]);
@@ -306,7 +305,7 @@ impl WgpuRenderer {
             };
             let mut main_pass = encoder.begin_render_pass(&main_pass_desc);
             self.game_renderer
-                .render_game(&self.queue, player, &mut main_pass, aspect);
+                .render_game(&self.queue, &game_state.player, &mut main_pass, aspect);
         }
 
         {

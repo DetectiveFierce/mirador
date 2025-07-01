@@ -33,20 +33,24 @@ pub struct GameState {
     pub current_fps: u32,
     /// Time of the last FPS update.
     pub last_fps_time: Instant,
-    /// Whether the title screen is currently shown.
-    pub title_screen: bool,
     /// Path to the currently loaded maze, if any.
     pub maze_path: Option<PathBuf>,
     /// Whether the mouse is captured for camera movement.
     pub capture_mouse: bool,
     /// Handles collisions between game entities.
     pub collision_system: CollisionSystem,
-    /// Current level number.
-    pub level: u32,
     /// Whether the exit has been reached.
     pub exit_reached: bool,
     pub exit_cell: Cell,
     pub game_ui: GameUIManager,
+    pub current_screen: CurrentScreen,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CurrentScreen {
+    Loading,
+    Game,
+    Pause,
 }
 
 impl Default for GameState {
@@ -67,17 +71,16 @@ impl GameState {
             frame_count: 0,
             current_fps: 0,
             last_fps_time: Instant::now(),
-            title_screen: true,
             maze_path: None,
             capture_mouse: true,
             collision_system: CollisionSystem::new(
                 10.0,  // player_radius (adjust based on your player size)
                 100.0, // player_height (adjust based on your player size)),
             ),
-            level: 1,
             exit_reached: false,
             exit_cell: Cell::default(),
             game_ui: GameUIManager::new(),
+            current_screen: CurrentScreen::Loading,
         }
     }
 
@@ -145,10 +148,11 @@ impl Default for TimerConfig {
 /// Game timer state
 #[derive(Debug)]
 pub struct GameTimer {
-    start_time: Instant,
-    config: TimerConfig,
-    is_running: bool,
-    is_expired: bool,
+    pub start_time: Instant,
+    pub config: TimerConfig,
+    pub is_running: bool,
+    pub is_expired: bool,
+    pub prev_time: Duration,
 }
 
 impl GameTimer {
@@ -158,6 +162,7 @@ impl GameTimer {
             config,
             is_running: false,
             is_expired: false,
+            prev_time: Duration::from_secs(60),
         }
     }
 
@@ -221,6 +226,10 @@ impl GameTimer {
         let remaining = self.get_remaining_time();
         let seconds = remaining.as_secs_f64();
         format!("{:05.2}", seconds)
+    }
+
+    pub fn add_time(&mut self, duration: Duration) {
+        self.config.duration += duration;
     }
 }
 

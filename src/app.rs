@@ -15,7 +15,9 @@
 //! - Handle window events, resizing, and redraws
 //! - Orchestrate maze generation and title screen animation
 //! - Integrate with the winit event loop
-use crate::game::TimerConfig;
+use crate::game::player::Player;
+use crate::game::{CurrentScreen, TimerConfig};
+use crate::maze::maze_animation::LoadingRenderer;
 use crate::maze::parse_maze_file;
 use crate::renderer::text::TextRenderer;
 use crate::renderer::vertex::Vertex;
@@ -128,14 +130,15 @@ impl AppState {
     }
 
     /// Updates the title screen maze and loading bar, and uploads new texture data.
-    pub fn handle_title_screen(&mut self, window: &winit::window::Window) {
+    pub fn handle_loading_screen(&mut self, window: &winit::window::Window) {
         let progress = self
             .wgpu_renderer
-            .animation_renderer
+            .loading_screen_renderer
             .generator
             .get_progress_ratio();
 
-        let (maze_width, maze_height) = match self.wgpu_renderer.animation_renderer.maze.lock() {
+        let (maze_width, maze_height) = match self.wgpu_renderer.loading_screen_renderer.maze.lock()
+        {
             Ok(maze_lock) => maze_lock.get_dimensions(),
 
             Err(err) => {
@@ -145,18 +148,18 @@ impl AppState {
         };
 
         self.wgpu_renderer
-            .animation_renderer
+            .loading_screen_renderer
             .update_loading_bar(&self.wgpu_renderer.queue, progress);
 
         self.wgpu_renderer
-            .animation_renderer
+            .loading_screen_renderer
             .update_exit_shader(&self.wgpu_renderer.queue, window);
 
-        let maze_data = match self.wgpu_renderer.animation_renderer.maze.lock() {
+        let maze_data = match self.wgpu_renderer.loading_screen_renderer.maze.lock() {
             Ok(maze_lock) => maze_lock.get_render_data(
                 &self
                     .wgpu_renderer
-                    .animation_renderer
+                    .loading_screen_renderer
                     .generator
                     .connected_cells,
             ),
@@ -167,13 +170,13 @@ impl AppState {
             }
         };
 
-        self.wgpu_renderer.animation_renderer.update_texture(
+        self.wgpu_renderer.loading_screen_renderer.update_texture(
             &self.wgpu_renderer.queue,
             &maze_data,
             maze_width,
             maze_height,
         );
-        self.wgpu_renderer.animation_renderer.last_update = Instant::now();
+        self.wgpu_renderer.loading_screen_renderer.last_update = Instant::now();
     }
 
     /// Handles mouse capture and cursor visibility based on game state.
@@ -205,7 +208,9 @@ impl AppState {
     /// Updates all game UI elements including timer, level, and score displays.
     pub fn update_game_ui(&mut self) {
         // Start timer when game begins (not on title screen)
-        if !self.game_state.title_screen && self.game_state.game_ui.timer.is_none() {
+        if self.game_state.current_screen == CurrentScreen::Game
+            && self.game_state.game_ui.timer.is_none()
+        {
             // Configure timer with custom settings
             let timer_config = TimerConfig {
                 duration: Duration::from_secs(60),
@@ -329,13 +334,13 @@ impl App {
             .as_mut()
             .expect("State must be initialized before use");
 
-        if state.game_state.title_screen {
-            state.handle_title_screen(window);
+        if state.game_state.current_screen == CurrentScreen::Loading {
+            state.handle_loading_screen(window);
         } else {
             state.game_state.player.update_cell(
                 &state
                     .wgpu_renderer
-                    .animation_renderer
+                    .loading_screen_renderer
                     .maze
                     .lock()
                     .unwrap()
@@ -358,11 +363,9 @@ impl App {
         let (surface_view, screen_descriptor, surface_texture) =
             match state.wgpu_renderer.update_canvas(
                 window,
-                &state.ui,
                 &mut encoder,
-                state.ui.start_time,
-                &state.game_state.player,
-                state.game_state.title_screen,
+                &state.ui,
+                &state.game_state,
                 &mut state.text_renderer,
             ) {
                 Ok(result) => result,
@@ -390,8 +393,36 @@ impl App {
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
         surface_texture.present();
 
+        if state.game_state.current_screen == CurrentScreen::Game
+            && state.game_state.player.current_cell == state.game_state.exit_cell
+        {
+            state.game_state.current_screen = CurrentScreen::Loading;
+            state.game_state.maze_path = None;
+            state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
+                &state.wgpu_renderer.device,
+                &state.wgpu_renderer.surface_config,
+            );
+            state.game_state.player = Player::new();
+
+            state
+                .game_state
+                .set_level(&mut state.text_renderer, state.game_state.game_ui.level + 1);
+            if let Some(timer) = &mut state.game_state.game_ui.timer {
+                let mut time_back = Duration::ZERO;
+                if timer.prev_time > timer.get_remaining_time() {
+                    time_back = (timer.prev_time - timer.get_remaining_time()) / 2;
+                } else if timer.prev_time < timer.get_remaining_time() {
+                    time_back = (timer.get_remaining_time() - timer.prev_time) / 2;
+                }
+
+                timer.prev_time = timer.get_remaining_time();
+                timer.add_time(time_back);
+            }
+        }
+
         // Handle title screen animation if needed
-        if state.game_state.title_screen {
+        if state.game_state.current_screen == CurrentScreen::Loading {
+            state.game_state.game_ui.stop_timer();
             self.handle_maze_generation();
         }
     }
@@ -441,7 +472,7 @@ impl App {
     /// Advances the maze generation animation and uploads new geometry when complete.
     pub fn handle_maze_generation(&mut self) {
         if let Some(state) = self.state.as_mut() {
-            let renderer = &mut state.wgpu_renderer.animation_renderer;
+            let renderer = &mut state.wgpu_renderer.loading_screen_renderer;
 
             // Calculate update timing
             let speed = if renderer.generator.fast_mode {
@@ -539,7 +570,9 @@ impl ApplicationHandler for App {
         if let DeviceEvent::MouseMotion { delta } = event {
             if let Some(state) = self.state.as_mut() {
                 if let Some(window) = &mut self.window {
-                    if !state.game_state.title_screen && state.game_state.capture_mouse {
+                    if state.game_state.current_screen == CurrentScreen::Game
+                        && state.game_state.capture_mouse
+                    {
                         state.game_state.player.mouse_movement(delta.0, delta.1);
                     }
                     state.triage_mouse(window);

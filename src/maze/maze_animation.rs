@@ -1,6 +1,6 @@
 //! Maze generation animation renderer module.
 //!
-//! This module provides [`AnimationRenderer`], which handles rendering a maze and a loading bar
+//! This module provides [`LoadingRenderer`], which handles rendering a maze and a loading bar
 //! for the maze's animation screen using `wgpu`. It manages GPU resources for the maze texture, pipelines,
 //! and loading bar, and provides methods to update the maze texture and loading bar progress.
 
@@ -27,7 +27,7 @@ use winit::window::Window;
 /// - `exit_shader_renderer`: Exit shader renderer for displaying the exit shader.
 /// - `texture`: Texture containing the maze image.
 /// - `last_update`: Timestamp of the last update (for animation/timing).
-pub struct AnimationRenderer {
+pub struct LoadingRenderer {
     /// Maze generator for producing new mazes.
     pub generator: MazeGenerator,
     /// Shared, thread-safe reference to the current maze.
@@ -44,7 +44,7 @@ pub struct AnimationRenderer {
     pub last_update: Instant,
 }
 
-impl AnimationRenderer {
+impl LoadingRenderer {
     /// Creates a new simplified maze generation animation screen renderer.
     pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
         // Initialize maze generation

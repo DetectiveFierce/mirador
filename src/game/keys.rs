@@ -4,7 +4,7 @@
 //! and provides [`KeyState`] for tracking pressed keys and updating the [`GameState`] accordingly.
 //! It also includes utilities for mapping from winit key events to game actions.
 
-use crate::game::GameState;
+use crate::game::{CurrentScreen, GameState};
 use std::collections::HashSet;
 use winit::keyboard;
 
@@ -98,26 +98,26 @@ impl KeyState {
         let left = self.is_pressed(GameKey::MoveLeft);
         let right = self.is_pressed(GameKey::MoveRight);
 
-        // Use the new collision-aware movement function
-        // Note: You'll need to add collision_system to your GameState
-        game_state.player.move_with_collision(
-            &game_state.collision_system, // You'll need to add this to GameState
-            game_state.delta_time,
-            forward,
-            backward,
-            left,
-            right,
-        );
+        if game_state.current_screen == CurrentScreen::Game {
+            game_state.player.move_with_collision(
+                &game_state.collision_system, // You'll need to add this to GameState
+                game_state.delta_time,
+                forward,
+                backward,
+                left,
+                right,
+            );
+        }
 
         // Handle non-movement keys
         if self.is_pressed(GameKey::MouseButtonLeft)
             && game_state.maze_path.is_some()
             && game_state.capture_mouse
         {
-            game_state.title_screen = false;
-        }
-        if self.is_pressed(GameKey::Escape) {
-            game_state.capture_mouse = !game_state.capture_mouse;
+            game_state.current_screen = CurrentScreen::Game;
+            if let Some(timer) = &mut game_state.game_ui.timer {
+                timer.start();
+            }
         }
     }
 }
