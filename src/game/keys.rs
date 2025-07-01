@@ -5,9 +5,10 @@
 //! It also includes utilities for mapping from winit key events to game actions.
 
 use crate::game::{CurrentScreen, GameState};
+use crate::game::{GameTimer, TimerConfig};
 use std::collections::HashSet;
+use std::time::Duration;
 use winit::keyboard;
-
 /// Enum representing all possible in-game actions that can be triggered by keyboard or mouse input.
 ///
 /// This abstraction allows the game logic to be decoupled from specific physical keys or buttons.
@@ -114,9 +115,16 @@ impl KeyState {
             && game_state.maze_path.is_some()
             && game_state.capture_mouse
         {
-            game_state.current_screen = CurrentScreen::Game;
-            if let Some(timer) = &mut game_state.game_ui.timer {
-                timer.start();
+            if game_state.current_screen == CurrentScreen::Loading {
+                game_state.current_screen = CurrentScreen::Game;
+                if let Some(timer) = &mut game_state.game_ui.timer {
+                    timer.start();
+                }
+            }
+            if game_state.current_screen == CurrentScreen::GameOver {
+                // cause level generation to start again
+
+                game_state.current_screen = CurrentScreen::NewGame;
             }
         }
     }

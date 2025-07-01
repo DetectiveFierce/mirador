@@ -51,6 +51,8 @@ pub enum CurrentScreen {
     Loading,
     Game,
     Pause,
+    GameOver,
+    NewGame,
 }
 
 impl Default for GameState {
@@ -105,7 +107,7 @@ impl GameState {
     }
 
     /// Update game level
-    pub fn set_level(&mut self, text_renderer: &mut TextRenderer, level: u32) {
+    pub fn set_level(&mut self, text_renderer: &mut TextRenderer, level: i32) {
         self.game_ui.set_level(level);
         if let Err(e) = text_renderer.update_text("level", &self.game_ui.get_level_text()) {
             println!("Failed to update level text: {}", e);
@@ -236,7 +238,7 @@ impl GameTimer {
 /// Manages game-specific UI elements like timers, scores, levels, etc.
 pub struct GameUIManager {
     pub timer: Option<GameTimer>,
-    pub level: u32,
+    pub level: i32,
     pub score: u32,
 }
 
@@ -299,11 +301,11 @@ impl GameUIManager {
             .map_or(Color::rgb(255, 255, 255), |t| t.get_current_color())
     }
 
-    pub fn set_level(&mut self, level: u32) {
+    pub fn set_level(&mut self, level: i32) {
         self.level = level;
     }
 
-    pub fn get_level(&self) -> u32 {
+    pub fn get_level(&self) -> i32 {
         self.level
     }
 

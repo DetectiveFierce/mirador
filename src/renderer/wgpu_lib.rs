@@ -17,6 +17,7 @@
 use crate::game::CurrentScreen;
 use crate::game::GameState;
 use crate::maze::maze_animation::LoadingRenderer;
+use crate::renderer::render_components::GameOverRenderer;
 use crate::renderer::render_components::GameRenderer;
 use crate::renderer::text::TextRenderer;
 use crate::ui::ui_panel::UiState;
@@ -49,6 +50,8 @@ pub struct WgpuRenderer {
     pub game_renderer: GameRenderer,
     /// Renderer for the loading screen maze and loading bar.
     pub loading_screen_renderer: LoadingRenderer,
+    /// Renderer for the game over screen.
+    pub game_over_renderer: GameOverRenderer,
 }
 
 impl WgpuRenderer {
@@ -115,7 +118,7 @@ impl WgpuRenderer {
 
         let game_renderer = GameRenderer::new(&device, &surface_config);
         let loading_screen_renderer = LoadingRenderer::new(&device, &surface_config);
-
+        let game_over_renderer = GameOverRenderer::new(&device, &surface_config);
         Self {
             surface,
             surface_config,
@@ -123,6 +126,7 @@ impl WgpuRenderer {
             queue,
             game_renderer,
             loading_screen_renderer,
+            game_over_renderer,
         }
     }
 
@@ -207,6 +211,182 @@ impl WgpuRenderer {
 
             return Ok((surface_view, screen_descriptor, surface_texture)); // <- This return was already there
         }
+
+        if game_state.current_screen == CurrentScreen::GameOver {
+            // Render the game scene first (frozen at game over state)
+            {
+                let clear_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Clear Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: ui_state.r as f64,
+                                g: ui_state.g as f64,
+                                b: ui_state.b as f64,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &depth_texture_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
+                    }),
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let clear_pass = encoder.begin_render_pass(&clear_pass_desc);
+
+                drop(clear_pass);
+            }
+
+            // Render stars
+            {
+                let elapsed_time = ui_state.start_time.elapsed().as_secs_f32();
+                self.game_renderer.star_renderer.update_background_color(
+                    &self.queue,
+                    [ui_state.r, ui_state.g, ui_state.b, 1.0],
+                );
+                self.game_renderer
+                    .star_renderer
+                    .update_star_time(&self.queue, elapsed_time);
+                self.queue.write_buffer(
+                    &self.game_renderer.star_renderer.time_buffer,
+                    0,
+                    bytemuck::cast_slice(&[elapsed_time]),
+                );
+
+                let star_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Star Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let mut star_pass = encoder.begin_render_pass(&star_pass_desc);
+                star_pass.set_pipeline(&self.game_renderer.star_renderer.pipeline);
+                star_pass.set_bind_group(
+                    0,
+                    &self.game_renderer.star_renderer.uniform_bind_group,
+                    &[],
+                );
+                star_pass
+                    .set_vertex_buffer(0, self.game_renderer.star_renderer.vertex_buffer.slice(..));
+                star_pass.set_index_buffer(
+                    self.game_renderer.star_renderer.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint16,
+                );
+                star_pass.draw_indexed(0..self.game_renderer.star_renderer.num_indices, 0, 0..1);
+                drop(star_pass);
+            }
+
+            // Render game objects
+            {
+                let main_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Main Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &depth_texture_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
+                    }),
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let mut main_pass = encoder.begin_render_pass(&main_pass_desc);
+                self.game_renderer.render_game(
+                    &self.queue,
+                    &game_state.player,
+                    &mut main_pass,
+                    aspect,
+                );
+            }
+
+            // Render game over overlay using the game over shader
+            {
+                let game_over_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Game Over Overlay Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load, // Preserve the game scene
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None, // No depth testing for overlay
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let mut game_over_pass = encoder.begin_render_pass(&game_over_pass_desc);
+                self.game_over_renderer.render(&mut game_over_pass, window);
+            }
+
+            // Render text on top
+            {
+                text_renderer.resize(
+                    &self.queue,
+                    glyphon::Resolution {
+                        width: self.surface_config.width,
+                        height: self.surface_config.height,
+                    },
+                );
+
+                text_renderer.show_game_over_display();
+
+                match text_renderer.prepare(&self.device, &self.queue, &self.surface_config) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("Failed to prepare Glyphon: {:?}", e);
+                    }
+                }
+
+                let mut text_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Game Over Text Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+                match text_renderer.render(&mut text_pass) {
+                    Ok(_) => {}
+                    Err(e) => println!("Glyphon render failed: {:?}", e),
+                }
+            }
+
+            return Ok((surface_view, screen_descriptor, surface_texture));
+        }
+
         if game_state.current_screen == CurrentScreen::Game {
             let clear_pass_desc = wgpu::RenderPassDescriptor {
                 label: Some("Clear Pass"),

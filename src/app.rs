@@ -15,6 +15,7 @@
 //! - Handle window events, resizing, and redraws
 //! - Orchestrate maze generation and title screen animation
 //! - Integrate with the winit event loop
+use crate::game::GameTimer;
 use crate::game::player::Player;
 use crate::game::{CurrentScreen, TimerConfig};
 use crate::maze::maze_animation::LoadingRenderer;
@@ -231,6 +232,7 @@ impl AppState {
         if timer_expired {
             // Handle timer expiration - you can add game over logic here
             println!("Timer expired! Game over.");
+            self.game_state.current_screen = CurrentScreen::GameOver;
             // Example: self.game_state.game_over = true;
         }
 
@@ -393,17 +395,38 @@ impl App {
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
         surface_texture.present();
 
-        if state.game_state.current_screen == CurrentScreen::Game
+        // Handle title screen animation if needed
+        if state.game_state.current_screen == CurrentScreen::Loading {
+            state.game_state.game_ui.stop_timer();
+            self.handle_maze_generation();
+        } else if state.game_state.current_screen == CurrentScreen::NewGame {
+            state.text_renderer.hide_game_over_display();
+            self.new_level(true);
+        } else if state.game_state.current_screen == CurrentScreen::Game
             && state.game_state.player.current_cell == state.game_state.exit_cell
         {
-            state.game_state.current_screen = CurrentScreen::Loading;
-            state.game_state.maze_path = None;
-            state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
-                &state.wgpu_renderer.device,
-                &state.wgpu_renderer.surface_config,
-            );
-            state.game_state.player = Player::new();
+            self.new_level(false);
+        }
+    }
 
+    pub fn new_level(&mut self, game_over: bool) {
+        let state = self
+            .state
+            .as_mut()
+            .expect("State must be initialized before use");
+
+        state.game_state.current_screen = CurrentScreen::Loading;
+        state.game_state.maze_path = None;
+        state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
+            &state.wgpu_renderer.device,
+            &state.wgpu_renderer.surface_config,
+        );
+        state.game_state.player = Player::new();
+
+        if game_over {
+            state.game_state.game_ui.level = 0;
+            state.game_state.game_ui.timer = Some(GameTimer::new(TimerConfig::default()));
+        } else {
             state
                 .game_state
                 .set_level(&mut state.text_renderer, state.game_state.game_ui.level + 1);
@@ -418,12 +441,6 @@ impl App {
                 timer.prev_time = timer.get_remaining_time();
                 timer.add_time(time_back);
             }
-        }
-
-        // Handle title screen animation if needed
-        if state.game_state.current_screen == CurrentScreen::Loading {
-            state.game_state.game_ui.stop_timer();
-            self.handle_maze_generation();
         }
     }
 

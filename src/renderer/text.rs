@@ -127,6 +127,7 @@ impl TextRenderer {
         self.create_timer_display(width, height);
         self.create_level_display(game_ui);
         self.create_score_display(game_ui);
+        self.create_game_over_display(width, height);
     }
 
     /// Create the main timer display
@@ -458,5 +459,122 @@ impl TextRenderer {
     /// Trim the atlas to free up unused space
     pub fn trim(&mut self) {
         self.atlas.trim();
+    }
+
+    pub fn create_game_over_display(&mut self, width: u32, height: u32) {
+        // Main "Game Over!" text - large and centered
+        let game_over_style = TextStyle {
+            font_family: "HankenGrotesk".to_string(),
+            font_size: 72.0,
+            line_height: 90.0,
+            color: Color::rgb(255, 255, 255), // White color
+            weight: Weight::BOLD,
+            style: Style::Normal,
+        };
+
+        // Calculate center position for "Game Over!" text
+        // Approximate text width for centering (adjust as needed)
+        let text_width = 450.0; // Approximate width for "Game Over!" at 72px
+        let text_height = 90.0;
+
+        let game_over_position = TextPosition {
+            x: (width as f32 / 2.0) - (text_width / 2.0),
+            y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0, // Offset up a bit
+            max_width: Some(text_width),
+            max_height: Some(text_height),
+        };
+
+        self.create_text_buffer(
+            "game_over_title",
+            "Game Over!",
+            Some(game_over_style),
+            Some(game_over_position),
+        );
+
+        // Restart instruction text - smaller and below the main text
+        let restart_style = TextStyle {
+            font_family: "HankenGrotesk".to_string(),
+            font_size: 24.0,
+            line_height: 30.0,
+            color: Color::rgb(255, 255, 255), // White color
+            weight: Weight::NORMAL,
+            style: Style::Normal,
+        };
+
+        // Calculate center position for restart text
+        let restart_text_width = 350.0; // Approximate width for restart message
+        let restart_text_height = 30.0;
+
+        let restart_position = TextPosition {
+            x: (width as f32 / 2.0) - (restart_text_width / 2.0),
+            y: (height as f32 / 2.0) + 40.0, // Below the main text
+            max_width: Some(restart_text_width),
+            max_height: Some(restart_text_height),
+        };
+
+        self.create_text_buffer(
+            "game_over_restart",
+            "Click anywhere to play again.",
+            Some(restart_style),
+            Some(restart_position),
+        );
+
+        // Initially hide the game over display
+        self.hide_game_over_display();
+    }
+
+    /// Show the game over display
+    pub fn show_game_over_display(&mut self) {
+        if let Some(title_buffer) = self.text_buffers.get_mut("game_over_title") {
+            title_buffer.visible = true;
+        }
+        if let Some(restart_buffer) = self.text_buffers.get_mut("game_over_restart") {
+            restart_buffer.visible = true;
+        }
+    }
+
+    /// Hide the game over display
+    pub fn hide_game_over_display(&mut self) {
+        if let Some(title_buffer) = self.text_buffers.get_mut("game_over_title") {
+            title_buffer.visible = false;
+        }
+        if let Some(restart_buffer) = self.text_buffers.get_mut("game_over_restart") {
+            restart_buffer.visible = false;
+        }
+    }
+
+    /// Check if game over display is currently visible
+    pub fn is_game_over_visible(&self) -> bool {
+        self.text_buffers
+            .get("game_over_title")
+            .map(|buffer| buffer.visible)
+            .unwrap_or(false)
+    }
+
+    /// Update game over display for different screen sizes (call on window resize)
+    pub fn update_game_over_position(&mut self, width: u32, height: u32) -> Result<(), String> {
+        // Update main title position
+        let text_width = 450.0;
+        let text_height = 90.0;
+        let game_over_position = TextPosition {
+            x: (width as f32 / 2.0) - (text_width / 2.0),
+            y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0,
+            max_width: Some(text_width),
+            max_height: Some(text_height),
+        };
+        self.update_position("game_over_title", game_over_position)?;
+
+        // Update restart text position
+        let restart_text_width = 350.0;
+        let restart_text_height = 30.0;
+        let restart_position = TextPosition {
+            x: (width as f32 / 2.0) - (restart_text_width / 2.0),
+            y: (height as f32 / 2.0) + 40.0,
+            max_width: Some(restart_text_width),
+            max_height: Some(restart_text_height),
+        };
+        self.update_position("game_over_restart", restart_position)?;
+
+        Ok(())
     }
 }
