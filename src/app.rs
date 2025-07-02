@@ -136,7 +136,7 @@ impl AppState {
         self.wgpu_renderer
             .game_renderer
             .compass_renderer
-            .update_uniforms(&self.wgpu_renderer.queue, [0.75, 0.75], [0.75, 0.75]);
+            .update_uniforms(&self.wgpu_renderer.queue, [0.75, 0.75], [1.75, 1.75]);
     }
 
     /// Updates the title screen maze and loading bar, and uploads new texture data.
