@@ -136,7 +136,7 @@ impl AppState {
         self.wgpu_renderer
             .game_renderer
             .compass_renderer
-            .update_uniforms(&self.wgpu_renderer.queue, [0.75, 0.75], [1.75, 1.75]);
+            .update_uniforms(&self.wgpu_renderer.queue, [0.75, 0.75], [4.75, 4.75]);
     }
 
     /// Updates the title screen maze and loading bar, and uploads new texture data.
@@ -433,12 +433,45 @@ impl App {
         state.game_state.player = Player::new();
 
         if game_over {
-            state.game_state.game_ui.level = 0;
+            state.game_state.game_ui.level = 1;
+            state.game_state.game_ui.score = 0;
             state.game_state.game_ui.timer = Some(GameTimer::new(TimerConfig::default()));
         } else {
+            let base_score = 100 * state.game_state.game_ui.level as u32;
+
+            // Calculate speed bonus based on remaining time
+            let speed_bonus = if let Some(timer) = &state.game_state.game_ui.timer {
+                let remaining_time = timer.get_remaining_time().as_secs_f32();
+                let total_time = timer.config.duration.as_secs_f32(); // Assuming this method exists
+
+                if total_time > 0.0 {
+                    // Calculate percentage of time remaining (0.0 to 1.0)
+                    let time_ratio = remaining_time / total_time;
+
+                    // Bonus multiplier: more time left = higher bonus
+                    // Scale: 0% time left = 0x bonus, 100% time left = 2x bonus
+                    let bonus_multiplier = (time_ratio * 2.0).max(0.0);
+
+                    // Apply bonus to base score
+                    (base_score as f32 * bonus_multiplier) as u32
+                } else {
+                    0
+                }
+            } else {
+                0
+            };
+
+            // Set total score (base + speed bonus)
+            let total_score = base_score + speed_bonus;
+            state.game_state.set_score(
+                &mut state.text_renderer,
+                state.game_state.game_ui.score + total_score,
+            );
+
             state
                 .game_state
                 .set_level(&mut state.text_renderer, state.game_state.game_ui.level + 1);
+
             if let Some(timer) = &mut state.game_state.game_ui.timer {
                 let mut time_back = Duration::ZERO;
                 if timer.prev_time > timer.get_remaining_time() {
@@ -446,7 +479,6 @@ impl App {
                 } else if timer.prev_time < timer.get_remaining_time() {
                     time_back = (timer.get_remaining_time() - timer.prev_time) / 2;
                 }
-
                 timer.prev_time = timer.get_remaining_time();
                 timer.add_time(time_back);
             }

@@ -29,7 +29,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 
     // Simplified: just put a small quad in bottom-right corner
     // Scale the quad down and position it
-    let scaled_pos = input.position * 0.15; // Make it smaller
+    let scaled_pos = input.position * 0.25; // Make it smaller
     let positioned = scaled_pos + vec2<f32>(0.7, -0.7); // Bottom-right in NDC
 
     out.clip_position = vec4<f32>(positioned.x, positioned.y, 0.0, 1.0);

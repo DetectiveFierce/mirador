@@ -233,6 +233,10 @@ impl GameTimer {
     pub fn add_time(&mut self, duration: Duration) {
         self.config.duration += duration;
     }
+
+    pub fn get_total_time(&self) -> Duration {
+        self.config.duration
+    }
 }
 
 /// Manages game-specific UI elements like timers, scores, levels, etc.
