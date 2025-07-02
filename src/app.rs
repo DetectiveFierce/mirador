@@ -60,6 +60,8 @@ pub struct AppState {
     pub key_state: KeyState,
     /// The text renderer for all game UI text elements.
     pub text_renderer: TextRenderer,
+    pub start_time: Instant,
+    pub elapsed_time: Duration,
 }
 
 impl AppState {
@@ -113,6 +115,8 @@ impl AppState {
             game_state,
             key_state: KeyState::new(),
             text_renderer,
+            start_time: Instant::now(),
+            elapsed_time: Duration::ZERO,
         }
     }
 
@@ -128,6 +132,11 @@ impl AppState {
             &self.wgpu_renderer.device,
             &self.wgpu_renderer.surface_config,
         );
+
+        self.wgpu_renderer
+            .game_renderer
+            .compass_renderer
+            .update_uniforms(&self.wgpu_renderer.queue, [0.75, 0.75], [0.75, 0.75]);
     }
 
     /// Updates the title screen maze and loading bar, and uploads new texture data.
@@ -452,6 +461,7 @@ impl App {
         if let Some(state) = self.state.as_mut() {
             let duration = current_time.duration_since(state.game_state.last_fps_time);
 
+            state.elapsed_time = current_time.duration_since(state.start_time);
             state.ui.elapsed_time += 1.0;
             state.game_state.frame_count += 1;
 
@@ -536,8 +546,10 @@ impl App {
                     // Generate geometry if maze was saved successfully
                     if let Some(maze_path) = &state.game_state.maze_path {
                         let (maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
-                        let mut floor_vertices =
+                        let (mut floor_vertices, exit_position) =
                             Vertex::create_floor_vertices(&maze_grid, exit_cell);
+
+                        state.wgpu_renderer.game_renderer.exit_position = Some(exit_position);
 
                         floor_vertices.append(&mut Vertex::create_wall_vertices(&maze_grid));
 

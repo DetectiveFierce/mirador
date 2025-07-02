@@ -13,3 +13,4 @@ bytemuck = { version = "1.15", features = ["derive"] }
 rand = "0.8.5"
 chrono = "0.4"
 glyphon = "0.8.0"
+image = "0.25.6"

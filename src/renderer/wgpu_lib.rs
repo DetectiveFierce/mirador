@@ -116,7 +116,7 @@ impl WgpuRenderer {
 
         surface.configure(&device, &surface_config);
 
-        let game_renderer = GameRenderer::new(&device, &surface_config);
+        let game_renderer = GameRenderer::new(&device, &queue, &surface_config);
         let loading_screen_renderer = LoadingRenderer::new(&device, &surface_config);
         let game_over_renderer = GameOverRenderer::new(&device, &surface_config);
         Self {
@@ -388,104 +388,145 @@ impl WgpuRenderer {
         }
 
         if game_state.current_screen == CurrentScreen::Game {
-            let clear_pass_desc = wgpu::RenderPassDescriptor {
-                label: Some("Clear Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &surface_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: ui_state.r as f64,
-                            g: ui_state.g as f64,
-                            b: ui_state.b as f64,
-                            a: 1.0,
+            {
+                let clear_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Clear Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: ui_state.r as f64,
+                                g: ui_state.g as f64,
+                                b: ui_state.b as f64,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &depth_texture_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
                         }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &depth_texture_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
+                        stencil_ops: None,
                     }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let clear_pass = encoder.begin_render_pass(&clear_pass_desc);
+                // No draw calls needed - just clears
+
+                drop(clear_pass)
+            }
+
+            {
+                let elapsed_time = ui_state.start_time.elapsed().as_secs_f32();
+                self.game_renderer.star_renderer.update_background_color(
+                    &self.queue,
+                    [ui_state.r, ui_state.g, ui_state.b, 1.0],
+                );
+                self.game_renderer
+                    .star_renderer
+                    .update_star_time(&self.queue, elapsed_time);
+                self.queue.write_buffer(
+                    &self.game_renderer.star_renderer.time_buffer,
+                    0,
+                    bytemuck::cast_slice(&[elapsed_time]),
+                );
+
+                let star_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Star Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load, // Preserve cleared background
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None, // No depth testing for stars
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let mut star_pass = encoder.begin_render_pass(&star_pass_desc);
+                star_pass.set_pipeline(&self.game_renderer.star_renderer.pipeline);
+                star_pass.set_bind_group(
+                    0,
+                    &self.game_renderer.star_renderer.uniform_bind_group,
+                    &[],
+                );
+                star_pass
+                    .set_vertex_buffer(0, self.game_renderer.star_renderer.vertex_buffer.slice(..));
+                star_pass.set_index_buffer(
+                    self.game_renderer.star_renderer.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint16,
+                );
+                star_pass.draw_indexed(0..self.game_renderer.star_renderer.num_indices, 0, 0..1);
+                drop(star_pass);
             };
-            let clear_pass = encoder.begin_render_pass(&clear_pass_desc);
-            // No draw calls needed - just clears
 
-            drop(clear_pass)
-        }
-
-        {
-            let elapsed_time = ui_state.start_time.elapsed().as_secs_f32();
-            self.game_renderer
-                .star_renderer
-                .update_background_color(&self.queue, [ui_state.r, ui_state.g, ui_state.b, 1.0]);
-            self.game_renderer
-                .star_renderer
-                .update_star_time(&self.queue, elapsed_time);
-            self.queue.write_buffer(
-                &self.game_renderer.star_renderer.time_buffer,
-                0,
-                bytemuck::cast_slice(&[elapsed_time]),
-            );
-
-            let star_pass_desc = wgpu::RenderPassDescriptor {
-                label: Some("Star Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &surface_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load, // Preserve cleared background
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None, // No depth testing for stars
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            };
-            let mut star_pass = encoder.begin_render_pass(&star_pass_desc);
-            star_pass.set_pipeline(&self.game_renderer.star_renderer.pipeline);
-            star_pass.set_bind_group(0, &self.game_renderer.star_renderer.uniform_bind_group, &[]);
-            star_pass
-                .set_vertex_buffer(0, self.game_renderer.star_renderer.vertex_buffer.slice(..));
-            star_pass.set_index_buffer(
-                self.game_renderer.star_renderer.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint16,
-            );
-            star_pass.draw_indexed(0..self.game_renderer.star_renderer.num_indices, 0, 0..1);
-            drop(star_pass);
-        };
-
-        {
-            let main_pass_desc = wgpu::RenderPassDescriptor {
-                label: Some("Main Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &surface_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &depth_texture_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
+            {
+                let main_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Main Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &depth_texture_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
                     }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            };
-            let mut main_pass = encoder.begin_render_pass(&main_pass_desc);
-            self.game_renderer
-                .render_game(&self.queue, &game_state.player, &mut main_pass, aspect);
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let mut main_pass = encoder.begin_render_pass(&main_pass_desc);
+                self.game_renderer.render_game(
+                    &self.queue,
+                    &game_state.player,
+                    &mut main_pass,
+                    aspect,
+                );
+            }
+
+            if let Some(exit_position) = self.game_renderer.exit_position {
+                self.game_renderer
+                    .compass_renderer
+                    .update_compass_direction(
+                        (game_state.player.position[0], game_state.player.position[2]),
+                        exit_position,
+                    );
+            }
+
+            {
+                let compass_pass_desc = wgpu::RenderPassDescriptor {
+                    label: Some("Compass Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None, // No depth testing for 2D overlay
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                };
+                let mut compass_pass = encoder.begin_render_pass(&compass_pass_desc);
+                self.game_renderer
+                    .compass_renderer
+                    .render(&mut compass_pass, window);
+            }
         }
 
         {

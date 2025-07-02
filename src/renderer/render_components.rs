@@ -120,10 +120,17 @@ pub struct GameRenderer {
     pub star_renderer: StarRenderer,
     /// Development tools for rendering bounding boxes and debug overlays.
     pub debug_renderer: DebugRenderer,
+    /// Renderer for compass
+    pub compass_renderer: CompassRenderer,
+    pub exit_position: Option<(f32, f32)>,
 }
 
 impl GameRenderer {
-    pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        surface_config: &wgpu::SurfaceConfiguration,
+    ) -> Self {
         let uniforms = Uniforms::new();
         let uniform_buffer = uniforms.create_buffer(device);
         let (uniform_bind_group, uniform_bind_group_layout) =
@@ -131,7 +138,7 @@ impl GameRenderer {
 
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Main Pipeline")
-            .with_shader(include_str!("shader.wgsl"))
+            .with_shader(include_str!("./shaders/main-shader.wgsl"))
             .with_vertex_buffer(Vertex::desc())
             .with_bind_group_layout(&uniform_bind_group_layout)
             .with_blend_state(wgpu::BlendState {
@@ -155,7 +162,8 @@ impl GameRenderer {
         // Load wall grid from file
         let (maze_grid, exit_cell) = parse_maze_file("src/maze/saved-mazes/test.mz");
 
-        let mut floor_vertices = Vertex::create_floor_vertices(&maze_grid, exit_cell);
+        let (mut floor_vertices, _exit_position) =
+            Vertex::create_floor_vertices(&maze_grid, exit_cell);
 
         // Generate wall geometry
         let mut wall_vertices = Vertex::create_wall_vertices(&maze_grid);
@@ -177,6 +185,8 @@ impl GameRenderer {
             debug_vertex_count: 0,
         };
 
+        let compass_renderer = CompassRenderer::new(device, queue, surface_config);
+
         Self {
             pipeline,
             vertex_buffer,
@@ -186,6 +196,8 @@ impl GameRenderer {
             depth_texture: None,
             star_renderer,
             debug_renderer,
+            compass_renderer,
+            exit_position: None,
         }
     }
 
@@ -457,7 +469,7 @@ impl MazeRenderer {
 
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Maze Render Pipeline")
-            .with_shader(include_str!("../maze/2D-maze-shader.wgsl"))
+            .with_shader(include_str!("./shaders/2D-maze-shader.wgsl"))
             .with_vertex_buffer(create_vertex_2d_layout())
             .with_bind_group_layout(&bind_group_layout)
             .build();
@@ -623,7 +635,7 @@ impl LoadingBarRenderer {
 
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Loading Bar Pipeline")
-            .with_shader(include_str!("../maze/loading-bar-shader.wgsl"))
+            .with_shader(include_str!("./shaders/loading-bar-shader.wgsl"))
             .with_vertex_buffer(create_vertex_2d_layout())
             .with_bind_group_layout(&bind_group_layout)
             .with_alpha_blending()
@@ -793,7 +805,7 @@ impl ExitShaderRenderer {
         // Exit shader uses a full-screen triangle trick, so no vertex buffer needed
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Exit Shader Pipeline")
-            .with_shader(include_str!("../maze/exit_shader.wgsl"))
+            .with_shader(include_str!("./shaders/exit_shader.wgsl"))
             .with_bind_group_layout(&bind_group_layout)
             .build();
 
@@ -990,7 +1002,7 @@ impl GameOverRenderer {
 
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Game Over Pipeline")
-            .with_shader(include_str!("../renderer/game-over.wgsl"))
+            .with_shader(include_str!("./shaders/game-over.wgsl"))
             .with_vertex_buffer(create_vertex_2d_layout())
             .with_bind_group_layout(&bind_group_layout)
             .with_alpha_blending()
@@ -1077,6 +1089,279 @@ impl GameOverRenderer {
     pub fn render(&self, render_pass: &mut wgpu::RenderPass, _window: &winit::window::Window) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.draw(0..6, 0..1);
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct CompassUniforms {
+    screen_position: [f32; 2], // Bottom-right position
+    compass_size: [f32; 2],    // Width and height
+    _padding: [f32; 4],
+}
+
+pub struct CompassRenderer {
+    pipeline: wgpu::RenderPipeline,
+    smoothed_angle: f32,
+    vertex_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    bind_groups: Vec<wgpu::BindGroup>, // One bind group per compass texture
+    current_compass_index: usize,
+}
+
+impl CompassRenderer {
+    pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        surface_config: &wgpu::SurfaceConfiguration,
+    ) -> Self {
+        // Load all compass textures
+        let compass_textures = Self::load_compass_textures(device, queue);
+
+        let uniforms = CompassUniforms {
+            screen_position: [0.85, 0.85], // Bottom-right corner (normalized coordinates)
+            compass_size: [0.12, 0.12],    // 12% of screen size
+            _padding: [0.0; 4],
+        };
+
+        let uniform_buffer = create_uniform_buffer(device, &uniforms, "Compass Uniform Buffer");
+
+        // Create bind group layout for texture + sampler + uniforms
+        let bind_group_layout = BindGroupLayoutBuilder::new(device)
+            .with_label("Compass Bind Group Layout")
+            .with_uniform_buffer(0, wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT)
+            .with_texture(1, wgpu::ShaderStages::FRAGMENT)
+            .with_sampler(2, wgpu::ShaderStages::FRAGMENT)
+            .build();
+
+        // Create sampler for all textures
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        // Create bind groups for each compass texture
+        let bind_groups: Vec<wgpu::BindGroup> = compass_textures
+            .iter()
+            .enumerate()
+            .map(|(i, texture)| {
+                let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+                device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: uniform_buffer.as_entire_binding(),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(&texture_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::Sampler(&sampler),
+                        },
+                    ],
+                    label: Some(&format!("Compass Bind Group {}", i)),
+                })
+            })
+            .collect();
+
+        // Create vertex buffer layout for position + tex_coords
+        let vertex_buffer_layout = wgpu::VertexBufferLayout {
+            array_stride: 4 * 4, // 4 floats * 4 bytes each
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x2, // position
+                },
+                wgpu::VertexAttribute {
+                    offset: 2 * 4, // 2 floats * 4 bytes
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x2, // tex_coords
+                },
+            ],
+        };
+
+        let pipeline = PipelineBuilder::new(device, surface_config.format)
+            .with_label("Compass Pipeline")
+            .with_shader(include_str!("./shaders/compass.wgsl"))
+            .with_vertex_buffer(vertex_buffer_layout)
+            .with_bind_group_layout(&bind_group_layout)
+            .with_alpha_blending()
+            .build();
+
+        let vertex_buffer = Self::create_compass_vertices(device);
+
+        Self {
+            pipeline,
+            smoothed_angle: 0.0,
+            vertex_buffer,
+            uniform_buffer,
+            bind_groups,
+            current_compass_index: 0,
+        }
+    }
+
+    fn load_compass_textures(device: &wgpu::Device, queue: &wgpu::Queue) -> Vec<wgpu::Texture> {
+        let mut textures = Vec::new();
+
+        for i in 0..26 {
+            let path = format!("assets/compass/compass({}).png", i);
+
+            // Load image using image crate
+            let img = match image::open(&path) {
+                Ok(img) => img.to_rgba8(),
+                Err(e) => {
+                    eprintln!("Failed to load compass texture {}: {}", path, e);
+                    // Create a fallback texture (solid color or default compass)
+                    image::RgbaImage::new(64, 64)
+                }
+            };
+
+            let dimensions = img.dimensions();
+            let texture_size = wgpu::Extent3d {
+                width: dimensions.0,
+                height: dimensions.1,
+                depth_or_array_layers: 1,
+            };
+
+            let texture = device.create_texture(&wgpu::TextureDescriptor {
+                label: Some(&format!("Compass Texture {}", i)),
+                size: texture_size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            });
+
+            queue.write_texture(
+                wgpu::TexelCopyTextureInfo {
+                    aspect: wgpu::TextureAspect::All,
+                    texture: &texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                },
+                &img,
+                wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(4 * dimensions.0),
+                    rows_per_image: Some(dimensions.1),
+                },
+                texture_size,
+            );
+
+            textures.push(texture);
+        }
+
+        textures
+    }
+
+    fn create_compass_vertices(device: &wgpu::Device) -> wgpu::Buffer {
+        // Create a quad for the compass (will be positioned via uniforms in shader)
+        // Raw vertex data: [x, y, u, v] for each vertex
+        let vertices: &[f32] = &[
+            // Triangle 1
+            -1.0, -1.0, 0.0, 1.0, // Bottom-left
+            1.0, -1.0, 1.0, 1.0, // Bottom-right
+            -1.0, 1.0, 0.0, 0.0, // Top-left
+            // Triangle 2
+            1.0, -1.0, 1.0, 1.0, // Bottom-right
+            1.0, 1.0, 1.0, 0.0, // Top-right
+            -1.0, 1.0, 0.0, 0.0, // Top-left
+        ];
+
+        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Compass Vertex Buffer"),
+            contents: bytemuck::cast_slice(vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        })
+    }
+
+    /// Calculate which compass image to show based on player and exit positions
+    pub fn update_compass_direction(&mut self, player_pos: (f32, f32), exit_pos: (f32, f32)) {
+        // Vector from player to exit
+        let direction_vector = (player_pos.0 - exit_pos.0, player_pos.1 - exit_pos.1);
+
+        // Skip if too close (avoid jitter when on top of exit)
+        let distance_sq =
+            direction_vector.0 * direction_vector.0 + direction_vector.1 * direction_vector.1;
+        if distance_sq < 0.0001 {
+            return;
+        }
+
+        // Calculate angle to exit in world space
+        let mut target_angle = direction_vector.1.atan2(direction_vector.0); // [-π, π]
+
+        // Normalize to [0, 2π]
+        if target_angle < 0.0 {
+            target_angle += 2.0 * std::f32::consts::PI;
+        }
+
+        // Initialize smoothed_angle if uninitialized
+        if self.smoothed_angle.is_nan() {
+            self.smoothed_angle = target_angle;
+        }
+
+        // Smooth angle update (exponential smoothing)
+        let alpha = 0.1; // Lower = slower/smoother
+        let mut delta = target_angle - self.smoothed_angle;
+
+        // Wrap to [-π, π] for shortest rotation
+        if delta > std::f32::consts::PI {
+            delta -= 2.0 * std::f32::consts::PI;
+        } else if delta < -std::f32::consts::PI {
+            delta += 2.0 * std::f32::consts::PI;
+        }
+
+        self.smoothed_angle += alpha * delta;
+
+        // Re-wrap smoothed angle to [0, 2π]
+        while self.smoothed_angle < 0.0 {
+            self.smoothed_angle += 2.0 * std::f32::consts::PI;
+        }
+        while self.smoothed_angle >= 2.0 * std::f32::consts::PI {
+            self.smoothed_angle -= 2.0 * std::f32::consts::PI;
+        }
+
+        // Map to compass frame (0–25)
+        let new_index =
+            ((self.smoothed_angle / (2.0 * std::f32::consts::PI)) * 26.0).floor() as usize % 26;
+
+        self.current_compass_index = new_index;
+    }
+
+    /// Update compass position and size
+    pub fn update_uniforms(
+        &self,
+        queue: &wgpu::Queue,
+        screen_position: [f32; 2],
+        compass_size: [f32; 2],
+    ) {
+        let uniforms = CompassUniforms {
+            screen_position,
+            compass_size,
+            _padding: [0.0; 4],
+        };
+
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
+
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, _window: &winit::window::Window) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_groups[self.current_compass_index], &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.draw(0..6, 0..1);
     }

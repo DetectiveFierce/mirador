@@ -95,6 +95,10 @@ impl AppState {
                                 self.game_state.player.current_cell
                             ));
                             ui.label(format!("Exit Cell: {:?}", self.game_state.exit_cell));
+                            ui.label(format!(
+                                "Exit Position: {:?}",
+                                self.wgpu_renderer.game_renderer.exit_position
+                            ));
                             ui.label(format!("FPS: {}", self.game_state.current_fps));
                             ui.label(format!("Maze Path: {:?}", self.game_state.maze_path));
 
