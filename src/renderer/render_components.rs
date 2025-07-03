@@ -1245,7 +1245,7 @@ impl CompassRenderer {
     }
 
     fn load_base_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-        let path = "assets/compass/compass.png";
+        let path = "assets/compass/gold-compass.png";
 
         // Load image using image crate
         let img = match image::open(path) {
