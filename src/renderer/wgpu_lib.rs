@@ -24,7 +24,6 @@ use crate::ui::ui_panel::UiState;
 use egui_wgpu::ScreenDescriptor;
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
-
 /// Main WGPU renderer for the Mirador game.
 ///
 /// This struct manages all GPU resources, pipelines, and rendering logic for the game scene,
@@ -499,12 +498,11 @@ impl WgpuRenderer {
             }
 
             if let Some(exit_position) = self.game_renderer.exit_position {
-                self.game_renderer
-                    .compass_renderer
-                    .update_compass_direction(
-                        (game_state.player.position[0], game_state.player.position[2]),
-                        exit_position,
-                    );
+                self.game_renderer.compass_renderer.update_compass_with_yaw(
+                    (game_state.player.position[0], game_state.player.position[2]),
+                    exit_position,
+                    game_state.player.yaw,
+                );
             }
 
             {

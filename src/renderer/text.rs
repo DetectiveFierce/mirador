@@ -325,6 +325,21 @@ impl TextRenderer {
         Ok(())
     }
 
+    /// Update only the text color of an existing buffer
+    pub fn update_text_color(&mut self, id: &str, color: Color) -> Result<(), String> {
+        let text_buffer = self
+            .text_buffers
+            .get_mut(id)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
+
+        // Update just the color in the existing style
+        let mut style = text_buffer.style.clone();
+        style.color = color;
+
+        // Use the existing update_style method to apply the change
+        self.update_style(id, style)
+    }
+
     /// Update the style of an existing buffer
     pub fn update_style(&mut self, id: &str, mut style: TextStyle) -> Result<(), String> {
         let text_buffer = self

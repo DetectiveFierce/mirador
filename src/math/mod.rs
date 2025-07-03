@@ -8,8 +8,10 @@
 //!
 //! - [`vec`] module contains all vector operations (re-exported at root level)
 //! - [`mat`] module contains all matrix operations (re-exported at root level)
+//! - [`coordinates`] module contains coordinate system transformations
 //! - Utility functions like angle conversions are provided at root level
 
+pub mod coordinates;
 pub mod mat;
 pub mod vec;
 

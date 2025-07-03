@@ -99,7 +99,7 @@ impl KeyState {
 
         if game_state.current_screen == CurrentScreen::Game {
             game_state.player.move_with_collision(
-                &game_state.collision_system, // You'll need to add this to GameState
+                &game_state.collision_system,
                 game_state.delta_time,
                 forward,
                 backward,
@@ -180,6 +180,7 @@ pub fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
             "c" => GameKey::ToggleSliders,
             "q" => GameKey::Quit,
             "b" => GameKey::ToggleBoundingBoxes,
+
         }),
 
         _ => None,

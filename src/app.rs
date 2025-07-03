@@ -602,6 +602,9 @@ impl App {
                             .game_state
                             .collision_system
                             .build_from_maze(&maze_grid);
+
+                        // Spawn the player at the bottom-left corner of the maze
+                        state.game_state.player.spawn_at_maze_entrance(&maze_grid);
                     }
                 }
             }
@@ -705,6 +708,7 @@ impl ApplicationHandler for App {
                                     state.game_state.capture_mouse =
                                         !state.game_state.capture_mouse;
                                 }
+
                                 _ => {} // Movement keys are handled in process_movement
                             }
                         }

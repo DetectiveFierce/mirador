@@ -654,6 +654,7 @@ pub struct CollisionSystem {
     pub bvh: BVH,
     pub player_radius: f32,
     pub player_height: f32,
+    pub maze_dimensions: (usize, usize),
 }
 
 impl CollisionSystem {
@@ -678,6 +679,7 @@ impl CollisionSystem {
             bvh: BVH::new(),
             player_radius,
             player_height,
+            maze_dimensions: (0, 0),
         }
     }
 
@@ -703,6 +705,8 @@ impl CollisionSystem {
     /// collision_system.build_from_maze(&maze.grid);
     /// ```
     pub fn build_from_maze(&mut self, maze_grid: &[Vec<bool>]) {
+        // Store maze dimensions
+        self.maze_dimensions = (maze_grid[0].len(), maze_grid.len());
         let wall_faces = self.extract_wall_faces_from_maze(maze_grid);
         self.bvh.build(wall_faces);
     }
@@ -735,12 +739,15 @@ impl CollisionSystem {
     /// wall and non-wall cells, avoiding redundant interior faces.
     fn extract_wall_faces_from_maze(&self, maze_grid: &[Vec<bool>]) -> Vec<WallFace> {
         let mut faces = Vec::new();
-        let floor_size = 3000.0;
         let maze_width = maze_grid[0].len();
         let maze_height = maze_grid.len();
-        let max_dimension = maze_width.max(maze_height) as f32;
-        let cell_size = floor_size / max_dimension;
+        let maze_dimensions = (maze_width, maze_height);
+
+        // Use coordinate API to calculate sizes and origins
+        let cell_size = crate::math::coordinates::calculate_cell_size(maze_dimensions);
         let wall_height = cell_size;
+
+        // Calculate the world origin offset (bottom-left corner of the maze)
         let origin_x = -(maze_width as f32 * cell_size) / 2.0;
         let origin_z = -(maze_height as f32 * cell_size) / 2.0;
 

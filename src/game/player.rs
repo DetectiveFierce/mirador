@@ -3,6 +3,7 @@
 //! This module defines the [`Player`] struct, which tracks the player's position, orientation,
 //! and movement parameters, and provides methods for movement and view matrix calculation.
 
+use crate::math::coordinates::{self, constants::PLAYER_HEIGHT};
 use crate::math::mat::Mat4;
 use crate::maze::generator::Cell;
 
@@ -33,7 +34,7 @@ impl Player {
     /// Creates a new [`Player`] with default starting position and parameters.
     pub fn new() -> Self {
         Self {
-            position: [1475.0, 50.0, 1475.0], // Start above and behind the floor
+            position: [0.0, PLAYER_HEIGHT, 0.0], // Will be set correctly when spawning
             pitch: 3.0,
             yaw: 316.0,
             fov: 100.0,
@@ -111,21 +112,28 @@ impl Player {
     }
 
     pub fn update_cell(&mut self, maze_grid: &[Vec<bool>]) {
-        let floor_size = 3000.0;
         let maze_width = maze_grid[0].len();
         let maze_height = maze_grid.len();
+        let maze_dimensions = (maze_width, maze_height);
 
-        // Calculate cell size to match wall generation logic
-        let max_dimension = maze_width.max(maze_height) as f32;
-        let cell_size = floor_size / max_dimension;
-        let half_maze = 1500.0;
+        self.current_cell = coordinates::world_to_maze(self.position, maze_dimensions);
+    }
 
-        let x = ((self.position[0] + half_maze) / cell_size).floor() as i32;
-        let z = ((self.position[2] + half_maze) / cell_size).floor() as i32;
+    /// Spawns the player at the bottom-left cell of the maze.
+    ///
+    /// # Arguments
+    /// * `maze_grid` - The maze grid representing walls and passages
+    pub fn spawn_at_maze_entrance(&mut self, maze_grid: &[Vec<bool>]) {
+        let maze_width = maze_grid[0].len();
+        let maze_height = maze_grid.len();
+        let maze_dimensions = (maze_width, maze_height);
 
-        self.current_cell = Cell {
-            row: z as usize,
-            col: x as usize,
-        };
+        // Set the player at the bottom-left cell of the maze
+        let entrance_cell = coordinates::get_bottom_left_cell(maze_dimensions);
+        self.position = coordinates::maze_to_world(&entrance_cell, maze_dimensions, PLAYER_HEIGHT);
+        self.current_cell = entrance_cell;
+
+        // Set the initial orientation to face north (into the maze)
+        self.yaw = coordinates::direction_to_yaw(coordinates::Direction::North);
     }
 }
