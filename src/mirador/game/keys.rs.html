@@ -99,8 +99,8 @@
 <a href=#99 id=99 data-nosnippet>99</a>
 <a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">if </span>game_state.current_screen == CurrentScreen::Game {
 <a href=#101 id=101 data-nosnippet>101</a>            game_state.player.move_with_collision(
-<a href=#102 id=102 data-nosnippet>102</a>                <span class="kw-2">&amp;</span>game_state.collision_system, <span class="comment">// You'll need to add this to GameState
-<a href=#103 id=103 data-nosnippet>103</a>                </span>game_state.delta_time,
+<a href=#102 id=102 data-nosnippet>102</a>                <span class="kw-2">&amp;</span>game_state.collision_system,
+<a href=#103 id=103 data-nosnippet>103</a>                game_state.delta_time,
 <a href=#104 id=104 data-nosnippet>104</a>                forward,
 <a href=#105 id=105 data-nosnippet>105</a>                backward,
 <a href=#106 id=106 data-nosnippet>106</a>                left,
@@ -180,8 +180,9 @@
 <a href=#180 id=180 data-nosnippet>180</a>            <span class="string">"c" </span>=&gt; GameKey::ToggleSliders,
 <a href=#181 id=181 data-nosnippet>181</a>            <span class="string">"q" </span>=&gt; GameKey::Quit,
 <a href=#182 id=182 data-nosnippet>182</a>            <span class="string">"b" </span>=&gt; GameKey::ToggleBoundingBoxes,
-<a href=#183 id=183 data-nosnippet>183</a>        }),
-<a href=#184 id=184 data-nosnippet>184</a>
-<a href=#185 id=185 data-nosnippet>185</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#186 id=186 data-nosnippet>186</a>    }
-<a href=#187 id=187 data-nosnippet>187</a>}</code></pre></div></section></main></body></html>
+<a href=#183 id=183 data-nosnippet>183</a>
+<a href=#184 id=184 data-nosnippet>184</a>        }),
+<a href=#185 id=185 data-nosnippet>185</a>
+<a href=#186 id=186 data-nosnippet>186</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#187 id=187 data-nosnippet>187</a>    }
+<a href=#188 id=188 data-nosnippet>188</a>}</code></pre></div></section></main></body></html>

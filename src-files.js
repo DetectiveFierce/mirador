@@ -1,3 +1,3 @@
-var srcIndex = new Map(JSON.parse('[["mirador",["",[["game",[],["collision.rs","keys.rs","mod.rs","player.rs"]],["math",[],["mat.rs","mod.rs","vec.rs"]],["maze",[],["generator.rs","maze_animation.rs","mod.rs"]],["renderer",[["background",[],["mod.rs","stars.rs"]]],["debug_renderer.rs","mod.rs","pipeline_builder.rs","render_components.rs","text.rs","uniform.rs","vertex.rs","wgpu_lib.rs"]],["ui",[],["egui_lib.rs","mod.rs","ui_panel.rs"]]],["app.rs","main.rs"]]]]'));
+var srcIndex = new Map(JSON.parse('[["mirador",["",[["game",[],["collision.rs","keys.rs","mod.rs","player.rs"]],["math",[["coordinates",[],["mod.rs","positions.rs","transformations.rs"]]],["mat.rs","mod.rs","vec.rs"]],["maze",[],["generator.rs","maze_animation.rs","mod.rs"]],["renderer",[["background",[],["mod.rs","stars.rs"]]],["debug_renderer.rs","mod.rs","pipeline_builder.rs","render_components.rs","text.rs","uniform.rs","vertex.rs","wgpu_lib.rs"]],["ui",[],["egui_lib.rs","mod.rs","ui_panel.rs"]]],["app.rs","main.rs"]]]]'));
 createSrcSidebar();
-//{"start":36,"fragment_lengths":[427]}
+//{"start":36,"fragment_lengths":[492]}
