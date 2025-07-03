@@ -18,8 +18,8 @@
 use crate::game::GameTimer;
 use crate::game::player::Player;
 use crate::game::{CurrentScreen, TimerConfig};
-use crate::maze::maze_animation::LoadingRenderer;
 use crate::maze::parse_maze_file;
+use crate::renderer::render_components::LoadingRenderer;
 use crate::renderer::text::TextRenderer;
 use crate::renderer::vertex::Vertex;
 use crate::{

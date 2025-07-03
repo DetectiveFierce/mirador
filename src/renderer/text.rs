@@ -67,7 +67,7 @@ pub struct TextRenderer {
     pub swash_cache: SwashCache,
     pub viewport: Viewport,
     pub atlas: TextAtlas,
-    pub text_renderer: GlyphonTextRenderer,
+    pub glyph_renderer: GlyphonTextRenderer,
     pub text_buffers: HashMap<String, TextBuffer>,
     pub window_scale_factor: f32,
     pub window_size: winit::dpi::PhysicalSize<u32>,
@@ -86,7 +86,7 @@ impl TextRenderer {
         let cache = Cache::new(device);
         let viewport = Viewport::new(device, &cache);
         let mut atlas = TextAtlas::new(device, queue, &cache, surface_format);
-        let text_renderer =
+        let glyph_renderer =
             GlyphonTextRenderer::new(&mut atlas, device, wgpu::MultisampleState::default(), None);
 
         let scale_factor = window.scale_factor() as f32;
@@ -97,7 +97,7 @@ impl TextRenderer {
             swash_cache,
             viewport,
             atlas,
-            text_renderer,
+            glyph_renderer,
             text_buffers: HashMap::new(),
             window_scale_factor: scale_factor,
             window_size: size,
@@ -109,7 +109,7 @@ impl TextRenderer {
             "fonts/HankenGrotesk/HankenGrotesk-Medium.ttf",
             "HankenGrotesk",
         ) {
-            Ok(_) => println!("Successfully loaded HankenGrotesk font"),
+            Ok(_) => println!("Successfully loaded HankenGrotesk font\n"),
             Err(e) => {
                 println!(
                     "Failed to load HankenGrotesk font: {}. Using system fonts.",
@@ -235,7 +235,7 @@ impl TextRenderer {
         let font_data = fs::read(Path::new(font_path))?;
         self.font_system.db_mut().load_font_data(font_data);
         self.loaded_fonts.push(font_name.to_string());
-        println!("Loaded font: {} from {}", font_name, font_path);
+        println!("Loaded font: {} from {}\n", font_name, font_path);
         Ok(())
     }
 
@@ -253,7 +253,7 @@ impl TextRenderer {
         // If the requested font isn't loaded, fall back to a system font
         if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "HankenGrotesk" {
             println!(
-                "Font '{}' not found, falling back to system font",
+                "Font '{}' not found, falling back to system font\n",
                 style.font_family
             );
             style.font_family = "DejaVu Sans".to_string();
@@ -269,7 +269,7 @@ impl TextRenderer {
             .unwrap_or(self.window_size.height as f32);
 
         println!(
-            "Creating text buffer '{}' with size: {}x{}, text: '{}'",
+            "Creating text buffer '{}' with size: {}x{}, text: '{}'\n",
             id, width, height, text
         );
         buffer.set_size(&mut self.font_system, Some(width), Some(height));
@@ -286,7 +286,11 @@ impl TextRenderer {
         if buffer.lines.is_empty() {
             println!("WARNING: Buffer '{}' has no lines after text setting", id);
         } else {
-            println!("Buffer '{}' created with {} lines", id, buffer.lines.len());
+            println!(
+                "Buffer '{}' created with {} lines\n",
+                id,
+                buffer.lines.len()
+            );
         }
 
         let text_buffer = TextBuffer {
@@ -299,7 +303,7 @@ impl TextRenderer {
         };
 
         self.text_buffers.insert(id.to_string(), text_buffer);
-        println!("Text buffer '{}' added to collection", id);
+        println!("Text buffer '{}' added to collection\n", id);
     }
 
     /// Update the text content of an existing buffer
@@ -450,7 +454,7 @@ impl TextRenderer {
             .collect();
 
         // Prepare the text renderer
-        self.text_renderer.prepare(
+        self.glyph_renderer.prepare(
             device,
             queue,
             &mut self.font_system,
@@ -466,7 +470,7 @@ impl TextRenderer {
     /// Render all visible text buffers
     pub fn render(&mut self, render_pass: &mut RenderPass) -> Result<(), glyphon::RenderError> {
         // Render the text
-        self.text_renderer
+        self.glyph_renderer
             .render(&self.atlas, &self.viewport, render_pass)?;
         Ok(())
     }

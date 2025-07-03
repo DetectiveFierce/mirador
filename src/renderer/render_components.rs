@@ -40,21 +40,31 @@
 //! let maze_renderer = MazeRenderer::new(&device, &surface_config, &texture_view, &sampler);
 //! let loading_renderer = LoadingBarRenderer::new(&device, &surface_config);
 //! ```
-use crate::game::player::Player;
-use crate::math::{deg_to_rad, mat::Mat4};
-use crate::maze::parse_maze_file;
-use crate::renderer::background::stars;
-use crate::renderer::background::stars::StarRenderer;
-use crate::renderer::debug_renderer::DebugRenderer;
-use crate::renderer::pipeline_builder::{
-    BindGroupLayoutBuilder, PipelineBuilder, create_fullscreen_vertices, create_uniform_buffer,
-    create_vertex_2d_layout,
-};
-use crate::renderer::uniform::Uniforms;
-use crate::renderer::vertex::Vertex;
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
+
+use winit::window::Window;
+
+use egui_wgpu::wgpu::{self, util::DeviceExt};
+
+use crate::{
+    game::player::Player,
+    math::{deg_to_rad, mat::Mat4},
+    maze::{
+        generator::{Maze, MazeGenerator},
+        parse_maze_file,
+    },
+    renderer::{
+        background::stars::{self, StarRenderer},
+        debug_renderer::DebugRenderer,
+        pipeline_builder::{
+            BindGroupLayoutBuilder, PipelineBuilder, create_fullscreen_vertices,
+            create_uniform_buffer, create_vertex_2d_layout,
+        },
+        uniform::Uniforms,
+        vertex::Vertex,
+    },
+};
 
 /// Main renderer for the 3D maze game.
 ///
@@ -282,6 +292,162 @@ impl GameRenderer {
                 pass.set_vertex_buffer(0, debug_buffer.slice(..));
                 pass.draw(0..self.debug_renderer.debug_vertex_count as u32, 0..1);
             }
+        }
+    }
+}
+
+/// Handles rendering of the maze and loading bar on the maze generation animation screen.
+///
+/// This struct manages GPU resources for the maze texture, pipelines, vertex buffers, and loading bar.
+/// It also holds a [`MazeGenerator`] and a shared [`Maze`] instance for generating and displaying the maze.
+///
+/// # Fields
+/// - `generator`: Maze generator for producing new mazes.
+/// - `maze`: Shared, thread-safe reference to the current maze.
+/// - `maze_renderer`: Maze renderer for displaying the maze.
+/// - `loading_bar_renderer`: Loading bar renderer for displaying the loading progress.
+/// - `exit_shader_renderer`: Exit shader renderer for displaying the exit shader.
+/// - `texture`: Texture containing the maze image.
+/// - `last_update`: Timestamp of the last update (for animation/timing).
+pub struct LoadingRenderer {
+    /// Maze generator for producing new mazes.
+    pub generator: MazeGenerator,
+    /// Shared, thread-safe reference to the current maze.
+    pub maze: Arc<Mutex<Maze>>,
+
+    // Rendering components
+    pub maze_renderer: MazeRenderer,
+    pub loading_bar_renderer: LoadingBarRenderer,
+    pub exit_shader_renderer: ExitShaderRenderer,
+
+    /// Texture containing the maze image.
+    pub texture: wgpu::Texture,
+    /// Timestamp of the last update (for animation/timing).
+    pub last_update: Instant,
+}
+
+impl LoadingRenderer {
+    /// Creates a new simplified maze generation animation screen renderer.
+    pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
+        // Initialize maze generation
+        let maze_width = 25;
+        let maze_height = 25;
+        let (generator, maze) = MazeGenerator::new(maze_width, maze_height);
+
+        // Get render dimensions
+        let config = MazeRenderConfig::new(maze_width as u32, maze_height as u32);
+        let (texture, texture_view, sampler) = config.create_maze_texture(device);
+
+        // Create rendering components
+        let maze_renderer = MazeRenderer::new(device, surface_config, &texture_view, &sampler);
+        let loading_bar_renderer = LoadingBarRenderer::new(device, surface_config);
+        let exit_shader_renderer = ExitShaderRenderer::new(device, surface_config);
+
+        Self {
+            generator,
+            maze,
+            maze_renderer,
+            loading_bar_renderer,
+            exit_shader_renderer,
+            texture,
+            last_update: Instant::now(),
+        }
+    }
+
+    /// Updates the maze texture with new pixel data.
+    ///
+    /// # Arguments
+    /// - `queue`: The wgpu queue to write to the texture.
+    /// - `maze_data`: The new maze image data (RGBA, row-major).
+    /// - `width`: Width of the maze image.
+    /// - `height`: Height of the maze image.
+    pub fn update_texture(
+        &self,
+        queue: &wgpu::Queue,
+        maze_data: &[u8],
+        width: usize,
+        height: usize,
+    ) {
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            maze_data,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width as u32),
+                rows_per_image: Some(height as u32),
+            },
+            wgpu::Extent3d {
+                width: width as u32,
+                height: height as u32,
+                depth_or_array_layers: 1,
+            },
+        );
+    }
+
+    /// Updates the loading bar progress.
+    pub fn update_loading_bar(&self, queue: &wgpu::Queue, progress: f32) {
+        self.loading_bar_renderer.update_progress(queue, progress);
+    }
+
+    /// Updates the exit shader animation.
+    pub fn update_exit_shader(&self, queue: &wgpu::Queue, window: &Window) {
+        let window_size = window.inner_size();
+        let resolution = [window_size.width as f32, window_size.height as f32];
+        let time = self.exit_shader_renderer.start_time.elapsed().as_secs_f32();
+        self.exit_shader_renderer
+            .update_uniforms(queue, resolution, time);
+    }
+
+    /// Renders the exit cell with the special shader effect.
+    ///
+    /// # Arguments
+    /// - `render_pass`: The render pass to draw into.
+    /// - `exit_cell`: The exit cell coordinates.
+    /// - `cell_size`: Size of each cell in pixels.
+    /// - `screen_size`: Screen dimensions.
+    ///
+    /// Renders all components for the maze generation animation.
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, window: &Window) {
+        // Render maze background
+        self.maze_renderer.render(render_pass);
+
+        // Render loading bar overlay
+        self.loading_bar_renderer.render(render_pass);
+
+        // Render exit cell effect if maze has an exit
+        if let Ok(maze_guard) = self.maze.lock() {
+            if let Some(exit_cell) = maze_guard.exit_cell {
+                self.exit_shader_renderer.render_to_cell(
+                    render_pass,
+                    window,
+                    (exit_cell.col, exit_cell.row),
+                );
+            }
+        }
+    }
+
+    /// Convenience method to get maze progress for loading bar.
+    pub fn get_generation_progress(&self) -> f32 {
+        self.generator.get_progress_ratio()
+    }
+
+    /// Check if maze generation is complete.
+    pub fn is_generation_complete(&self) -> bool {
+        self.generator.is_complete()
+    }
+
+    /// Get maze dimensions for texture updates.
+    pub fn get_maze_dimensions(&self) -> (u32, u32) {
+        if let Ok(maze_guard) = self.maze.lock() {
+            let (width, height) = maze_guard.get_dimensions();
+            (width as u32, height as u32)
+        } else {
+            (126, 126) // Default fallback
         }
     }
 }
@@ -1584,5 +1750,334 @@ impl CompassRenderer {
     /// Set smoothing factor (0.0 = very smooth, 1.0 = instant)
     pub fn set_smoothing_factor(&mut self, factor: f32) {
         self.smoothing_factor = factor.clamp(0.01, 1.0);
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct EnemyUniforms {
+    model_matrix: [[f32; 4]; 4],
+    view_proj_matrix: [[f32; 4]; 4],
+}
+
+#[allow(dead_code)]
+pub struct EnemyRenderer {
+    pipeline: wgpu::RenderPipeline,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    texture: wgpu::Texture,
+    texture_view: wgpu::TextureView,
+    sampler: wgpu::Sampler,
+    bind_group: wgpu::BindGroup,
+}
+
+impl EnemyRenderer {
+    /// Create a new enemy renderer.
+    ///
+    /// This sets up the complete rendering pipeline for displaying enemy sprites,
+    /// including texture loading, vertex/index buffers, and transform matrices
+    /// for positioning enemies in the game world.
+    ///
+    /// ## Shader Requirements
+    ///
+    /// The enemy shader should be located at `../maze/enemy.wgsl`
+    /// and should expect:
+    /// - Vertex input: `@location(0) position: vec3<f32>`, `@location(1) tex_coords: vec2<f32>`
+    /// - Uniform binding: `@group(0) @binding(0) var<uniform> uniforms: EnemyUniforms;`
+    /// - Texture binding: `@group(0) @binding(1) var enemy_texture: texture_2d<f32>;`
+    /// - Sampler binding: `@group(0) @binding(2) var enemy_sampler: sampler;`
+    ///
+    /// ## Asset Requirements
+    ///
+    /// The enemy sprite should be located at `assets/frankie.png`
+    ///
+    /// # Parameters
+    ///
+    /// - `device` - WGPU device for creating GPU resources
+    /// - `queue` - WGPU queue for uploading texture data
+    /// - `surface_config` - Surface configuration (provides target format)
+    ///
+    /// # Returns
+    ///
+    /// A configured `EnemyRenderer` ready for rendering enemy sprites.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::EnemyRenderer;
+    /// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+    /// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+    ///
+    /// let renderer = EnemyRenderer::new(&device, &queue, &surface_config);
+    /// ```
+    pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        surface_config: &wgpu::SurfaceConfiguration,
+    ) -> Self {
+        // Load enemy texture
+        let enemy_image = image::load_from_memory(include_bytes!("../../assets/frankie.png"))
+            .expect("Failed to load enemy texture")
+            .to_rgba8();
+
+        let texture_size = wgpu::Extent3d {
+            width: enemy_image.width(),
+            height: enemy_image.height(),
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Enemy Texture"),
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &enemy_image,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * enemy_image.width()),
+                rows_per_image: Some(enemy_image.height()),
+            },
+            texture_size,
+        );
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Enemy Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        // Initialize with identity matrices
+        let uniforms = EnemyUniforms {
+            model_matrix: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            view_proj_matrix: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        };
+
+        let uniform_buffer = create_uniform_buffer(device, &uniforms, "Enemy Uniform Buffer");
+
+        let bind_group_layout = BindGroupLayoutBuilder::new(device)
+            .with_label("Enemy Bind Group Layout")
+            .with_uniform_buffer(0, wgpu::ShaderStages::VERTEX)
+            .with_texture(1, wgpu::ShaderStages::FRAGMENT)
+            .with_sampler(2, wgpu::ShaderStages::FRAGMENT)
+            .build();
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+            label: Some("Enemy Bind Group"),
+        });
+
+        let pipeline = PipelineBuilder::new(device, surface_config.format)
+            .with_label("Enemy Pipeline")
+            .with_shader(include_str!("./shaders/enemy.wgsl"))
+            .with_vertex_buffer(create_vertex_3d_layout())
+            .with_bind_group_layout(&bind_group_layout)
+            .with_alpha_blending()
+            .build();
+
+        let vertex_buffer = create_sprite_vertices(device);
+        let index_buffer = create_sprite_indices(device);
+
+        Self {
+            pipeline,
+            vertex_buffer,
+            index_buffer,
+            uniform_buffer,
+            texture,
+            texture_view,
+            sampler,
+            bind_group,
+        }
+    }
+
+    /// Update the enemy's transformation matrices.
+    ///
+    /// This method uploads new transformation data to the GPU uniform buffer
+    /// to position, rotate, and scale the enemy sprite in the game world.
+    ///
+    /// ## Performance Notes
+    ///
+    /// This operation involves a GPU buffer write. It should be called once
+    /// per frame per enemy to update their positions smoothly.
+    ///
+    /// # Parameters
+    ///
+    /// - `queue` - WGPU queue for buffer uploads
+    /// - `position` - World position of the enemy (x, y)
+    /// - `size` - Size of the enemy sprite (width, height)
+    /// - `view_proj_matrix` - Combined view and projection matrix from camera
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::EnemyRenderer;
+    /// # let renderer: EnemyRenderer = unimplemented!();
+    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+    /// # let view_proj: [[f32; 4]; 4] = unimplemented!();
+    ///
+    /// // Update enemy position and size
+    /// renderer.update_transform(&queue, (100.0, 200.0), (32.0, 32.0), view_proj);
+    /// ```
+    pub fn update_transform(
+        &self,
+        queue: &wgpu::Queue,
+        position: (f32, f32),
+        size: (f32, f32),
+        view_proj_matrix: [[f32; 4]; 4],
+    ) {
+        // Create model matrix with translation and scale
+        let model_matrix = [
+            [size.0, 0.0, 0.0, 0.0],
+            [0.0, size.1, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [position.0, position.1, 0.0, 1.0],
+        ];
+
+        let uniforms = EnemyUniforms {
+            model_matrix,
+            view_proj_matrix,
+        };
+
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
+
+    /// Render the enemy sprite to the current render pass.
+    ///
+    /// This method renders the enemy sprite using the previously uploaded
+    /// transformation matrices. The sprite will be positioned, scaled, and
+    /// rendered with alpha blending support.
+    ///
+    /// ## Render State
+    ///
+    /// This method assumes:
+    /// - A render pass is active
+    /// - Transform matrices have been updated via `update_transform()`
+    /// - Alpha blending is desired (the pipeline enables it)
+    /// - The background has already been rendered
+    ///
+    /// # Parameters
+    ///
+    /// - `render_pass` - Active render pass to render into
+    /// - `window` - Window reference for potential window-specific adjustments
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use crate::renderer::maze_renderer::EnemyRenderer;
+    /// # let renderer: EnemyRenderer = unimplemented!();
+    /// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+    /// # let window: &winit::window::Window = unimplemented!();
+    ///
+    /// // Render background first
+    /// // ... render maze, player, etc ...
+    ///
+    /// // Update enemy transform
+    /// renderer.update_transform(&queue, enemy_position, enemy_size, view_proj);
+    ///
+    /// // Render enemy sprite
+    /// renderer.render(&mut render_pass, window);
+    /// ```
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass, _window: &winit::window::Window) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.draw_indexed(0..6, 0, 0..1);
+    }
+}
+
+// Helper functions for creating sprite geometry
+fn create_sprite_vertices(device: &wgpu::Device) -> wgpu::Buffer {
+    // Sprite vertices for a unit quad centered at origin
+    let vertices = [
+        // Position (x, y, z), Texture coordinates (u, v)
+        [-0.5, -0.5, 0.0, 0.0, 1.0], // Bottom-left
+        [0.5, -0.5, 0.0, 1.0, 1.0],  // Bottom-right
+        [0.5, 0.5, 0.0, 1.0, 0.0],   // Top-right
+        [-0.5, 0.5, 0.0, 0.0, 0.0],  // Top-left
+    ];
+
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Enemy Vertex Buffer"),
+        contents: bytemuck::cast_slice(&vertices),
+        usage: wgpu::BufferUsages::VERTEX,
+    })
+}
+
+fn create_sprite_indices(device: &wgpu::Device) -> wgpu::Buffer {
+    // Indices for two triangles making a quad
+    let indices: [u16; 6] = [
+        0, 1, 2, // First triangle
+        2, 3, 0, // Second triangle
+    ];
+
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Enemy Index Buffer"),
+        contents: bytemuck::cast_slice(&indices),
+        usage: wgpu::BufferUsages::INDEX,
+    })
+}
+
+fn create_vertex_3d_layout() -> wgpu::VertexBufferLayout<'static> {
+    wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &[
+            wgpu::VertexAttribute {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float32x3,
+            },
+            wgpu::VertexAttribute {
+                offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                shader_location: 1,
+                format: wgpu::VertexFormat::Float32x2,
+            },
+        ],
     }
 }

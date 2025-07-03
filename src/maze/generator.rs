@@ -226,6 +226,38 @@ impl Maze {
         (width, height)
     }
 
+    /// Check if a position is walkable (not a wall)
+    /// This method converts grid coordinates to the maze's internal wall representation
+    pub fn is_walkable(&self, x: usize, y: usize) -> bool {
+        // Check bounds first
+        if x >= self.width || y >= self.height {
+            return false;
+        }
+
+        // Convert grid coordinates to wall array coordinates
+        // In your maze representation, cells are at odd coordinates (row*2+1, col*2+1)
+        let wall_row = y * 2 + 1;
+        let wall_col = x * 2 + 1;
+
+        // Check if the wall array indices are valid
+        if wall_row >= self.walls.len() || wall_col >= self.walls[0].len() {
+            return false;
+        }
+
+        // A position is walkable if it's not a wall (false in the walls array)
+        !self.walls[wall_row][wall_col]
+    }
+
+    /// Alternative method: check if a position is a wall
+    pub fn is_wall(&self, x: usize, y: usize) -> bool {
+        !self.is_walkable(x, y)
+    }
+
+    /// Get the actual maze dimensions (number of cells, not wall array size)
+    pub fn get_maze_dimensions(&self) -> (usize, usize) {
+        (self.width, self.height)
+    }
+
     /// Saves the current maze to a timestamped file in the `src/maze/saved-mazes/generated` directory.
     ///
     /// # File Naming

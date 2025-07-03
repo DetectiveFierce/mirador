@@ -4,7 +4,6 @@
 //! It includes utilities for reading maze files into a 2D wall representation.
 
 pub mod generator;
-pub mod maze_animation;
 
 use self::generator::Cell;
 use std::fs::File;
