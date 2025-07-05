@@ -86,7 +86,7 @@ impl GameState {
             exit_cell: Cell::default(),
             game_ui: GameUIManager::new(),
             current_screen: CurrentScreen::Loading,
-            enemy: Enemy::new([-1370.0, 30.0, 1370.0]),
+            enemy: Enemy::new([-1370.0, 30.0, 1370.0], 50.0),
         }
     }
 

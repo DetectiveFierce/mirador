@@ -57,7 +57,7 @@ Requirements for Memory Compatibility with WGPU:
 /// ```
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Vec3([f32; 3]);
+pub struct Vec3(pub [f32; 3]);
 
 #[allow(dead_code)]
 impl Vec3 {
@@ -118,6 +118,19 @@ impl Vec3 {
     /// Contains a square root operation - consider `length_squared()` for comparisons.
     pub fn length(&self) -> f32 {
         (self.x().powi(2) + self.y().powi(2) + self.z().powi(2)).sqrt()
+    }
+    pub fn distance_to(&self, other: &Self) -> f32 {
+        (*self - *other).length()
+    }
+
+    /// Convert to 2D vector (ignoring Y component)
+    pub fn to_2d(&self) -> Vec2 {
+        Vec2([self.x(), self.z()])
+    }
+
+    /// Create Vec3 from 2D vector with specified Y component
+    pub fn from_2d(vec2: Vec2, y: f32) -> Self {
+        Vec3([vec2.x(), y, vec2.z()])
     }
 
     /// Normalizes the vector to unit length.
@@ -212,5 +225,69 @@ impl Mul<f32> for Vec3 {
 
     fn mul(self, scalar: f32) -> Self {
         Self([self.x() * scalar, self.y() * scalar, self.z() * scalar])
+    }
+}
+
+// Helper struct for 2D operations
+#[derive(Copy, Clone, Debug)]
+pub struct Vec2(pub [f32; 2]);
+
+impl Vec2 {
+    pub fn new(x: f32, z: f32) -> Self {
+        Vec2([x, z])
+    }
+
+    pub fn x(&self) -> f32 {
+        self.0[0]
+    }
+
+    pub fn z(&self) -> f32 {
+        self.0[1]
+    }
+
+    pub fn length(&self) -> f32 {
+        (self.x().powi(2) + self.z().powi(2)).sqrt()
+    }
+
+    pub fn normalize(&self) -> Self {
+        let length = self.length();
+        if length <= f32::EPSILON {
+            return Self([0.0, 0.0]);
+        }
+        Self([self.x() / length, self.z() / length])
+    }
+
+    pub fn distance_to(&self, other: &Self) -> f32 {
+        (*self - *other).length()
+    }
+
+    pub fn rotate(&self, angle: f32) -> Self {
+        let cos_a = angle.cos();
+        let sin_a = angle.sin();
+        Self([
+            self.x() * cos_a - self.z() * sin_a,
+            self.x() * sin_a + self.z() * cos_a,
+        ])
+    }
+}
+
+impl Add for Vec2 {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self([self.x() + other.x(), self.z() + other.z()])
+    }
+}
+
+impl Sub for Vec2 {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self([self.x() - other.x(), self.z() - other.z()])
+    }
+}
+
+impl Mul<f32> for Vec2 {
+    type Output = Self;
+    fn mul(self, scalar: f32) -> Self {
+        Self([self.x() * scalar, self.z() * scalar])
     }
 }

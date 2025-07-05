@@ -1140,6 +1140,159 @@ impl CollisionSystem {
 
         desired_pos
     }
+
+    pub fn line_intersects_geometry(&self, start: [f32; 3], end: [f32; 3]) -> bool {
+        let line_aabb = AABB::new(
+            [
+                start[0].min(end[0]),
+                start[1].min(end[1]),
+                start[2].min(end[2]),
+            ],
+            [
+                start[0].max(end[0]),
+                start[1].max(end[1]),
+                start[2].max(end[2]),
+            ],
+        );
+
+        let potential_faces = self.bvh.query_collisions(&line_aabb);
+
+        for face in &potential_faces {
+            if self.line_intersects_wall_face(start, end, face).is_some() {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Performs line-wall face intersection test.
+    ///
+    /// This method tests whether a line segment intersects with a specific wall face.
+    /// It assumes wall faces are axis-aligned rectangles (which matches your maze structure).
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Line segment start point
+    /// * `end` - Line segment end point
+    /// * `face` - The wall face to test against
+    ///
+    /// # Returns
+    ///
+    /// `Some(intersection_point)` if intersection occurs within the face bounds, `None` otherwise.
+    fn line_intersects_wall_face(
+        &self,
+        start: [f32; 3],
+        end: [f32; 3],
+        face: &WallFace,
+    ) -> Option<[f32; 3]> {
+        // Get the face's AABB bounds
+        let min_bounds = face.aabb.min;
+        let max_bounds = face.aabb.max;
+
+        // Determine which axis the face is aligned with based on its normal
+        // For a maze, faces are typically axis-aligned
+        let normal = face.normal;
+        let epsilon = 0.0001;
+
+        // Check if this is an X-facing wall (normal in X direction)
+        if normal[0].abs() > epsilon {
+            let wall_x = if normal[0] > 0.0 {
+                min_bounds[0]
+            } else {
+                max_bounds[0]
+            };
+
+            // Check if line crosses this X plane
+            if (start[0] - wall_x) * (end[0] - wall_x) > 0.0 {
+                return None; // Line doesn't cross the plane
+            }
+
+            // Calculate intersection point
+            let t = (wall_x - start[0]) / (end[0] - start[0]);
+            if !(0.0..=1.0).contains(&t) {
+                return None;
+            }
+
+            let intersection_y = start[1] + t * (end[1] - start[1]);
+            let intersection_z = start[2] + t * (end[2] - start[2]);
+
+            // Check if intersection is within face bounds
+            if intersection_y >= min_bounds[1]
+                && intersection_y <= max_bounds[1]
+                && intersection_z >= min_bounds[2]
+                && intersection_z <= max_bounds[2]
+            {
+                return Some([wall_x, intersection_y, intersection_z]);
+            }
+        }
+
+        // Check if this is a Z-facing wall (normal in Z direction)
+        if normal[2].abs() > epsilon {
+            let wall_z = if normal[2] > 0.0 {
+                min_bounds[2]
+            } else {
+                max_bounds[2]
+            };
+
+            // Check if line crosses this Z plane
+            if (start[2] - wall_z) * (end[2] - wall_z) > 0.0 {
+                return None; // Line doesn't cross the plane
+            }
+
+            // Calculate intersection point
+            let t = (wall_z - start[2]) / (end[2] - start[2]);
+            if !(0.0..=1.0).contains(&t) {
+                return None;
+            }
+
+            let intersection_x = start[0] + t * (end[0] - start[0]);
+            let intersection_y = start[1] + t * (end[1] - start[1]);
+
+            // Check if intersection is within face bounds
+            if intersection_x >= min_bounds[0]
+                && intersection_x <= max_bounds[0]
+                && intersection_y >= min_bounds[1]
+                && intersection_y <= max_bounds[1]
+            {
+                return Some([intersection_x, intersection_y, wall_z]);
+            }
+        }
+
+        // Check if this is a Y-facing wall (normal in Y direction) - for floors/ceilings
+        if normal[1].abs() > epsilon {
+            let wall_y = if normal[1] > 0.0 {
+                min_bounds[1]
+            } else {
+                max_bounds[1]
+            };
+
+            // Check if line crosses this Y plane
+            if (start[1] - wall_y) * (end[1] - wall_y) > 0.0 {
+                return None; // Line doesn't cross the plane
+            }
+
+            // Calculate intersection point
+            let t = (wall_y - start[1]) / (end[1] - start[1]);
+            if !(0.0..=1.0).contains(&t) {
+                return None;
+            }
+
+            let intersection_x = start[0] + t * (end[0] - start[0]);
+            let intersection_z = start[2] + t * (end[2] - start[2]);
+
+            // Check if intersection is within face bounds
+            if intersection_x >= min_bounds[0]
+                && intersection_x <= max_bounds[0]
+                && intersection_z >= min_bounds[2]
+                && intersection_z <= max_bounds[2]
+            {
+                return Some([intersection_x, wall_y, intersection_z]);
+            }
+        }
+
+        None
+    }
 }
 
 // Integration with Player struct

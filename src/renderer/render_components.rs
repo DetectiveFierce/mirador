@@ -46,7 +46,6 @@ use std::time::Instant;
 use crate::game::GameState;
 use crate::game::enemy::Enemy;
 use crate::{
-    game::player::Player,
     math::{deg_to_rad, mat::Mat4},
     maze::{
         generator::{Maze, MazeGenerator},
@@ -197,7 +196,7 @@ impl GameRenderer {
         };
 
         let compass_renderer = CompassRenderer::new(device, queue, surface_config);
-        let enemy = Enemy::new([-1370.0, 50.0, 1370.0]);
+        let enemy = Enemy::new([-1370.0, 50.0, 1370.0], 100.0);
         let enemy_renderer = EnemyRenderer::new(enemy, device, queue, surface_config);
         Self {
             pipeline,
@@ -1808,7 +1807,7 @@ impl EnemyRenderer {
 
         let uniforms = EnemyUniforms {
             view_proj_matrix: [[0.0; 4]; 4],
-            enemy_position: enemy.position,
+            enemy_position: enemy.pathfinder.position,
             enemy_size: enemy.size,
             player_position: [0.0; 3],
             _padding: 0.0,
@@ -1986,8 +1985,8 @@ impl EnemyRenderer {
         view_proj_matrix: [[f32; 4]; 4],
     ) {
         // Calculate rotation to face player
-        let dx = game_state.player.position[0] - game_state.enemy.position[0];
-        let dz = game_state.player.position[2] - game_state.enemy.position[2];
+        let dx = game_state.player.position[0] - game_state.enemy.pathfinder.position[0];
+        let dz = game_state.player.position[2] - game_state.enemy.pathfinder.position[2];
 
         // Calculate target rotation using the same coordinate system as your compass
         // Your compass uses dx.atan2(dz) pattern, so use that here
@@ -2008,7 +2007,7 @@ impl EnemyRenderer {
         // Update uniform buffer
         let uniforms = EnemyUniforms {
             view_proj_matrix,
-            enemy_position: game_state.enemy.position,
+            enemy_position: game_state.enemy.pathfinder.position,
             enemy_size: game_state.enemy.size,
             player_position: game_state.player.position,
             _padding: 0.0,

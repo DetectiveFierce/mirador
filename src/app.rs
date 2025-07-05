@@ -404,6 +404,19 @@ impl App {
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
         surface_texture.present();
 
+        // Update enemy pathfinding
+
+        state.game_state.enemy.update(
+            state.game_state.player.position,
+            state.game_state.delta_time,
+            |from, to| {
+                state
+                    .game_state
+                    .collision_system
+                    .line_intersects_geometry(from, to)
+            },
+        );
+
         // Handle title screen animation if needed
         if state.game_state.current_screen == CurrentScreen::Loading {
             state.game_state.game_ui.stop_timer();
