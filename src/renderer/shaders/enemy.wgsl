@@ -1,6 +1,11 @@
+// Enemy billboard shader - rotates sprite around Y-axis to face player
+
 struct EnemyUniforms {
-    model_matrix: mat4x4<f32>,
     view_proj_matrix: mat4x4<f32>,
+    enemy_position: vec3<f32>,
+    enemy_size: f32,
+    player_position: vec3<f32>,
+    _padding: f32,
 }
 
 struct VertexInput {
@@ -23,26 +28,46 @@ var enemy_texture: texture_2d<f32>;
 var enemy_sampler: sampler;
 
 @vertex
-fn vs_main(input: VertexInput) -> VertexOutput {
+fn vs_main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
 
-    // Transform vertex position
-    let world_position = uniforms.model_matrix * vec4<f32>(input.position, 1.0);
-    out.clip_position = uniforms.view_proj_matrix * world_position;
+    // Calculate direction from enemy to player (for Y-axis rotation)
+    let to_player = uniforms.player_position - uniforms.enemy_position;
+    let rotation_angle = atan2(to_player.x, to_player.z);
 
-    // Pass through texture coordinates
-    out.tex_coords = input.tex_coords;
+    // Create rotation matrix around Y-axis (fixed signs)
+    let cos_y = cos(rotation_angle);
+    let sin_y = sin(rotation_angle);
+    let rotation_matrix = mat3x3<f32>(
+        cos_y,  0.0, -sin_y,  // Changed: sin_y to -sin_y
+        0.0,    1.0, 0.0,
+        sin_y,  0.0, cos_y    // Changed: -sin_y to sin_y
+    );
+
+    // Scale the vertex by enemy size
+    let scaled_position = model.position * uniforms.enemy_size;
+
+    // Apply rotation to the scaled position
+    let rotated_position = rotation_matrix * scaled_position;
+
+    // Translate to enemy's world position
+    let world_position = rotated_position + uniforms.enemy_position;
+
+    // Transform to clip space
+    out.clip_position = uniforms.view_proj_matrix * vec4<f32>(world_position, 1.0);
+    out.tex_coords = model.tex_coords;
 
     return out;
 }
 
 @fragment
-fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    // Sample the enemy texture
-    let texture_color = textureSample(enemy_texture, enemy_sampler, input.tex_coords);
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let texture_color = textureSample(enemy_texture, enemy_sampler, in.tex_coords);
 
-    // Optional: Add some subtle effects
-    // You can add color tinting, transparency, or other effects here
+    // Discard transparent pixels (alpha testing)
+    if (texture_color.a < 0.1) {
+        discard;
+    }
 
     return texture_color;
 }

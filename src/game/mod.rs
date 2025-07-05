@@ -4,10 +4,12 @@
 //! including the player, timing, UI state, and maze path.
 
 pub mod collision;
+pub mod enemy;
 pub mod keys;
 pub mod player;
 use self::collision::CollisionSystem;
 use self::player::Player;
+use crate::game::enemy::Enemy;
 use crate::maze::generator::Cell;
 use crate::renderer::text::TextRenderer;
 use glyphon::Color;
@@ -44,6 +46,7 @@ pub struct GameState {
     pub exit_cell: Cell,
     pub game_ui: GameUIManager,
     pub current_screen: CurrentScreen,
+    pub enemy: Enemy,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -83,6 +86,7 @@ impl GameState {
             exit_cell: Cell::default(),
             game_ui: GameUIManager::new(),
             current_screen: CurrentScreen::Loading,
+            enemy: Enemy::new([-1370.0, 30.0, 1370.0]),
         }
     }
 

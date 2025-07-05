@@ -64,6 +64,19 @@ impl Player {
         rotation_matrix.multiply(&translation_matrix)
     }
 
+    pub fn get_view_proj_matrix(&self, aspect_ratio: f32, near: f32, far: f32) -> Mat4 {
+        let view_matrix = self.get_view_matrix();
+        let projection_matrix = Mat4::perspective(
+            self.fov, // Keep in degrees since your Mat4 likely expects degrees
+            aspect_ratio,
+            near,
+            far,
+        );
+
+        // Projection * View (note the order)
+        projection_matrix.multiply(&view_matrix)
+    }
+
     /// Updates the player's orientation based on mouse movement.
     ///
     /// # Arguments

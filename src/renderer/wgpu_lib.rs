@@ -419,7 +419,7 @@ impl WgpuRenderer {
         });
 
         self.game_renderer
-            .render_game(&self.queue, &game_state.player, &mut main_pass, aspect);
+            .render_game(&self.queue, &game_state, &mut main_pass, aspect);
     }
 
     fn render_compass(

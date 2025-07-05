@@ -43,10 +43,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use winit::window::Window;
-
-use egui_wgpu::wgpu::{self, util::DeviceExt};
-
+use crate::game::GameState;
+use crate::game::enemy::Enemy;
 use crate::{
     game::player::Player,
     math::{deg_to_rad, mat::Mat4},
@@ -65,6 +63,8 @@ use crate::{
         vertex::Vertex,
     },
 };
+use egui_wgpu::wgpu::{self, util::DeviceExt};
+use winit::window::Window;
 
 /// Main renderer for the 3D maze game.
 ///
@@ -133,6 +133,7 @@ pub struct GameRenderer {
     /// Renderer for compass
     pub compass_renderer: CompassRenderer,
     pub exit_position: Option<(f32, f32)>,
+    pub enemy_renderer: EnemyRenderer,
 }
 
 impl GameRenderer {
@@ -196,7 +197,8 @@ impl GameRenderer {
         };
 
         let compass_renderer = CompassRenderer::new(device, queue, surface_config);
-
+        let enemy = Enemy::new([-1370.0, 50.0, 1370.0]);
+        let enemy_renderer = EnemyRenderer::new(enemy, device, queue, surface_config);
         Self {
             pipeline,
             vertex_buffer,
@@ -208,6 +210,7 @@ impl GameRenderer {
             debug_renderer,
             compass_renderer,
             exit_position: None,
+            enemy_renderer,
         }
     }
 
@@ -250,48 +253,67 @@ impl GameRenderer {
     pub fn render_game(
         &mut self,
         queue: &wgpu::Queue,
-        player: &Player,
+        game_state: &GameState,
         pass: &mut wgpu::RenderPass,
         aspect: f32,
     ) {
-        // Step 1: Model Matrix - Just identity since the floor is at world origin
-        let model_matrix = Mat4::identity();
-
-        // Step 2: View Matrix - Based on player's camera position and orientation
-        let view_matrix = player.get_view_matrix();
-
-        // Step 3: Projection Matrix - Using FOV from UI state
+        // Calculate view and projection matrices once
+        let view_matrix = game_state.player.get_view_matrix();
         let projection_matrix = Mat4::perspective(
-            deg_to_rad(player.fov),
+            deg_to_rad(game_state.player.fov),
             aspect,
             0.1,    // zNear
             2000.0, // zFar
         );
+        let view_proj_matrix = projection_matrix.multiply(&view_matrix);
 
-        // Step 4: Combine matrices: Projection * View * Model
-        let final_mvp_matrix = projection_matrix
-            .multiply(&view_matrix)
-            .multiply(&model_matrix);
-
-        let uniforms = Uniforms {
-            matrix: final_mvp_matrix.into(), // Access the inner `[[f32; 4]; 4]` array
-        };
-        // upload the uniform values to the uniform buffer
-        queue.write_buffer(&self.uniform_buffer, 0, uniforms.as_bytes());
-
-        pass.set_pipeline(&self.pipeline);
-        pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        pass.set_bind_group(0, &self.uniform_bind_group, &[]);
-        pass.draw(0..self.vertex_count, 0..1);
-
-        // Inside your render method:
-        if self.debug_renderer.debug_render_bounding_boxes
-            && self.debug_renderer.debug_vertex_count > 0
+        // ==============================================
+        // 1. RENDER MAZE/FLOOR FIRST
+        // ==============================================
         {
-            if let Some(debug_buffer) = &self.debug_renderer.debug_vertex_buffer {
-                pass.set_vertex_buffer(0, debug_buffer.slice(..));
-                pass.draw(0..self.debug_renderer.debug_vertex_count as u32, 0..1);
+            // Model Matrix for floor - identity since floor is at world origin
+            let model_matrix = Mat4::identity();
+
+            // Combine matrices: Projection * View * Model
+            let final_mvp_matrix = view_proj_matrix.multiply(&model_matrix);
+
+            let uniforms = Uniforms {
+                matrix: final_mvp_matrix.into(),
+            };
+
+            // Upload uniform values for the maze/floor
+            queue.write_buffer(&self.uniform_buffer, 0, uniforms.as_bytes());
+
+            // Render the maze/floor
+            pass.set_pipeline(&self.pipeline);
+            pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+            pass.draw(0..self.vertex_count, 0..1);
+
+            // Debug rendering for maze/floor
+            if self.debug_renderer.debug_render_bounding_boxes
+                && self.debug_renderer.debug_vertex_count > 0
+            {
+                if let Some(debug_buffer) = &self.debug_renderer.debug_vertex_buffer {
+                    pass.set_vertex_buffer(0, debug_buffer.slice(..));
+                    pass.draw(0..self.debug_renderer.debug_vertex_count as u32, 0..1);
+                }
             }
+        }
+
+        // ==============================================
+        // 2. RENDER ENEMIES
+        // ==============================================
+        {
+            // Update enemy transform with the combined view-projection matrix
+            self.enemy_renderer.update(
+                queue,
+                game_state,
+                view_proj_matrix.0, // Pass the view-projection matrix
+            );
+
+            // Actually render the enemy
+            self.enemy_renderer.render(pass); // You might need to pass the actual window here
         }
     }
 }
@@ -1754,82 +1776,158 @@ impl CompassRenderer {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct EnemyUniforms {
-    model_matrix: [[f32; 4]; 4],
     view_proj_matrix: [[f32; 4]; 4],
+    enemy_position: [f32; 3],
+    enemy_size: f32,
+    player_position: [f32; 3],
+    _padding: f32,
 }
 
-#[allow(dead_code)]
 pub struct EnemyRenderer {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
-    texture: wgpu::Texture,
-    texture_view: wgpu::TextureView,
-    sampler: wgpu::Sampler,
     bind_group: wgpu::BindGroup,
+
+    // For smooth rotation
+    smoothed_rotation: f32,
+    smoothing_factor: f32,
 }
 
 impl EnemyRenderer {
-    /// Create a new enemy renderer.
-    ///
-    /// This sets up the complete rendering pipeline for displaying enemy sprites,
-    /// including texture loading, vertex/index buffers, and transform matrices
-    /// for positioning enemies in the game world.
-    ///
-    /// ## Shader Requirements
-    ///
-    /// The enemy shader should be located at `../maze/enemy.wgsl`
-    /// and should expect:
-    /// - Vertex input: `@location(0) position: vec3<f32>`, `@location(1) tex_coords: vec2<f32>`
-    /// - Uniform binding: `@group(0) @binding(0) var<uniform> uniforms: EnemyUniforms;`
-    /// - Texture binding: `@group(0) @binding(1) var enemy_texture: texture_2d<f32>;`
-    /// - Sampler binding: `@group(0) @binding(2) var enemy_sampler: sampler;`
-    ///
-    /// ## Asset Requirements
-    ///
-    /// The enemy sprite should be located at `assets/frankie.png`
-    ///
-    /// # Parameters
-    ///
-    /// - `device` - WGPU device for creating GPU resources
-    /// - `queue` - WGPU queue for uploading texture data
-    /// - `surface_config` - Surface configuration (provides target format)
-    ///
-    /// # Returns
-    ///
-    /// A configured `EnemyRenderer` ready for rendering enemy sprites.
-    ///
-    /// # Example
-    ///
-    /// ```rust,no_run
-    /// # use crate::renderer::maze_renderer::EnemyRenderer;
-    /// # let device: egui_wgpu::wgpu::Device = unimplemented!();
-    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
-    /// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
-    ///
-    /// let renderer = EnemyRenderer::new(&device, &queue, &surface_config);
-    /// ```
     pub fn new(
+        enemy: Enemy,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         surface_config: &wgpu::SurfaceConfiguration,
     ) -> Self {
-        // Load enemy texture
-        let enemy_image = image::load_from_memory(include_bytes!("../../assets/frankie.png"))
-            .expect("Failed to load enemy texture")
-            .to_rgba8();
+        // Load frankie texture
+        let frankie_texture = Self::load_frankie_texture(device, queue);
 
+        let uniforms = EnemyUniforms {
+            view_proj_matrix: [[0.0; 4]; 4],
+            enemy_position: enemy.position,
+            enemy_size: enemy.size,
+            player_position: [0.0; 3],
+            _padding: 0.0,
+        };
+
+        let uniform_buffer = create_uniform_buffer(device, &uniforms, "Enemy Uniform Buffer");
+
+        // Create bind group layout for texture + sampler + uniforms
+        let bind_group_layout = BindGroupLayoutBuilder::new(device)
+            .with_label("Enemy Bind Group Layout")
+            .with_uniform_buffer(0, wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT)
+            .with_texture(1, wgpu::ShaderStages::FRAGMENT)
+            .with_sampler(2, wgpu::ShaderStages::FRAGMENT)
+            .build();
+
+        // Create sampler
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        // Create bind group for frankie texture
+        let frankie_texture_view =
+            frankie_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&frankie_texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+            label: Some("Enemy Bind Group"),
+        });
+
+        // Create vertex buffer layout for position + tex_coords
+        let vertex_buffer_layout = wgpu::VertexBufferLayout {
+            array_stride: 5 * 4, // 5 floats * 4 bytes each
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3, // position (x, y, z)
+                },
+                wgpu::VertexAttribute {
+                    offset: 3 * 4, // 3 floats * 4 bytes
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x2, // tex_coords
+                },
+            ],
+        };
+
+        let pipeline = PipelineBuilder::new(device, surface_config.format)
+            .with_label("Enemy Pipeline")
+            .with_shader(include_str!("./shaders/enemy.wgsl"))
+            .with_vertex_buffer(vertex_buffer_layout)
+            .with_bind_group_layout(&bind_group_layout)
+            .with_alpha_blending()
+            .with_depth_stencil(wgpu::DepthStencilState {
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::LessEqual,
+                format: wgpu::TextureFormat::Depth24Plus,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            })
+            .build();
+
+        let vertex_buffer = Self::create_billboard_vertices(device);
+
+        Self {
+            pipeline,
+            vertex_buffer,
+            uniform_buffer,
+            bind_group,
+            smoothed_rotation: 0.0,
+            smoothing_factor: 0.85, // Smooth rotation
+        }
+    }
+
+    fn load_frankie_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
+        let path = "assets/frankie.png";
+
+        // Load image using image crate
+        let img = match image::open(path) {
+            Ok(img) => img.to_rgba8(),
+            Err(e) => {
+                eprintln!("Failed to load frankie texture {}: {}", path, e);
+                // Create a fallback texture (solid red square)
+                let mut fallback = image::RgbaImage::new(64, 64);
+                for pixel in fallback.pixels_mut() {
+                    *pixel = image::Rgba([255, 0, 0, 255]); // Red
+                }
+                fallback
+            }
+        };
+
+        let dimensions = img.dimensions();
         let texture_size = wgpu::Extent3d {
-            width: enemy_image.width(),
-            height: enemy_image.height(),
+            width: dimensions.0,
+            height: dimensions.1,
             depth_or_array_layers: 1,
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Enemy Texture"),
+            label: Some("Frankie Texture"),
             size: texture_size,
             mip_level_count: 1,
             sample_count: 1,
@@ -1841,243 +1939,98 @@ impl EnemyRenderer {
 
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
             },
-            &enemy_image,
+            &img,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * enemy_image.width()),
-                rows_per_image: Some(enemy_image.height()),
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
             },
             texture_size,
         );
 
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("Enemy Sampler"),
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
-        // Initialize with identity matrices
-        let uniforms = EnemyUniforms {
-            model_matrix: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-            view_proj_matrix: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-        };
-
-        let uniform_buffer = create_uniform_buffer(device, &uniforms, "Enemy Uniform Buffer");
-
-        let bind_group_layout = BindGroupLayoutBuilder::new(device)
-            .with_label("Enemy Bind Group Layout")
-            .with_uniform_buffer(0, wgpu::ShaderStages::VERTEX)
-            .with_texture(1, wgpu::ShaderStages::FRAGMENT)
-            .with_sampler(2, wgpu::ShaderStages::FRAGMENT)
-            .build();
-
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: uniform_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
-                },
-            ],
-            label: Some("Enemy Bind Group"),
-        });
-
-        let pipeline = PipelineBuilder::new(device, surface_config.format)
-            .with_label("Enemy Pipeline")
-            .with_shader(include_str!("./shaders/enemy.wgsl"))
-            .with_vertex_buffer(create_vertex_3d_layout())
-            .with_bind_group_layout(&bind_group_layout)
-            .with_alpha_blending()
-            .build();
-
-        let vertex_buffer = create_sprite_vertices(device);
-        let index_buffer = create_sprite_indices(device);
-
-        Self {
-            pipeline,
-            vertex_buffer,
-            index_buffer,
-            uniform_buffer,
-            texture,
-            texture_view,
-            sampler,
-            bind_group,
-        }
+        texture
     }
 
-    /// Update the enemy's transformation matrices.
-    ///
-    /// This method uploads new transformation data to the GPU uniform buffer
-    /// to position, rotate, and scale the enemy sprite in the game world.
-    ///
-    /// ## Performance Notes
-    ///
-    /// This operation involves a GPU buffer write. It should be called once
-    /// per frame per enemy to update their positions smoothly.
-    ///
-    /// # Parameters
-    ///
-    /// - `queue` - WGPU queue for buffer uploads
-    /// - `position` - World position of the enemy (x, y)
-    /// - `size` - Size of the enemy sprite (width, height)
-    /// - `view_proj_matrix` - Combined view and projection matrix from camera
-    ///
-    /// # Example
-    ///
-    /// ```rust,no_run
-    /// # use crate::renderer::maze_renderer::EnemyRenderer;
-    /// # let renderer: EnemyRenderer = unimplemented!();
-    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
-    /// # let view_proj: [[f32; 4]; 4] = unimplemented!();
-    ///
-    /// // Update enemy position and size
-    /// renderer.update_transform(&queue, (100.0, 200.0), (32.0, 32.0), view_proj);
-    /// ```
-    pub fn update_transform(
-        &self,
-        queue: &wgpu::Queue,
-        position: (f32, f32),
-        size: (f32, f32),
-        view_proj_matrix: [[f32; 4]; 4],
-    ) {
-        // Create model matrix with translation and scale
-        let model_matrix = [
-            [size.0, 0.0, 0.0, 0.0],
-            [0.0, size.1, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [position.0, position.1, 0.0, 1.0],
+    fn create_billboard_vertices(device: &wgpu::Device) -> wgpu::Buffer {
+        // Create a quad centered at origin that will be positioned and rotated by the shader
+        // The quad is in local space and will be transformed to world space
+        let vertices: &[f32] = &[
+            // Position (x, y, z)    // Texture coords (u, v)
+            // Triangle 1
+            -0.5, -0.5, 0.0, 0.0, 1.0, // Bottom-left
+            0.5, -0.5, 0.0, 1.0, 1.0, // Bottom-right
+            -0.5, 0.5, 0.0, 0.0, 0.0, // Top-left
+            // Triangle 2
+            0.5, -0.5, 0.0, 1.0, 1.0, // Bottom-right
+            0.5, 0.5, 0.0, 1.0, 0.0, // Top-right
+            -0.5, 0.5, 0.0, 0.0, 0.0, // Top-left
         ];
 
+        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Enemy Billboard Vertex Buffer"),
+            contents: bytemuck::cast_slice(vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        })
+    }
+
+    /// Update enemy position and rotation to face player
+    pub fn update(
+        &mut self,
+        queue: &wgpu::Queue,
+        game_state: &GameState,
+        view_proj_matrix: [[f32; 4]; 4],
+    ) {
+        // Calculate rotation to face player
+        let dx = game_state.player.position[0] - game_state.enemy.position[0];
+        let dz = game_state.player.position[2] - game_state.enemy.position[2];
+
+        // Calculate target rotation using the same coordinate system as your compass
+        // Your compass uses dx.atan2(dz) pattern, so use that here
+        let target_rotation = dx.atan2(dz);
+
+        // Smooth rotation interpolation
+        let mut rotation_diff = target_rotation - self.smoothed_rotation;
+
+        // Wrap to shortest path
+        if rotation_diff > std::f32::consts::PI {
+            rotation_diff -= 2.0 * std::f32::consts::PI;
+        } else if rotation_diff < -std::f32::consts::PI {
+            rotation_diff += 2.0 * std::f32::consts::PI;
+        }
+
+        self.smoothed_rotation += rotation_diff * self.smoothing_factor;
+
+        // Update uniform buffer
         let uniforms = EnemyUniforms {
-            model_matrix,
             view_proj_matrix,
+            enemy_position: game_state.enemy.position,
+            enemy_size: game_state.enemy.size,
+            player_position: game_state.player.position,
+            _padding: 0.0,
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
-
-    /// Render the enemy sprite to the current render pass.
-    ///
-    /// This method renders the enemy sprite using the previously uploaded
-    /// transformation matrices. The sprite will be positioned, scaled, and
-    /// rendered with alpha blending support.
-    ///
-    /// ## Render State
-    ///
-    /// This method assumes:
-    /// - A render pass is active
-    /// - Transform matrices have been updated via `update_transform()`
-    /// - Alpha blending is desired (the pipeline enables it)
-    /// - The background has already been rendered
-    ///
-    /// # Parameters
-    ///
-    /// - `render_pass` - Active render pass to render into
-    /// - `window` - Window reference for potential window-specific adjustments
-    ///
-    /// # Example
-    ///
-    /// ```rust,no_run
-    /// # use crate::renderer::maze_renderer::EnemyRenderer;
-    /// # let renderer: EnemyRenderer = unimplemented!();
-    /// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
-    /// # let window: &winit::window::Window = unimplemented!();
-    ///
-    /// // Render background first
-    /// // ... render maze, player, etc ...
-    ///
-    /// // Update enemy transform
-    /// renderer.update_transform(&queue, enemy_position, enemy_size, view_proj);
-    ///
-    /// // Render enemy sprite
-    /// renderer.render(&mut render_pass, window);
-    /// ```
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, _window: &winit::window::Window) {
+    /// Render the enemy
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..6, 0, 0..1);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.draw(0..6, 0..1);
     }
-}
 
-// Helper functions for creating sprite geometry
-fn create_sprite_vertices(device: &wgpu::Device) -> wgpu::Buffer {
-    // Sprite vertices for a unit quad centered at origin
-    let vertices = [
-        // Position (x, y, z), Texture coordinates (u, v)
-        [-0.5, -0.5, 0.0, 0.0, 1.0], // Bottom-left
-        [0.5, -0.5, 0.0, 1.0, 1.0],  // Bottom-right
-        [0.5, 0.5, 0.0, 1.0, 0.0],   // Top-right
-        [-0.5, 0.5, 0.0, 0.0, 0.0],  // Top-left
-    ];
+    /// Get current rotation angle (in radians)
+    pub fn get_rotation(&self) -> f32 {
+        self.smoothed_rotation
+    }
 
-    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Enemy Vertex Buffer"),
-        contents: bytemuck::cast_slice(&vertices),
-        usage: wgpu::BufferUsages::VERTEX,
-    })
-}
-
-fn create_sprite_indices(device: &wgpu::Device) -> wgpu::Buffer {
-    // Indices for two triangles making a quad
-    let indices: [u16; 6] = [
-        0, 1, 2, // First triangle
-        2, 3, 0, // Second triangle
-    ];
-
-    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Enemy Index Buffer"),
-        contents: bytemuck::cast_slice(&indices),
-        usage: wgpu::BufferUsages::INDEX,
-    })
-}
-
-fn create_vertex_3d_layout() -> wgpu::VertexBufferLayout<'static> {
-    wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
-        step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &[
-            wgpu::VertexAttribute {
-                offset: 0,
-                shader_location: 0,
-                format: wgpu::VertexFormat::Float32x3,
-            },
-            wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                shader_location: 1,
-                format: wgpu::VertexFormat::Float32x2,
-            },
-        ],
+    /// Set smoothing factor for rotation (0.0 = very smooth, 1.0 = instant)
+    pub fn set_smoothing_factor(&mut self, factor: f32) {
+        self.smoothing_factor = factor.clamp(0.01, 1.0);
     }
 }
