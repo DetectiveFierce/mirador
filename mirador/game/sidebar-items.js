@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CurrentScreen"],"mod":["collision","keys","player"],"struct":["GameState","GameTimer","GameUIManager","TimerConfig"]};
+window.SIDEBAR_ITEMS = {"enum":["CurrentScreen"],"mod":["collision","enemy","keys","player"],"struct":["GameState","GameTimer","GameUIManager","TimerConfig"]};
