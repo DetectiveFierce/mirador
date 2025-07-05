@@ -404,357 +404,370 @@
 <a href=#404 id=404 data-nosnippet>404</a>        </span>state.wgpu_renderer.queue.submit(<span class="prelude-val">Some</span>(encoder.finish()));
 <a href=#405 id=405 data-nosnippet>405</a>        surface_texture.present();
 <a href=#406 id=406 data-nosnippet>406</a>
-<a href=#407 id=407 data-nosnippet>407</a>        <span class="comment">// Handle title screen animation if needed
-<a href=#408 id=408 data-nosnippet>408</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Loading {
-<a href=#409 id=409 data-nosnippet>409</a>            state.game_state.game_ui.stop_timer();
-<a href=#410 id=410 data-nosnippet>410</a>            <span class="self">self</span>.handle_maze_generation();
-<a href=#411 id=411 data-nosnippet>411</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::NewGame {
-<a href=#412 id=412 data-nosnippet>412</a>            state.text_renderer.hide_game_over_display();
-<a href=#413 id=413 data-nosnippet>413</a>            <span class="self">self</span>.new_level(<span class="bool-val">true</span>);
-<a href=#414 id=414 data-nosnippet>414</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::Game
-<a href=#415 id=415 data-nosnippet>415</a>            &amp;&amp; state.game_state.player.current_cell == state.game_state.exit_cell
-<a href=#416 id=416 data-nosnippet>416</a>        {
-<a href=#417 id=417 data-nosnippet>417</a>            <span class="self">self</span>.new_level(<span class="bool-val">false</span>);
-<a href=#418 id=418 data-nosnippet>418</a>        }
-<a href=#419 id=419 data-nosnippet>419</a>    }
-<a href=#420 id=420 data-nosnippet>420</a>
-<a href=#421 id=421 data-nosnippet>421</a>    <span class="kw">pub fn </span>new_level(<span class="kw-2">&amp;mut </span><span class="self">self</span>, game_over: bool) {
-<a href=#422 id=422 data-nosnippet>422</a>        <span class="kw">let </span>state = <span class="self">self
-<a href=#423 id=423 data-nosnippet>423</a>            </span>.state
-<a href=#424 id=424 data-nosnippet>424</a>            .as_mut()
-<a href=#425 id=425 data-nosnippet>425</a>            .expect(<span class="string">"State must be initialized before use"</span>);
-<a href=#426 id=426 data-nosnippet>426</a>
-<a href=#427 id=427 data-nosnippet>427</a>        state.game_state.current_screen = CurrentScreen::Loading;
-<a href=#428 id=428 data-nosnippet>428</a>        state.game_state.maze_path = <span class="prelude-val">None</span>;
-<a href=#429 id=429 data-nosnippet>429</a>        state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
-<a href=#430 id=430 data-nosnippet>430</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
-<a href=#431 id=431 data-nosnippet>431</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
-<a href=#432 id=432 data-nosnippet>432</a>        );
-<a href=#433 id=433 data-nosnippet>433</a>        state.game_state.player = Player::new();
-<a href=#434 id=434 data-nosnippet>434</a>
-<a href=#435 id=435 data-nosnippet>435</a>        <span class="kw">if </span>game_over {
-<a href=#436 id=436 data-nosnippet>436</a>            state.game_state.game_ui.level = <span class="number">1</span>;
-<a href=#437 id=437 data-nosnippet>437</a>            state.game_state.game_ui.score = <span class="number">0</span>;
-<a href=#438 id=438 data-nosnippet>438</a>            state.game_state.game_ui.timer = <span class="prelude-val">Some</span>(GameTimer::new(TimerConfig::default()));
-<a href=#439 id=439 data-nosnippet>439</a>        } <span class="kw">else </span>{
-<a href=#440 id=440 data-nosnippet>440</a>            <span class="kw">let </span>base_score = <span class="number">100 </span>* state.game_state.game_ui.level <span class="kw">as </span>u32;
-<a href=#441 id=441 data-nosnippet>441</a>
-<a href=#442 id=442 data-nosnippet>442</a>            <span class="comment">// Calculate speed bonus based on remaining time
-<a href=#443 id=443 data-nosnippet>443</a>            </span><span class="kw">let </span>speed_bonus = <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;</span>state.game_state.game_ui.timer {
-<a href=#444 id=444 data-nosnippet>444</a>                <span class="kw">let </span>remaining_time = timer.get_remaining_time().as_secs_f32();
-<a href=#445 id=445 data-nosnippet>445</a>                <span class="kw">let </span>total_time = timer.config.duration.as_secs_f32(); <span class="comment">// Assuming this method exists
-<a href=#446 id=446 data-nosnippet>446</a>
-<a href=#447 id=447 data-nosnippet>447</a>                </span><span class="kw">if </span>total_time &gt; <span class="number">0.0 </span>{
-<a href=#448 id=448 data-nosnippet>448</a>                    <span class="comment">// Calculate percentage of time remaining (0.0 to 1.0)
-<a href=#449 id=449 data-nosnippet>449</a>                    </span><span class="kw">let </span>time_ratio = remaining_time / total_time;
-<a href=#450 id=450 data-nosnippet>450</a>
-<a href=#451 id=451 data-nosnippet>451</a>                    <span class="comment">// Bonus multiplier: more time left = higher bonus
-<a href=#452 id=452 data-nosnippet>452</a>                    // Scale: 0% time left = 0x bonus, 100% time left = 2x bonus
-<a href=#453 id=453 data-nosnippet>453</a>                    </span><span class="kw">let </span>bonus_multiplier = (time_ratio * <span class="number">2.0</span>).max(<span class="number">0.0</span>);
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="comment">// Update enemy pathfinding
+<a href=#408 id=408 data-nosnippet>408</a>
+<a href=#409 id=409 data-nosnippet>409</a>        </span>state.game_state.enemy.update(
+<a href=#410 id=410 data-nosnippet>410</a>            state.game_state.player.position,
+<a href=#411 id=411 data-nosnippet>411</a>            state.game_state.delta_time,
+<a href=#412 id=412 data-nosnippet>412</a>            |from, to| {
+<a href=#413 id=413 data-nosnippet>413</a>                state
+<a href=#414 id=414 data-nosnippet>414</a>                    .game_state
+<a href=#415 id=415 data-nosnippet>415</a>                    .collision_system
+<a href=#416 id=416 data-nosnippet>416</a>                    .line_intersects_geometry(from, to)
+<a href=#417 id=417 data-nosnippet>417</a>            },
+<a href=#418 id=418 data-nosnippet>418</a>        );
+<a href=#419 id=419 data-nosnippet>419</a>
+<a href=#420 id=420 data-nosnippet>420</a>        <span class="comment">// Handle title screen animation if needed
+<a href=#421 id=421 data-nosnippet>421</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Loading {
+<a href=#422 id=422 data-nosnippet>422</a>            state.game_state.game_ui.stop_timer();
+<a href=#423 id=423 data-nosnippet>423</a>            <span class="self">self</span>.handle_maze_generation();
+<a href=#424 id=424 data-nosnippet>424</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::NewGame {
+<a href=#425 id=425 data-nosnippet>425</a>            state.text_renderer.hide_game_over_display();
+<a href=#426 id=426 data-nosnippet>426</a>            <span class="self">self</span>.new_level(<span class="bool-val">true</span>);
+<a href=#427 id=427 data-nosnippet>427</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::Game
+<a href=#428 id=428 data-nosnippet>428</a>            &amp;&amp; state.game_state.player.current_cell == state.game_state.exit_cell
+<a href=#429 id=429 data-nosnippet>429</a>        {
+<a href=#430 id=430 data-nosnippet>430</a>            <span class="self">self</span>.new_level(<span class="bool-val">false</span>);
+<a href=#431 id=431 data-nosnippet>431</a>        }
+<a href=#432 id=432 data-nosnippet>432</a>    }
+<a href=#433 id=433 data-nosnippet>433</a>
+<a href=#434 id=434 data-nosnippet>434</a>    <span class="kw">pub fn </span>new_level(<span class="kw-2">&amp;mut </span><span class="self">self</span>, game_over: bool) {
+<a href=#435 id=435 data-nosnippet>435</a>        <span class="kw">let </span>state = <span class="self">self
+<a href=#436 id=436 data-nosnippet>436</a>            </span>.state
+<a href=#437 id=437 data-nosnippet>437</a>            .as_mut()
+<a href=#438 id=438 data-nosnippet>438</a>            .expect(<span class="string">"State must be initialized before use"</span>);
+<a href=#439 id=439 data-nosnippet>439</a>
+<a href=#440 id=440 data-nosnippet>440</a>        state.game_state.current_screen = CurrentScreen::Loading;
+<a href=#441 id=441 data-nosnippet>441</a>        state.game_state.maze_path = <span class="prelude-val">None</span>;
+<a href=#442 id=442 data-nosnippet>442</a>        state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
+<a href=#443 id=443 data-nosnippet>443</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
+<a href=#444 id=444 data-nosnippet>444</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
+<a href=#445 id=445 data-nosnippet>445</a>        );
+<a href=#446 id=446 data-nosnippet>446</a>        state.game_state.player = Player::new();
+<a href=#447 id=447 data-nosnippet>447</a>
+<a href=#448 id=448 data-nosnippet>448</a>        <span class="kw">if </span>game_over {
+<a href=#449 id=449 data-nosnippet>449</a>            state.game_state.game_ui.level = <span class="number">1</span>;
+<a href=#450 id=450 data-nosnippet>450</a>            state.game_state.game_ui.score = <span class="number">0</span>;
+<a href=#451 id=451 data-nosnippet>451</a>            state.game_state.game_ui.timer = <span class="prelude-val">Some</span>(GameTimer::new(TimerConfig::default()));
+<a href=#452 id=452 data-nosnippet>452</a>        } <span class="kw">else </span>{
+<a href=#453 id=453 data-nosnippet>453</a>            <span class="kw">let </span>base_score = <span class="number">100 </span>* state.game_state.game_ui.level <span class="kw">as </span>u32;
 <a href=#454 id=454 data-nosnippet>454</a>
-<a href=#455 id=455 data-nosnippet>455</a>                    <span class="comment">// Apply bonus to base score
-<a href=#456 id=456 data-nosnippet>456</a>                    </span>(base_score <span class="kw">as </span>f32 * bonus_multiplier) <span class="kw">as </span>u32
-<a href=#457 id=457 data-nosnippet>457</a>                } <span class="kw">else </span>{
-<a href=#458 id=458 data-nosnippet>458</a>                    <span class="number">0
-<a href=#459 id=459 data-nosnippet>459</a>                </span>}
-<a href=#460 id=460 data-nosnippet>460</a>            } <span class="kw">else </span>{
-<a href=#461 id=461 data-nosnippet>461</a>                <span class="number">0
-<a href=#462 id=462 data-nosnippet>462</a>            </span>};
+<a href=#455 id=455 data-nosnippet>455</a>            <span class="comment">// Calculate speed bonus based on remaining time
+<a href=#456 id=456 data-nosnippet>456</a>            </span><span class="kw">let </span>speed_bonus = <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;</span>state.game_state.game_ui.timer {
+<a href=#457 id=457 data-nosnippet>457</a>                <span class="kw">let </span>remaining_time = timer.get_remaining_time().as_secs_f32();
+<a href=#458 id=458 data-nosnippet>458</a>                <span class="kw">let </span>total_time = timer.config.duration.as_secs_f32(); <span class="comment">// Assuming this method exists
+<a href=#459 id=459 data-nosnippet>459</a>
+<a href=#460 id=460 data-nosnippet>460</a>                </span><span class="kw">if </span>total_time &gt; <span class="number">0.0 </span>{
+<a href=#461 id=461 data-nosnippet>461</a>                    <span class="comment">// Calculate percentage of time remaining (0.0 to 1.0)
+<a href=#462 id=462 data-nosnippet>462</a>                    </span><span class="kw">let </span>time_ratio = remaining_time / total_time;
 <a href=#463 id=463 data-nosnippet>463</a>
-<a href=#464 id=464 data-nosnippet>464</a>            <span class="comment">// Set total score (base + speed bonus)
-<a href=#465 id=465 data-nosnippet>465</a>            </span><span class="kw">let </span>total_score = base_score + speed_bonus;
-<a href=#466 id=466 data-nosnippet>466</a>            state.game_state.set_score(
-<a href=#467 id=467 data-nosnippet>467</a>                <span class="kw-2">&amp;mut </span>state.text_renderer,
-<a href=#468 id=468 data-nosnippet>468</a>                state.game_state.game_ui.score + total_score,
-<a href=#469 id=469 data-nosnippet>469</a>            );
-<a href=#470 id=470 data-nosnippet>470</a>
-<a href=#471 id=471 data-nosnippet>471</a>            state
-<a href=#472 id=472 data-nosnippet>472</a>                .game_state
-<a href=#473 id=473 data-nosnippet>473</a>                .set_level(<span class="kw-2">&amp;mut </span>state.text_renderer, state.game_state.game_ui.level + <span class="number">1</span>);
-<a href=#474 id=474 data-nosnippet>474</a>
-<a href=#475 id=475 data-nosnippet>475</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;mut </span>state.game_state.game_ui.timer {
-<a href=#476 id=476 data-nosnippet>476</a>                <span class="kw">let </span><span class="kw-2">mut </span>time_back = Duration::ZERO;
-<a href=#477 id=477 data-nosnippet>477</a>                <span class="kw">if </span>timer.prev_time &gt; timer.get_remaining_time() {
-<a href=#478 id=478 data-nosnippet>478</a>                    time_back = (timer.prev_time - timer.get_remaining_time()) / <span class="number">2</span>;
-<a href=#479 id=479 data-nosnippet>479</a>                } <span class="kw">else if </span>timer.prev_time &lt; timer.get_remaining_time() {
-<a href=#480 id=480 data-nosnippet>480</a>                    time_back = (timer.get_remaining_time() - timer.prev_time) / <span class="number">2</span>;
-<a href=#481 id=481 data-nosnippet>481</a>                }
-<a href=#482 id=482 data-nosnippet>482</a>                timer.prev_time = timer.get_remaining_time();
-<a href=#483 id=483 data-nosnippet>483</a>                timer.add_time(time_back);
-<a href=#484 id=484 data-nosnippet>484</a>            }
-<a href=#485 id=485 data-nosnippet>485</a>        }
-<a href=#486 id=486 data-nosnippet>486</a>    }
+<a href=#464 id=464 data-nosnippet>464</a>                    <span class="comment">// Bonus multiplier: more time left = higher bonus
+<a href=#465 id=465 data-nosnippet>465</a>                    // Scale: 0% time left = 0x bonus, 100% time left = 2x bonus
+<a href=#466 id=466 data-nosnippet>466</a>                    </span><span class="kw">let </span>bonus_multiplier = (time_ratio * <span class="number">2.0</span>).max(<span class="number">0.0</span>);
+<a href=#467 id=467 data-nosnippet>467</a>
+<a href=#468 id=468 data-nosnippet>468</a>                    <span class="comment">// Apply bonus to base score
+<a href=#469 id=469 data-nosnippet>469</a>                    </span>(base_score <span class="kw">as </span>f32 * bonus_multiplier) <span class="kw">as </span>u32
+<a href=#470 id=470 data-nosnippet>470</a>                } <span class="kw">else </span>{
+<a href=#471 id=471 data-nosnippet>471</a>                    <span class="number">0
+<a href=#472 id=472 data-nosnippet>472</a>                </span>}
+<a href=#473 id=473 data-nosnippet>473</a>            } <span class="kw">else </span>{
+<a href=#474 id=474 data-nosnippet>474</a>                <span class="number">0
+<a href=#475 id=475 data-nosnippet>475</a>            </span>};
+<a href=#476 id=476 data-nosnippet>476</a>
+<a href=#477 id=477 data-nosnippet>477</a>            <span class="comment">// Set total score (base + speed bonus)
+<a href=#478 id=478 data-nosnippet>478</a>            </span><span class="kw">let </span>total_score = base_score + speed_bonus;
+<a href=#479 id=479 data-nosnippet>479</a>            state.game_state.set_score(
+<a href=#480 id=480 data-nosnippet>480</a>                <span class="kw-2">&amp;mut </span>state.text_renderer,
+<a href=#481 id=481 data-nosnippet>481</a>                state.game_state.game_ui.score + total_score,
+<a href=#482 id=482 data-nosnippet>482</a>            );
+<a href=#483 id=483 data-nosnippet>483</a>
+<a href=#484 id=484 data-nosnippet>484</a>            state
+<a href=#485 id=485 data-nosnippet>485</a>                .game_state
+<a href=#486 id=486 data-nosnippet>486</a>                .set_level(<span class="kw-2">&amp;mut </span>state.text_renderer, state.game_state.game_ui.level + <span class="number">1</span>);
 <a href=#487 id=487 data-nosnippet>487</a>
-<a href=#488 id=488 data-nosnippet>488</a>    <span class="doccomment">/// Updates frame timing, FPS, and delta time in the game state.
-<a href=#489 id=489 data-nosnippet>489</a>    ///
-<a href=#490 id=490 data-nosnippet>490</a>    /// # Arguments
-<a href=#491 id=491 data-nosnippet>491</a>    /// - `current_time`: The current time (typically from `Instant::now()`).
-<a href=#492 id=492 data-nosnippet>492</a>    </span><span class="kw">pub fn </span>handle_frame_timing(<span class="kw-2">&amp;mut </span><span class="self">self</span>, current_time: Instant) {
-<a href=#493 id=493 data-nosnippet>493</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
-<a href=#494 id=494 data-nosnippet>494</a>            <span class="kw">let </span>duration = current_time.duration_since(state.game_state.last_fps_time);
-<a href=#495 id=495 data-nosnippet>495</a>
-<a href=#496 id=496 data-nosnippet>496</a>            state.elapsed_time = current_time.duration_since(state.start_time);
-<a href=#497 id=497 data-nosnippet>497</a>            state.ui.elapsed_time += <span class="number">1.0</span>;
-<a href=#498 id=498 data-nosnippet>498</a>            state.game_state.frame_count += <span class="number">1</span>;
-<a href=#499 id=499 data-nosnippet>499</a>
-<a href=#500 id=500 data-nosnippet>500</a>            <span class="kw">if </span>duration.as_secs_f32() &gt;= <span class="number">1.0 </span>{
-<a href=#501 id=501 data-nosnippet>501</a>                state.game_state.current_fps = state.game_state.frame_count;
-<a href=#502 id=502 data-nosnippet>502</a>                state.game_state.frame_count = <span class="number">0</span>;
-<a href=#503 id=503 data-nosnippet>503</a>                state.game_state.last_fps_time = current_time;
-<a href=#504 id=504 data-nosnippet>504</a>            }
-<a href=#505 id=505 data-nosnippet>505</a>
-<a href=#506 id=506 data-nosnippet>506</a>            <span class="kw">let </span>delta_time = current_time
-<a href=#507 id=507 data-nosnippet>507</a>                .duration_since(state.game_state.last_frame_time)
-<a href=#508 id=508 data-nosnippet>508</a>                .as_secs_f32();
-<a href=#509 id=509 data-nosnippet>509</a>
-<a href=#510 id=510 data-nosnippet>510</a>            state.game_state.delta_time = delta_time;
-<a href=#511 id=511 data-nosnippet>511</a>            state.game_state.last_frame_time = current_time;
+<a href=#488 id=488 data-nosnippet>488</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;mut </span>state.game_state.game_ui.timer {
+<a href=#489 id=489 data-nosnippet>489</a>                <span class="kw">let </span><span class="kw-2">mut </span>time_back = Duration::ZERO;
+<a href=#490 id=490 data-nosnippet>490</a>                <span class="kw">if </span>timer.prev_time &gt; timer.get_remaining_time() {
+<a href=#491 id=491 data-nosnippet>491</a>                    time_back = (timer.prev_time - timer.get_remaining_time()) / <span class="number">2</span>;
+<a href=#492 id=492 data-nosnippet>492</a>                } <span class="kw">else if </span>timer.prev_time &lt; timer.get_remaining_time() {
+<a href=#493 id=493 data-nosnippet>493</a>                    time_back = (timer.get_remaining_time() - timer.prev_time) / <span class="number">2</span>;
+<a href=#494 id=494 data-nosnippet>494</a>                }
+<a href=#495 id=495 data-nosnippet>495</a>                timer.prev_time = timer.get_remaining_time();
+<a href=#496 id=496 data-nosnippet>496</a>                timer.add_time(time_back);
+<a href=#497 id=497 data-nosnippet>497</a>            }
+<a href=#498 id=498 data-nosnippet>498</a>        }
+<a href=#499 id=499 data-nosnippet>499</a>    }
+<a href=#500 id=500 data-nosnippet>500</a>
+<a href=#501 id=501 data-nosnippet>501</a>    <span class="doccomment">/// Updates frame timing, FPS, and delta time in the game state.
+<a href=#502 id=502 data-nosnippet>502</a>    ///
+<a href=#503 id=503 data-nosnippet>503</a>    /// # Arguments
+<a href=#504 id=504 data-nosnippet>504</a>    /// - `current_time`: The current time (typically from `Instant::now()`).
+<a href=#505 id=505 data-nosnippet>505</a>    </span><span class="kw">pub fn </span>handle_frame_timing(<span class="kw-2">&amp;mut </span><span class="self">self</span>, current_time: Instant) {
+<a href=#506 id=506 data-nosnippet>506</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
+<a href=#507 id=507 data-nosnippet>507</a>            <span class="kw">let </span>duration = current_time.duration_since(state.game_state.last_fps_time);
+<a href=#508 id=508 data-nosnippet>508</a>
+<a href=#509 id=509 data-nosnippet>509</a>            state.elapsed_time = current_time.duration_since(state.start_time);
+<a href=#510 id=510 data-nosnippet>510</a>            state.ui.elapsed_time += <span class="number">1.0</span>;
+<a href=#511 id=511 data-nosnippet>511</a>            state.game_state.frame_count += <span class="number">1</span>;
 <a href=#512 id=512 data-nosnippet>512</a>
-<a href=#513 id=513 data-nosnippet>513</a>            <span class="kw">if </span>state
-<a href=#514 id=514 data-nosnippet>514</a>                .wgpu_renderer
-<a href=#515 id=515 data-nosnippet>515</a>                .game_renderer
-<a href=#516 id=516 data-nosnippet>516</a>                .debug_renderer
-<a href=#517 id=517 data-nosnippet>517</a>                .debug_render_bounding_boxes
-<a href=#518 id=518 data-nosnippet>518</a>            {
-<a href=#519 id=519 data-nosnippet>519</a>                state
-<a href=#520 id=520 data-nosnippet>520</a>                    .wgpu_renderer
-<a href=#521 id=521 data-nosnippet>521</a>                    .game_renderer
-<a href=#522 id=522 data-nosnippet>522</a>                    .debug_renderer
-<a href=#523 id=523 data-nosnippet>523</a>                    .update_debug_vertices(
-<a href=#524 id=524 data-nosnippet>524</a>                        <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
-<a href=#525 id=525 data-nosnippet>525</a>                        <span class="kw-2">&amp;</span>state.game_state.collision_system,
-<a href=#526 id=526 data-nosnippet>526</a>                    );
-<a href=#527 id=527 data-nosnippet>527</a>            }
-<a href=#528 id=528 data-nosnippet>528</a>        }
-<a href=#529 id=529 data-nosnippet>529</a>    }
-<a href=#530 id=530 data-nosnippet>530</a>
-<a href=#531 id=531 data-nosnippet>531</a>    <span class="doccomment">/// Advances the maze generation animation and uploads new geometry when complete.
-<a href=#532 id=532 data-nosnippet>532</a>    </span><span class="kw">pub fn </span>handle_maze_generation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#533 id=533 data-nosnippet>533</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
-<a href=#534 id=534 data-nosnippet>534</a>            <span class="kw">let </span>renderer = <span class="kw-2">&amp;mut </span>state.wgpu_renderer.loading_screen_renderer;
-<a href=#535 id=535 data-nosnippet>535</a>
-<a href=#536 id=536 data-nosnippet>536</a>            <span class="comment">// Calculate update timing
-<a href=#537 id=537 data-nosnippet>537</a>            </span><span class="kw">let </span>speed = <span class="kw">if </span>renderer.generator.fast_mode {
-<a href=#538 id=538 data-nosnippet>538</a>                Duration::from_millis(<span class="number">10</span>) / <span class="number">20
-<a href=#539 id=539 data-nosnippet>539</a>            </span>} <span class="kw">else </span>{
-<a href=#540 id=540 data-nosnippet>540</a>                Duration::from_millis(<span class="number">10</span>)
-<a href=#541 id=541 data-nosnippet>541</a>            };
-<a href=#542 id=542 data-nosnippet>542</a>
-<a href=#543 id=543 data-nosnippet>543</a>            <span class="comment">// Skip if not time to update or already complete
-<a href=#544 id=544 data-nosnippet>544</a>            </span><span class="kw">if </span>renderer.last_update.elapsed() &lt; speed || renderer.generator.is_complete() {
-<a href=#545 id=545 data-nosnippet>545</a>                <span class="kw">return</span>;
-<a href=#546 id=546 data-nosnippet>546</a>            }
-<a href=#547 id=547 data-nosnippet>547</a>
-<a href=#548 id=548 data-nosnippet>548</a>            <span class="comment">// Process animation steps
-<a href=#549 id=549 data-nosnippet>549</a>            </span><span class="kw">let </span>steps = <span class="kw">if </span>renderer.generator.fast_mode { <span class="number">30 </span>} <span class="kw">else </span>{ <span class="number">10 </span>};
-<a href=#550 id=550 data-nosnippet>550</a>            <span class="kw">for _ in </span><span class="number">0</span>..steps {
-<a href=#551 id=551 data-nosnippet>551</a>                <span class="kw">if </span>!renderer.generator.step() {
-<a href=#552 id=552 data-nosnippet>552</a>                    <span class="kw">break</span>;
-<a href=#553 id=553 data-nosnippet>553</a>                }
-<a href=#554 id=554 data-nosnippet>554</a>            }
+<a href=#513 id=513 data-nosnippet>513</a>            <span class="kw">if </span>duration.as_secs_f32() &gt;= <span class="number">1.0 </span>{
+<a href=#514 id=514 data-nosnippet>514</a>                state.game_state.current_fps = state.game_state.frame_count;
+<a href=#515 id=515 data-nosnippet>515</a>                state.game_state.frame_count = <span class="number">0</span>;
+<a href=#516 id=516 data-nosnippet>516</a>                state.game_state.last_fps_time = current_time;
+<a href=#517 id=517 data-nosnippet>517</a>            }
+<a href=#518 id=518 data-nosnippet>518</a>
+<a href=#519 id=519 data-nosnippet>519</a>            <span class="kw">let </span>delta_time = current_time
+<a href=#520 id=520 data-nosnippet>520</a>                .duration_since(state.game_state.last_frame_time)
+<a href=#521 id=521 data-nosnippet>521</a>                .as_secs_f32();
+<a href=#522 id=522 data-nosnippet>522</a>
+<a href=#523 id=523 data-nosnippet>523</a>            state.game_state.delta_time = delta_time;
+<a href=#524 id=524 data-nosnippet>524</a>            state.game_state.last_frame_time = current_time;
+<a href=#525 id=525 data-nosnippet>525</a>
+<a href=#526 id=526 data-nosnippet>526</a>            <span class="kw">if </span>state
+<a href=#527 id=527 data-nosnippet>527</a>                .wgpu_renderer
+<a href=#528 id=528 data-nosnippet>528</a>                .game_renderer
+<a href=#529 id=529 data-nosnippet>529</a>                .debug_renderer
+<a href=#530 id=530 data-nosnippet>530</a>                .debug_render_bounding_boxes
+<a href=#531 id=531 data-nosnippet>531</a>            {
+<a href=#532 id=532 data-nosnippet>532</a>                state
+<a href=#533 id=533 data-nosnippet>533</a>                    .wgpu_renderer
+<a href=#534 id=534 data-nosnippet>534</a>                    .game_renderer
+<a href=#535 id=535 data-nosnippet>535</a>                    .debug_renderer
+<a href=#536 id=536 data-nosnippet>536</a>                    .update_debug_vertices(
+<a href=#537 id=537 data-nosnippet>537</a>                        <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
+<a href=#538 id=538 data-nosnippet>538</a>                        <span class="kw-2">&amp;</span>state.game_state.collision_system,
+<a href=#539 id=539 data-nosnippet>539</a>                    );
+<a href=#540 id=540 data-nosnippet>540</a>            }
+<a href=#541 id=541 data-nosnippet>541</a>        }
+<a href=#542 id=542 data-nosnippet>542</a>    }
+<a href=#543 id=543 data-nosnippet>543</a>
+<a href=#544 id=544 data-nosnippet>544</a>    <span class="doccomment">/// Advances the maze generation animation and uploads new geometry when complete.
+<a href=#545 id=545 data-nosnippet>545</a>    </span><span class="kw">pub fn </span>handle_maze_generation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#546 id=546 data-nosnippet>546</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
+<a href=#547 id=547 data-nosnippet>547</a>            <span class="kw">let </span>renderer = <span class="kw-2">&amp;mut </span>state.wgpu_renderer.loading_screen_renderer;
+<a href=#548 id=548 data-nosnippet>548</a>
+<a href=#549 id=549 data-nosnippet>549</a>            <span class="comment">// Calculate update timing
+<a href=#550 id=550 data-nosnippet>550</a>            </span><span class="kw">let </span>speed = <span class="kw">if </span>renderer.generator.fast_mode {
+<a href=#551 id=551 data-nosnippet>551</a>                Duration::from_millis(<span class="number">10</span>) / <span class="number">20
+<a href=#552 id=552 data-nosnippet>552</a>            </span>} <span class="kw">else </span>{
+<a href=#553 id=553 data-nosnippet>553</a>                Duration::from_millis(<span class="number">10</span>)
+<a href=#554 id=554 data-nosnippet>554</a>            };
 <a href=#555 id=555 data-nosnippet>555</a>
-<a href=#556 id=556 data-nosnippet>556</a>            <span class="comment">// Report progress
-<a href=#557 id=557 data-nosnippet>557</a>            </span><span class="kw">let </span>(current, total) = renderer.generator.get_progress();
-<a href=#558 id=558 data-nosnippet>558</a>            <span class="kw">if </span>current % <span class="number">50 </span>== <span class="number">0 </span>|| renderer.generator.is_complete() {
-<a href=#559 id=559 data-nosnippet>559</a>                <span class="macro">println!</span>(
-<a href=#560 id=560 data-nosnippet>560</a>                    <span class="string">"Progress: {}/{} ({:.1}%)"</span>,
-<a href=#561 id=561 data-nosnippet>561</a>                    current,
-<a href=#562 id=562 data-nosnippet>562</a>                    total,
-<a href=#563 id=563 data-nosnippet>563</a>                    (current <span class="kw">as </span>f32 * <span class="number">100.0 </span>/ total.max(<span class="number">1</span>) <span class="kw">as </span>f32)
-<a href=#564 id=564 data-nosnippet>564</a>                );
-<a href=#565 id=565 data-nosnippet>565</a>
-<a href=#566 id=566 data-nosnippet>566</a>                <span class="comment">// Handle completion
-<a href=#567 id=567 data-nosnippet>567</a>                </span><span class="kw">if </span>renderer.generator.is_complete() {
-<a href=#568 id=568 data-nosnippet>568</a>                    <span class="macro">println!</span>(<span class="string">"Maze generation complete! Saving to file..."</span>);
-<a href=#569 id=569 data-nosnippet>569</a>                    <span class="kw">let </span>maze_lock = renderer.maze.lock().unwrap();
-<a href=#570 id=570 data-nosnippet>570</a>                    state.game_state.maze_path = maze_lock.save_to_file().map_or_else(
-<a href=#571 id=571 data-nosnippet>571</a>                        |err| {
-<a href=#572 id=572 data-nosnippet>572</a>                            <span class="macro">eprintln!</span>(<span class="string">"Failed to save maze: {}"</span>, err);
-<a href=#573 id=573 data-nosnippet>573</a>                            std::process::exit(<span class="number">1</span>);
-<a href=#574 id=574 data-nosnippet>574</a>                        },
-<a href=#575 id=575 data-nosnippet>575</a>                        <span class="prelude-val">Some</span>,
-<a href=#576 id=576 data-nosnippet>576</a>                    );
-<a href=#577 id=577 data-nosnippet>577</a>
-<a href=#578 id=578 data-nosnippet>578</a>                    <span class="comment">// Generate geometry if maze was saved successfully
-<a href=#579 id=579 data-nosnippet>579</a>                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(maze_path) = <span class="kw-2">&amp;</span>state.game_state.maze_path {
-<a href=#580 id=580 data-nosnippet>580</a>                        <span class="kw">let </span>(maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
-<a href=#581 id=581 data-nosnippet>581</a>                        <span class="kw">let </span>(<span class="kw-2">mut </span>floor_vertices, exit_position) =
-<a href=#582 id=582 data-nosnippet>582</a>                            Vertex::create_floor_vertices(<span class="kw-2">&amp;</span>maze_grid, exit_cell);
-<a href=#583 id=583 data-nosnippet>583</a>
-<a href=#584 id=584 data-nosnippet>584</a>                        state.wgpu_renderer.game_renderer.exit_position = <span class="prelude-val">Some</span>(exit_position);
-<a href=#585 id=585 data-nosnippet>585</a>
-<a href=#586 id=586 data-nosnippet>586</a>                        floor_vertices.append(<span class="kw-2">&amp;mut </span>Vertex::create_wall_vertices(<span class="kw-2">&amp;</span>maze_grid));
-<a href=#587 id=587 data-nosnippet>587</a>
-<a href=#588 id=588 data-nosnippet>588</a>                        state.wgpu_renderer.game_renderer.vertex_buffer = state
-<a href=#589 id=589 data-nosnippet>589</a>                            .wgpu_renderer
-<a href=#590 id=590 data-nosnippet>590</a>                            .device
-<a href=#591 id=591 data-nosnippet>591</a>                            .create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor {
-<a href=#592 id=592 data-nosnippet>592</a>                                label: <span class="prelude-val">Some</span>(<span class="string">"Combined Vertex Buffer"</span>),
-<a href=#593 id=593 data-nosnippet>593</a>                                contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>floor_vertices),
-<a href=#594 id=594 data-nosnippet>594</a>                                usage: wgpu::BufferUsages::VERTEX,
-<a href=#595 id=595 data-nosnippet>595</a>                            });
+<a href=#556 id=556 data-nosnippet>556</a>            <span class="comment">// Skip if not time to update or already complete
+<a href=#557 id=557 data-nosnippet>557</a>            </span><span class="kw">if </span>renderer.last_update.elapsed() &lt; speed || renderer.generator.is_complete() {
+<a href=#558 id=558 data-nosnippet>558</a>                <span class="kw">return</span>;
+<a href=#559 id=559 data-nosnippet>559</a>            }
+<a href=#560 id=560 data-nosnippet>560</a>
+<a href=#561 id=561 data-nosnippet>561</a>            <span class="comment">// Process animation steps
+<a href=#562 id=562 data-nosnippet>562</a>            </span><span class="kw">let </span>steps = <span class="kw">if </span>renderer.generator.fast_mode { <span class="number">30 </span>} <span class="kw">else </span>{ <span class="number">10 </span>};
+<a href=#563 id=563 data-nosnippet>563</a>            <span class="kw">for _ in </span><span class="number">0</span>..steps {
+<a href=#564 id=564 data-nosnippet>564</a>                <span class="kw">if </span>!renderer.generator.step() {
+<a href=#565 id=565 data-nosnippet>565</a>                    <span class="kw">break</span>;
+<a href=#566 id=566 data-nosnippet>566</a>                }
+<a href=#567 id=567 data-nosnippet>567</a>            }
+<a href=#568 id=568 data-nosnippet>568</a>
+<a href=#569 id=569 data-nosnippet>569</a>            <span class="comment">// Report progress
+<a href=#570 id=570 data-nosnippet>570</a>            </span><span class="kw">let </span>(current, total) = renderer.generator.get_progress();
+<a href=#571 id=571 data-nosnippet>571</a>            <span class="kw">if </span>current % <span class="number">50 </span>== <span class="number">0 </span>|| renderer.generator.is_complete() {
+<a href=#572 id=572 data-nosnippet>572</a>                <span class="macro">println!</span>(
+<a href=#573 id=573 data-nosnippet>573</a>                    <span class="string">"Progress: {}/{} ({:.1}%)"</span>,
+<a href=#574 id=574 data-nosnippet>574</a>                    current,
+<a href=#575 id=575 data-nosnippet>575</a>                    total,
+<a href=#576 id=576 data-nosnippet>576</a>                    (current <span class="kw">as </span>f32 * <span class="number">100.0 </span>/ total.max(<span class="number">1</span>) <span class="kw">as </span>f32)
+<a href=#577 id=577 data-nosnippet>577</a>                );
+<a href=#578 id=578 data-nosnippet>578</a>
+<a href=#579 id=579 data-nosnippet>579</a>                <span class="comment">// Handle completion
+<a href=#580 id=580 data-nosnippet>580</a>                </span><span class="kw">if </span>renderer.generator.is_complete() {
+<a href=#581 id=581 data-nosnippet>581</a>                    <span class="macro">println!</span>(<span class="string">"Maze generation complete! Saving to file..."</span>);
+<a href=#582 id=582 data-nosnippet>582</a>                    <span class="kw">let </span>maze_lock = renderer.maze.lock().unwrap();
+<a href=#583 id=583 data-nosnippet>583</a>                    state.game_state.maze_path = maze_lock.save_to_file().map_or_else(
+<a href=#584 id=584 data-nosnippet>584</a>                        |err| {
+<a href=#585 id=585 data-nosnippet>585</a>                            <span class="macro">eprintln!</span>(<span class="string">"Failed to save maze: {}"</span>, err);
+<a href=#586 id=586 data-nosnippet>586</a>                            std::process::exit(<span class="number">1</span>);
+<a href=#587 id=587 data-nosnippet>587</a>                        },
+<a href=#588 id=588 data-nosnippet>588</a>                        <span class="prelude-val">Some</span>,
+<a href=#589 id=589 data-nosnippet>589</a>                    );
+<a href=#590 id=590 data-nosnippet>590</a>
+<a href=#591 id=591 data-nosnippet>591</a>                    <span class="comment">// Generate geometry if maze was saved successfully
+<a href=#592 id=592 data-nosnippet>592</a>                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(maze_path) = <span class="kw-2">&amp;</span>state.game_state.maze_path {
+<a href=#593 id=593 data-nosnippet>593</a>                        <span class="kw">let </span>(maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
+<a href=#594 id=594 data-nosnippet>594</a>                        <span class="kw">let </span>(<span class="kw-2">mut </span>floor_vertices, exit_position) =
+<a href=#595 id=595 data-nosnippet>595</a>                            Vertex::create_floor_vertices(<span class="kw-2">&amp;</span>maze_grid, exit_cell);
 <a href=#596 id=596 data-nosnippet>596</a>
-<a href=#597 id=597 data-nosnippet>597</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>(exit_cell_position) = exit_cell {
-<a href=#598 id=598 data-nosnippet>598</a>                            state.game_state.exit_cell = exit_cell_position;
-<a href=#599 id=599 data-nosnippet>599</a>                        }
+<a href=#597 id=597 data-nosnippet>597</a>                        state.wgpu_renderer.game_renderer.exit_position = <span class="prelude-val">Some</span>(exit_position);
+<a href=#598 id=598 data-nosnippet>598</a>
+<a href=#599 id=599 data-nosnippet>599</a>                        floor_vertices.append(<span class="kw-2">&amp;mut </span>Vertex::create_wall_vertices(<span class="kw-2">&amp;</span>maze_grid));
 <a href=#600 id=600 data-nosnippet>600</a>
-<a href=#601 id=601 data-nosnippet>601</a>                        state
-<a href=#602 id=602 data-nosnippet>602</a>                            .game_state
-<a href=#603 id=603 data-nosnippet>603</a>                            .collision_system
-<a href=#604 id=604 data-nosnippet>604</a>                            .build_from_maze(<span class="kw-2">&amp;</span>maze_grid);
-<a href=#605 id=605 data-nosnippet>605</a>
-<a href=#606 id=606 data-nosnippet>606</a>                        <span class="comment">// Spawn the player at the bottom-left corner of the maze
-<a href=#607 id=607 data-nosnippet>607</a>                        </span>state.game_state.player.spawn_at_maze_entrance(<span class="kw-2">&amp;</span>maze_grid);
-<a href=#608 id=608 data-nosnippet>608</a>                    }
-<a href=#609 id=609 data-nosnippet>609</a>                }
-<a href=#610 id=610 data-nosnippet>610</a>            }
-<a href=#611 id=611 data-nosnippet>611</a>        }
-<a href=#612 id=612 data-nosnippet>612</a>    }
-<a href=#613 id=613 data-nosnippet>613</a>}
-<a href=#614 id=614 data-nosnippet>614</a>
-<a href=#615 id=615 data-nosnippet>615</a><span class="kw">impl </span>ApplicationHandler <span class="kw">for </span>App {
-<a href=#616 id=616 data-nosnippet>616</a>    <span class="doccomment">/// Called when the application is resumed; creates the window and initializes state.
-<a href=#617 id=617 data-nosnippet>617</a>    </span><span class="kw">fn </span>resumed(<span class="kw-2">&amp;mut </span><span class="self">self</span>, event_loop: <span class="kw-2">&amp;</span>ActiveEventLoop) {
-<a href=#618 id=618 data-nosnippet>618</a>        <span class="kw">let </span>window = <span class="kw">match </span>event_loop.create_window(Window::default_attributes()) {
-<a href=#619 id=619 data-nosnippet>619</a>            <span class="prelude-val">Ok</span>(window) =&gt; window,
-<a href=#620 id=620 data-nosnippet>620</a>            <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#621 id=621 data-nosnippet>621</a>                <span class="macro">panic!</span>(<span class="string">"Failed to create window: {}"</span>, err);
-<a href=#622 id=622 data-nosnippet>622</a>            }
-<a href=#623 id=623 data-nosnippet>623</a>        };
-<a href=#624 id=624 data-nosnippet>624</a>        pollster::block_on(<span class="self">self</span>.set_window(window));
+<a href=#601 id=601 data-nosnippet>601</a>                        state.wgpu_renderer.game_renderer.vertex_buffer = state
+<a href=#602 id=602 data-nosnippet>602</a>                            .wgpu_renderer
+<a href=#603 id=603 data-nosnippet>603</a>                            .device
+<a href=#604 id=604 data-nosnippet>604</a>                            .create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor {
+<a href=#605 id=605 data-nosnippet>605</a>                                label: <span class="prelude-val">Some</span>(<span class="string">"Combined Vertex Buffer"</span>),
+<a href=#606 id=606 data-nosnippet>606</a>                                contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>floor_vertices),
+<a href=#607 id=607 data-nosnippet>607</a>                                usage: wgpu::BufferUsages::VERTEX,
+<a href=#608 id=608 data-nosnippet>608</a>                            });
+<a href=#609 id=609 data-nosnippet>609</a>
+<a href=#610 id=610 data-nosnippet>610</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>(exit_cell_position) = exit_cell {
+<a href=#611 id=611 data-nosnippet>611</a>                            state.game_state.exit_cell = exit_cell_position;
+<a href=#612 id=612 data-nosnippet>612</a>                        }
+<a href=#613 id=613 data-nosnippet>613</a>
+<a href=#614 id=614 data-nosnippet>614</a>                        state
+<a href=#615 id=615 data-nosnippet>615</a>                            .game_state
+<a href=#616 id=616 data-nosnippet>616</a>                            .collision_system
+<a href=#617 id=617 data-nosnippet>617</a>                            .build_from_maze(<span class="kw-2">&amp;</span>maze_grid);
+<a href=#618 id=618 data-nosnippet>618</a>
+<a href=#619 id=619 data-nosnippet>619</a>                        <span class="comment">// Spawn the player at the bottom-left corner of the maze
+<a href=#620 id=620 data-nosnippet>620</a>                        </span>state.game_state.player.spawn_at_maze_entrance(<span class="kw-2">&amp;</span>maze_grid);
+<a href=#621 id=621 data-nosnippet>621</a>                    }
+<a href=#622 id=622 data-nosnippet>622</a>                }
+<a href=#623 id=623 data-nosnippet>623</a>            }
+<a href=#624 id=624 data-nosnippet>624</a>        }
 <a href=#625 id=625 data-nosnippet>625</a>    }
-<a href=#626 id=626 data-nosnippet>626</a>
-<a href=#627 id=627 data-nosnippet>627</a>    <span class="doccomment">/// Handles device-level events, such as mouse motion for camera control.
-<a href=#628 id=628 data-nosnippet>628</a>    </span><span class="kw">fn </span>device_event(
-<a href=#629 id=629 data-nosnippet>629</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#630 id=630 data-nosnippet>630</a>        _event_loop: <span class="kw-2">&amp;</span>ActiveEventLoop,
-<a href=#631 id=631 data-nosnippet>631</a>        _device_id: DeviceId,
-<a href=#632 id=632 data-nosnippet>632</a>        event: DeviceEvent,
-<a href=#633 id=633 data-nosnippet>633</a>    ) {
-<a href=#634 id=634 data-nosnippet>634</a>        <span class="kw">if let </span>DeviceEvent::MouseMotion { delta } = event {
-<a href=#635 id=635 data-nosnippet>635</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
-<a href=#636 id=636 data-nosnippet>636</a>                <span class="kw">if let </span><span class="prelude-val">Some</span>(window) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.window {
-<a href=#637 id=637 data-nosnippet>637</a>                    <span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Game
-<a href=#638 id=638 data-nosnippet>638</a>                        &amp;&amp; state.game_state.capture_mouse
-<a href=#639 id=639 data-nosnippet>639</a>                    {
-<a href=#640 id=640 data-nosnippet>640</a>                        state.game_state.player.mouse_movement(delta.<span class="number">0</span>, delta.<span class="number">1</span>);
-<a href=#641 id=641 data-nosnippet>641</a>                    }
-<a href=#642 id=642 data-nosnippet>642</a>                    state.triage_mouse(window);
-<a href=#643 id=643 data-nosnippet>643</a>                }
-<a href=#644 id=644 data-nosnippet>644</a>            }
-<a href=#645 id=645 data-nosnippet>645</a>        }
-<a href=#646 id=646 data-nosnippet>646</a>    }
-<a href=#647 id=647 data-nosnippet>647</a>
-<a href=#648 id=648 data-nosnippet>648</a>    <span class="doccomment">/// Handles all window-level events, including input, resizing, redraws, and close requests.
-<a href=#649 id=649 data-nosnippet>649</a>    </span><span class="kw">fn </span>window_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>, event_loop: <span class="kw-2">&amp;</span>ActiveEventLoop, <span class="kw">_</span>: WindowId, event: WindowEvent) {
-<a href=#650 id=650 data-nosnippet>650</a>        <span class="kw">let </span>state = <span class="kw">match </span><span class="self">self</span>.state.as_mut() {
-<a href=#651 id=651 data-nosnippet>651</a>            <span class="prelude-val">Some</span>(state) =&gt; state,
-<a href=#652 id=652 data-nosnippet>652</a>            <span class="prelude-val">None </span>=&gt; {
-<a href=#653 id=653 data-nosnippet>653</a>                <span class="macro">panic!</span>(<span class="string">"State not initialized"</span>);
-<a href=#654 id=654 data-nosnippet>654</a>            }
-<a href=#655 id=655 data-nosnippet>655</a>        };
-<a href=#656 id=656 data-nosnippet>656</a>        <span class="kw">let </span>window = <span class="kw">match </span><span class="self">self</span>.window.as_ref() {
-<a href=#657 id=657 data-nosnippet>657</a>            <span class="prelude-val">Some</span>(window) =&gt; window,
-<a href=#658 id=658 data-nosnippet>658</a>            <span class="prelude-val">None </span>=&gt; {
-<a href=#659 id=659 data-nosnippet>659</a>                <span class="macro">panic!</span>(<span class="string">"Window not initialized"</span>);
-<a href=#660 id=660 data-nosnippet>660</a>            }
-<a href=#661 id=661 data-nosnippet>661</a>        };
-<a href=#662 id=662 data-nosnippet>662</a>
-<a href=#663 id=663 data-nosnippet>663</a>        state.egui_renderer.handle_input(window, <span class="kw-2">&amp;</span>event);
-<a href=#664 id=664 data-nosnippet>664</a>
-<a href=#665 id=665 data-nosnippet>665</a>        <span class="kw">match </span>event {
-<a href=#666 id=666 data-nosnippet>666</a>            WindowEvent::CloseRequested =&gt; {
-<a href=#667 id=667 data-nosnippet>667</a>                <span class="macro">println!</span>(<span class="string">"The close button was pressed; stopping"</span>);
-<a href=#668 id=668 data-nosnippet>668</a>                event_loop.exit();
-<a href=#669 id=669 data-nosnippet>669</a>            }
-<a href=#670 id=670 data-nosnippet>670</a>
-<a href=#671 id=671 data-nosnippet>671</a>            WindowEvent::Resized(new_size) =&gt; {
-<a href=#672 id=672 data-nosnippet>672</a>                <span class="self">self</span>.handle_resized(new_size.width, new_size.height);
+<a href=#626 id=626 data-nosnippet>626</a>}
+<a href=#627 id=627 data-nosnippet>627</a>
+<a href=#628 id=628 data-nosnippet>628</a><span class="kw">impl </span>ApplicationHandler <span class="kw">for </span>App {
+<a href=#629 id=629 data-nosnippet>629</a>    <span class="doccomment">/// Called when the application is resumed; creates the window and initializes state.
+<a href=#630 id=630 data-nosnippet>630</a>    </span><span class="kw">fn </span>resumed(<span class="kw-2">&amp;mut </span><span class="self">self</span>, event_loop: <span class="kw-2">&amp;</span>ActiveEventLoop) {
+<a href=#631 id=631 data-nosnippet>631</a>        <span class="kw">let </span>window = <span class="kw">match </span>event_loop.create_window(Window::default_attributes()) {
+<a href=#632 id=632 data-nosnippet>632</a>            <span class="prelude-val">Ok</span>(window) =&gt; window,
+<a href=#633 id=633 data-nosnippet>633</a>            <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#634 id=634 data-nosnippet>634</a>                <span class="macro">panic!</span>(<span class="string">"Failed to create window: {}"</span>, err);
+<a href=#635 id=635 data-nosnippet>635</a>            }
+<a href=#636 id=636 data-nosnippet>636</a>        };
+<a href=#637 id=637 data-nosnippet>637</a>        pollster::block_on(<span class="self">self</span>.set_window(window));
+<a href=#638 id=638 data-nosnippet>638</a>    }
+<a href=#639 id=639 data-nosnippet>639</a>
+<a href=#640 id=640 data-nosnippet>640</a>    <span class="doccomment">/// Handles device-level events, such as mouse motion for camera control.
+<a href=#641 id=641 data-nosnippet>641</a>    </span><span class="kw">fn </span>device_event(
+<a href=#642 id=642 data-nosnippet>642</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#643 id=643 data-nosnippet>643</a>        _event_loop: <span class="kw-2">&amp;</span>ActiveEventLoop,
+<a href=#644 id=644 data-nosnippet>644</a>        _device_id: DeviceId,
+<a href=#645 id=645 data-nosnippet>645</a>        event: DeviceEvent,
+<a href=#646 id=646 data-nosnippet>646</a>    ) {
+<a href=#647 id=647 data-nosnippet>647</a>        <span class="kw">if let </span>DeviceEvent::MouseMotion { delta } = event {
+<a href=#648 id=648 data-nosnippet>648</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
+<a href=#649 id=649 data-nosnippet>649</a>                <span class="kw">if let </span><span class="prelude-val">Some</span>(window) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.window {
+<a href=#650 id=650 data-nosnippet>650</a>                    <span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Game
+<a href=#651 id=651 data-nosnippet>651</a>                        &amp;&amp; state.game_state.capture_mouse
+<a href=#652 id=652 data-nosnippet>652</a>                    {
+<a href=#653 id=653 data-nosnippet>653</a>                        state.game_state.player.mouse_movement(delta.<span class="number">0</span>, delta.<span class="number">1</span>);
+<a href=#654 id=654 data-nosnippet>654</a>                    }
+<a href=#655 id=655 data-nosnippet>655</a>                    state.triage_mouse(window);
+<a href=#656 id=656 data-nosnippet>656</a>                }
+<a href=#657 id=657 data-nosnippet>657</a>            }
+<a href=#658 id=658 data-nosnippet>658</a>        }
+<a href=#659 id=659 data-nosnippet>659</a>    }
+<a href=#660 id=660 data-nosnippet>660</a>
+<a href=#661 id=661 data-nosnippet>661</a>    <span class="doccomment">/// Handles all window-level events, including input, resizing, redraws, and close requests.
+<a href=#662 id=662 data-nosnippet>662</a>    </span><span class="kw">fn </span>window_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>, event_loop: <span class="kw-2">&amp;</span>ActiveEventLoop, <span class="kw">_</span>: WindowId, event: WindowEvent) {
+<a href=#663 id=663 data-nosnippet>663</a>        <span class="kw">let </span>state = <span class="kw">match </span><span class="self">self</span>.state.as_mut() {
+<a href=#664 id=664 data-nosnippet>664</a>            <span class="prelude-val">Some</span>(state) =&gt; state,
+<a href=#665 id=665 data-nosnippet>665</a>            <span class="prelude-val">None </span>=&gt; {
+<a href=#666 id=666 data-nosnippet>666</a>                <span class="macro">panic!</span>(<span class="string">"State not initialized"</span>);
+<a href=#667 id=667 data-nosnippet>667</a>            }
+<a href=#668 id=668 data-nosnippet>668</a>        };
+<a href=#669 id=669 data-nosnippet>669</a>        <span class="kw">let </span>window = <span class="kw">match </span><span class="self">self</span>.window.as_ref() {
+<a href=#670 id=670 data-nosnippet>670</a>            <span class="prelude-val">Some</span>(window) =&gt; window,
+<a href=#671 id=671 data-nosnippet>671</a>            <span class="prelude-val">None </span>=&gt; {
+<a href=#672 id=672 data-nosnippet>672</a>                <span class="macro">panic!</span>(<span class="string">"Window not initialized"</span>);
 <a href=#673 id=673 data-nosnippet>673</a>            }
-<a href=#674 id=674 data-nosnippet>674</a>
-<a href=#675 id=675 data-nosnippet>675</a>            WindowEvent::KeyboardInput {
-<a href=#676 id=676 data-nosnippet>676</a>                event:
-<a href=#677 id=677 data-nosnippet>677</a>                    KeyEvent {
-<a href=#678 id=678 data-nosnippet>678</a>                        logical_key: key,
-<a href=#679 id=679 data-nosnippet>679</a>                        state: key_state,
-<a href=#680 id=680 data-nosnippet>680</a>                        repeat: <span class="bool-val">false</span>,
-<a href=#681 id=681 data-nosnippet>681</a>                        ..
-<a href=#682 id=682 data-nosnippet>682</a>                    },
-<a href=#683 id=683 data-nosnippet>683</a>                ..
-<a href=#684 id=684 data-nosnippet>684</a>            } =&gt; {
-<a href=#685 id=685 data-nosnippet>685</a>                <span class="kw">if let </span><span class="prelude-val">Some</span>(game_key) = winit_key_to_game_key(<span class="kw-2">&amp;</span>key) {
-<a href=#686 id=686 data-nosnippet>686</a>                    <span class="kw">match </span>key_state {
-<a href=#687 id=687 data-nosnippet>687</a>                        ElementState::Pressed =&gt; {
-<a href=#688 id=688 data-nosnippet>688</a>                            state.key_state.press_key(game_key);
-<a href=#689 id=689 data-nosnippet>689</a>
-<a href=#690 id=690 data-nosnippet>690</a>                            <span class="comment">// Handle non-movement keys immediately on press
-<a href=#691 id=691 data-nosnippet>691</a>                            </span><span class="kw">match </span>game_key {
-<a href=#692 id=692 data-nosnippet>692</a>                                GameKey::Quit =&gt; event_loop.exit(),
-<a href=#693 id=693 data-nosnippet>693</a>                                GameKey::ToggleSliders =&gt; {
-<a href=#694 id=694 data-nosnippet>694</a>                                    state.ui.show_sliders = !state.ui.show_sliders
-<a href=#695 id=695 data-nosnippet>695</a>                                }
-<a href=#696 id=696 data-nosnippet>696</a>                                GameKey::ToggleBoundingBoxes =&gt; {
-<a href=#697 id=697 data-nosnippet>697</a>                                    state
-<a href=#698 id=698 data-nosnippet>698</a>                                        .wgpu_renderer
-<a href=#699 id=699 data-nosnippet>699</a>                                        .game_renderer
-<a href=#700 id=700 data-nosnippet>700</a>                                        .debug_renderer
-<a href=#701 id=701 data-nosnippet>701</a>                                        .debug_render_bounding_boxes = !state
-<a href=#702 id=702 data-nosnippet>702</a>                                        .wgpu_renderer
-<a href=#703 id=703 data-nosnippet>703</a>                                        .game_renderer
-<a href=#704 id=704 data-nosnippet>704</a>                                        .debug_renderer
-<a href=#705 id=705 data-nosnippet>705</a>                                        .debug_render_bounding_boxes;
-<a href=#706 id=706 data-nosnippet>706</a>                                }
-<a href=#707 id=707 data-nosnippet>707</a>                                GameKey::Escape =&gt; {
-<a href=#708 id=708 data-nosnippet>708</a>                                    state.game_state.capture_mouse =
-<a href=#709 id=709 data-nosnippet>709</a>                                        !state.game_state.capture_mouse;
-<a href=#710 id=710 data-nosnippet>710</a>                                }
-<a href=#711 id=711 data-nosnippet>711</a>
-<a href=#712 id=712 data-nosnippet>712</a>                                <span class="kw">_ </span>=&gt; {} <span class="comment">// Movement keys are handled in process_movement
-<a href=#713 id=713 data-nosnippet>713</a>                            </span>}
-<a href=#714 id=714 data-nosnippet>714</a>                        }
-<a href=#715 id=715 data-nosnippet>715</a>                        ElementState::Released =&gt; {
-<a href=#716 id=716 data-nosnippet>716</a>                            state.key_state.release_key(game_key);
-<a href=#717 id=717 data-nosnippet>717</a>                        }
-<a href=#718 id=718 data-nosnippet>718</a>                    }
-<a href=#719 id=719 data-nosnippet>719</a>                }
-<a href=#720 id=720 data-nosnippet>720</a>            }
-<a href=#721 id=721 data-nosnippet>721</a>
-<a href=#722 id=722 data-nosnippet>722</a>            WindowEvent::MouseInput { state, button, .. } =&gt; <span class="kw">match </span>state {
-<a href=#723 id=723 data-nosnippet>723</a>                ElementState::Pressed =&gt; {
-<a href=#724 id=724 data-nosnippet>724</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>(app_state) = <span class="self">self</span>.state.as_mut() {
-<a href=#725 id=725 data-nosnippet>725</a>                        <span class="kw">match </span>button {
-<a href=#726 id=726 data-nosnippet>726</a>                            MouseButton::Left =&gt; {
-<a href=#727 id=727 data-nosnippet>727</a>                                app_state.key_state.press_key(GameKey::MouseButtonLeft);
-<a href=#728 id=728 data-nosnippet>728</a>                            }
-<a href=#729 id=729 data-nosnippet>729</a>                            MouseButton::Right =&gt; {
-<a href=#730 id=730 data-nosnippet>730</a>                                app_state.key_state.press_key(GameKey::MouseButtonRight);
-<a href=#731 id=731 data-nosnippet>731</a>                            }
-<a href=#732 id=732 data-nosnippet>732</a>                            <span class="kw">_ </span>=&gt; {}
-<a href=#733 id=733 data-nosnippet>733</a>                        }
-<a href=#734 id=734 data-nosnippet>734</a>                    }
-<a href=#735 id=735 data-nosnippet>735</a>                }
-<a href=#736 id=736 data-nosnippet>736</a>                ElementState::Released =&gt; {
+<a href=#674 id=674 data-nosnippet>674</a>        };
+<a href=#675 id=675 data-nosnippet>675</a>
+<a href=#676 id=676 data-nosnippet>676</a>        state.egui_renderer.handle_input(window, <span class="kw-2">&amp;</span>event);
+<a href=#677 id=677 data-nosnippet>677</a>
+<a href=#678 id=678 data-nosnippet>678</a>        <span class="kw">match </span>event {
+<a href=#679 id=679 data-nosnippet>679</a>            WindowEvent::CloseRequested =&gt; {
+<a href=#680 id=680 data-nosnippet>680</a>                <span class="macro">println!</span>(<span class="string">"The close button was pressed; stopping"</span>);
+<a href=#681 id=681 data-nosnippet>681</a>                event_loop.exit();
+<a href=#682 id=682 data-nosnippet>682</a>            }
+<a href=#683 id=683 data-nosnippet>683</a>
+<a href=#684 id=684 data-nosnippet>684</a>            WindowEvent::Resized(new_size) =&gt; {
+<a href=#685 id=685 data-nosnippet>685</a>                <span class="self">self</span>.handle_resized(new_size.width, new_size.height);
+<a href=#686 id=686 data-nosnippet>686</a>            }
+<a href=#687 id=687 data-nosnippet>687</a>
+<a href=#688 id=688 data-nosnippet>688</a>            WindowEvent::KeyboardInput {
+<a href=#689 id=689 data-nosnippet>689</a>                event:
+<a href=#690 id=690 data-nosnippet>690</a>                    KeyEvent {
+<a href=#691 id=691 data-nosnippet>691</a>                        logical_key: key,
+<a href=#692 id=692 data-nosnippet>692</a>                        state: key_state,
+<a href=#693 id=693 data-nosnippet>693</a>                        repeat: <span class="bool-val">false</span>,
+<a href=#694 id=694 data-nosnippet>694</a>                        ..
+<a href=#695 id=695 data-nosnippet>695</a>                    },
+<a href=#696 id=696 data-nosnippet>696</a>                ..
+<a href=#697 id=697 data-nosnippet>697</a>            } =&gt; {
+<a href=#698 id=698 data-nosnippet>698</a>                <span class="kw">if let </span><span class="prelude-val">Some</span>(game_key) = winit_key_to_game_key(<span class="kw-2">&amp;</span>key) {
+<a href=#699 id=699 data-nosnippet>699</a>                    <span class="kw">match </span>key_state {
+<a href=#700 id=700 data-nosnippet>700</a>                        ElementState::Pressed =&gt; {
+<a href=#701 id=701 data-nosnippet>701</a>                            state.key_state.press_key(game_key);
+<a href=#702 id=702 data-nosnippet>702</a>
+<a href=#703 id=703 data-nosnippet>703</a>                            <span class="comment">// Handle non-movement keys immediately on press
+<a href=#704 id=704 data-nosnippet>704</a>                            </span><span class="kw">match </span>game_key {
+<a href=#705 id=705 data-nosnippet>705</a>                                GameKey::Quit =&gt; event_loop.exit(),
+<a href=#706 id=706 data-nosnippet>706</a>                                GameKey::ToggleSliders =&gt; {
+<a href=#707 id=707 data-nosnippet>707</a>                                    state.ui.show_sliders = !state.ui.show_sliders
+<a href=#708 id=708 data-nosnippet>708</a>                                }
+<a href=#709 id=709 data-nosnippet>709</a>                                GameKey::ToggleBoundingBoxes =&gt; {
+<a href=#710 id=710 data-nosnippet>710</a>                                    state
+<a href=#711 id=711 data-nosnippet>711</a>                                        .wgpu_renderer
+<a href=#712 id=712 data-nosnippet>712</a>                                        .game_renderer
+<a href=#713 id=713 data-nosnippet>713</a>                                        .debug_renderer
+<a href=#714 id=714 data-nosnippet>714</a>                                        .debug_render_bounding_boxes = !state
+<a href=#715 id=715 data-nosnippet>715</a>                                        .wgpu_renderer
+<a href=#716 id=716 data-nosnippet>716</a>                                        .game_renderer
+<a href=#717 id=717 data-nosnippet>717</a>                                        .debug_renderer
+<a href=#718 id=718 data-nosnippet>718</a>                                        .debug_render_bounding_boxes;
+<a href=#719 id=719 data-nosnippet>719</a>                                }
+<a href=#720 id=720 data-nosnippet>720</a>                                GameKey::Escape =&gt; {
+<a href=#721 id=721 data-nosnippet>721</a>                                    state.game_state.capture_mouse =
+<a href=#722 id=722 data-nosnippet>722</a>                                        !state.game_state.capture_mouse;
+<a href=#723 id=723 data-nosnippet>723</a>                                }
+<a href=#724 id=724 data-nosnippet>724</a>
+<a href=#725 id=725 data-nosnippet>725</a>                                <span class="kw">_ </span>=&gt; {} <span class="comment">// Movement keys are handled in process_movement
+<a href=#726 id=726 data-nosnippet>726</a>                            </span>}
+<a href=#727 id=727 data-nosnippet>727</a>                        }
+<a href=#728 id=728 data-nosnippet>728</a>                        ElementState::Released =&gt; {
+<a href=#729 id=729 data-nosnippet>729</a>                            state.key_state.release_key(game_key);
+<a href=#730 id=730 data-nosnippet>730</a>                        }
+<a href=#731 id=731 data-nosnippet>731</a>                    }
+<a href=#732 id=732 data-nosnippet>732</a>                }
+<a href=#733 id=733 data-nosnippet>733</a>            }
+<a href=#734 id=734 data-nosnippet>734</a>
+<a href=#735 id=735 data-nosnippet>735</a>            WindowEvent::MouseInput { state, button, .. } =&gt; <span class="kw">match </span>state {
+<a href=#736 id=736 data-nosnippet>736</a>                ElementState::Pressed =&gt; {
 <a href=#737 id=737 data-nosnippet>737</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>(app_state) = <span class="self">self</span>.state.as_mut() {
 <a href=#738 id=738 data-nosnippet>738</a>                        <span class="kw">match </span>button {
 <a href=#739 id=739 data-nosnippet>739</a>                            MouseButton::Left =&gt; {
-<a href=#740 id=740 data-nosnippet>740</a>                                app_state.key_state.release_key(GameKey::MouseButtonLeft);
+<a href=#740 id=740 data-nosnippet>740</a>                                app_state.key_state.press_key(GameKey::MouseButtonLeft);
 <a href=#741 id=741 data-nosnippet>741</a>                            }
 <a href=#742 id=742 data-nosnippet>742</a>                            MouseButton::Right =&gt; {
-<a href=#743 id=743 data-nosnippet>743</a>                                app_state.key_state.release_key(GameKey::MouseButtonRight);
+<a href=#743 id=743 data-nosnippet>743</a>                                app_state.key_state.press_key(GameKey::MouseButtonRight);
 <a href=#744 id=744 data-nosnippet>744</a>                            }
 <a href=#745 id=745 data-nosnippet>745</a>                            <span class="kw">_ </span>=&gt; {}
 <a href=#746 id=746 data-nosnippet>746</a>                        }
 <a href=#747 id=747 data-nosnippet>747</a>                    }
 <a href=#748 id=748 data-nosnippet>748</a>                }
-<a href=#749 id=749 data-nosnippet>749</a>            },
-<a href=#750 id=750 data-nosnippet>750</a>
-<a href=#751 id=751 data-nosnippet>751</a>            WindowEvent::RedrawRequested =&gt; {
-<a href=#752 id=752 data-nosnippet>752</a>                <span class="kw">let </span>current_time = Instant::now();
-<a href=#753 id=753 data-nosnippet>753</a>                <span class="self">self</span>.handle_frame_timing(current_time);
-<a href=#754 id=754 data-nosnippet>754</a>                <span class="self">self</span>.handle_redraw();
-<a href=#755 id=755 data-nosnippet>755</a>            }
-<a href=#756 id=756 data-nosnippet>756</a>
-<a href=#757 id=757 data-nosnippet>757</a>            <span class="kw">_ </span>=&gt; (),
-<a href=#758 id=758 data-nosnippet>758</a>        }
-<a href=#759 id=759 data-nosnippet>759</a>    }
-<a href=#760 id=760 data-nosnippet>760</a>}</code></pre></div></section></main></body></html>
+<a href=#749 id=749 data-nosnippet>749</a>                ElementState::Released =&gt; {
+<a href=#750 id=750 data-nosnippet>750</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>(app_state) = <span class="self">self</span>.state.as_mut() {
+<a href=#751 id=751 data-nosnippet>751</a>                        <span class="kw">match </span>button {
+<a href=#752 id=752 data-nosnippet>752</a>                            MouseButton::Left =&gt; {
+<a href=#753 id=753 data-nosnippet>753</a>                                app_state.key_state.release_key(GameKey::MouseButtonLeft);
+<a href=#754 id=754 data-nosnippet>754</a>                            }
+<a href=#755 id=755 data-nosnippet>755</a>                            MouseButton::Right =&gt; {
+<a href=#756 id=756 data-nosnippet>756</a>                                app_state.key_state.release_key(GameKey::MouseButtonRight);
+<a href=#757 id=757 data-nosnippet>757</a>                            }
+<a href=#758 id=758 data-nosnippet>758</a>                            <span class="kw">_ </span>=&gt; {}
+<a href=#759 id=759 data-nosnippet>759</a>                        }
+<a href=#760 id=760 data-nosnippet>760</a>                    }
+<a href=#761 id=761 data-nosnippet>761</a>                }
+<a href=#762 id=762 data-nosnippet>762</a>            },
+<a href=#763 id=763 data-nosnippet>763</a>
+<a href=#764 id=764 data-nosnippet>764</a>            WindowEvent::RedrawRequested =&gt; {
+<a href=#765 id=765 data-nosnippet>765</a>                <span class="kw">let </span>current_time = Instant::now();
+<a href=#766 id=766 data-nosnippet>766</a>                <span class="self">self</span>.handle_frame_timing(current_time);
+<a href=#767 id=767 data-nosnippet>767</a>                <span class="self">self</span>.handle_redraw();
+<a href=#768 id=768 data-nosnippet>768</a>            }
+<a href=#769 id=769 data-nosnippet>769</a>
+<a href=#770 id=770 data-nosnippet>770</a>            <span class="kw">_ </span>=&gt; (),
+<a href=#771 id=771 data-nosnippet>771</a>        }
+<a href=#772 id=772 data-nosnippet>772</a>    }
+<a href=#773 id=773 data-nosnippet>773</a>}</code></pre></div></section></main></body></html>
