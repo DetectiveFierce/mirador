@@ -264,7 +264,7 @@ impl GameRenderer {
             0.1,    // zNear
             2000.0, // zFar
         );
-        let view_proj_matrix = projection_matrix.multiply(&view_matrix);
+        let view_proj_matrix = view_matrix.multiply(&projection_matrix);
 
         // ==============================================
         // 1. RENDER MAZE/FLOOR FIRST
@@ -274,7 +274,7 @@ impl GameRenderer {
             let model_matrix = Mat4::identity();
 
             // Combine matrices: Projection * View * Model
-            let final_mvp_matrix = view_proj_matrix.multiply(&model_matrix);
+            let final_mvp_matrix = model_matrix.multiply(&view_proj_matrix);
 
             let uniforms = Uniforms {
                 matrix: final_mvp_matrix.into(),

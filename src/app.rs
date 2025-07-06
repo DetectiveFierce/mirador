@@ -413,7 +413,7 @@ impl App {
                 state
                     .game_state
                     .collision_system
-                    .line_intersects_geometry(from, to)
+                    .cylinder_intersects_geometry(from, to, 15.0)
             },
         );
 

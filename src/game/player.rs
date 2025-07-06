@@ -54,14 +54,14 @@ impl Player {
         let yaw_matrix = Mat4::rotation_y(self.yaw);
 
         // Combine rotations: apply yaw first, then pitch
-        let rotation_matrix = pitch_matrix.multiply(&yaw_matrix);
+        let rotation_matrix = yaw_matrix.multiply(&pitch_matrix);
 
         // Create translation matrix (negative because we move the world opposite to camera)
         let translation_matrix =
             Mat4::translation(-self.position[0], -self.position[1], -self.position[2]);
 
         // View matrix = rotation * translation
-        rotation_matrix.multiply(&translation_matrix)
+        translation_matrix.multiply(&rotation_matrix)
     }
 
     pub fn get_view_proj_matrix(&self, aspect_ratio: f32, near: f32, far: f32) -> Mat4 {
@@ -74,7 +74,7 @@ impl Player {
         );
 
         // Projection * View (note the order)
-        projection_matrix.multiply(&view_matrix)
+        view_matrix.multiply(&projection_matrix)
     }
 
     /// Updates the player's orientation based on mouse movement.

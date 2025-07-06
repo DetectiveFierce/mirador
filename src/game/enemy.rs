@@ -101,37 +101,35 @@ impl EnemyPathfinder {
     where
         F: Fn([f32; 3], [f32; 3]) -> bool,
     {
-        // Work in 2D space (ignoring Y component)
         let enemy_vec = Vec3(self.position);
         let player_vec = Vec3(player_position);
         let enemy_2d = enemy_vec.to_2d();
         let player_2d = player_vec.to_2d();
 
-        // Calculate ideal direction to player
         let direction_to_player = (player_2d - enemy_2d).normalize();
 
-        // If player is too close, don't move
         if enemy_2d.distance_to(&player_2d) < self.path_radius {
             self.current_target = Some(self.position);
             return;
         }
 
-        // Calculate the ideal target point
         let ideal_target_2d = enemy_2d + direction_to_player * self.path_radius;
         let ideal_target = Vec3::from_2d(ideal_target_2d, self.position[1]);
 
-        // Check if the direct path is clear
         if !line_intersects_geometry(self.position, *ideal_target.as_array()) {
             self.current_target = Some(*ideal_target.as_array());
             return;
         }
 
-        // If direct path is blocked, rotate counter-clockwise until we find a clear path
+        // Rotation bias: rotate slightly more per step
+        let rotation_bias = 1.25; // 25% more than base
+        let adjusted_step = self.rotation_step * rotation_bias;
+        let max_rotations = (2.0 * PI / adjusted_step) as i32;
+
         let mut current_direction = direction_to_player;
-        let max_rotations = (2.0 * PI / self.rotation_step) as i32; // Full circle
 
         for _ in 0..max_rotations {
-            current_direction = current_direction.rotate(self.rotation_step);
+            current_direction = current_direction.rotate(adjusted_step);
             let test_target_2d = enemy_2d + current_direction * self.path_radius;
             let test_target = Vec3::from_2d(test_target_2d, self.position[1]);
 
@@ -141,7 +139,6 @@ impl EnemyPathfinder {
             }
         }
 
-        // If no clear path found (shouldn't happen in most cases), stay in place
         self.current_target = Some(self.position);
     }
 

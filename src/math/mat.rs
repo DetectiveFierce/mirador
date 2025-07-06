@@ -208,23 +208,6 @@ impl Mat4 {
         ])
     }
 
-    /// Multiplies two matrices (self * b).
-    ///
-    /// # Note
-    /// This implements standard matrix multiplication where:
-    /// result[i][j] = sum over k (self[i][k] * b[k][j])
-    ///
-    /// For better performance, consider optimizing with SIMD.
-    pub fn multiply(&self, b: &Mat4) -> Mat4 {
-        let mut result = [[0.0; 4]; 4];
-        for (i, row) in result.iter_mut().enumerate() {
-            for (j, cell) in row.iter_mut().enumerate() {
-                *cell = (0..4).map(|k| b.0[i][k] * self.0[k][j]).sum();
-            }
-        }
-        Mat4(result)
-    }
-
     /// Computes the inverse of an affine transformation matrix.
     ///
     /// # Returns
@@ -283,6 +266,25 @@ impl Mat4 {
             [a_inv[2][0], a_inv[2][1], a_inv[2][2], new_t[2]],
             [0.0, 0.0, 0.0, 1.0],
         ])
+    }
+
+    /// Multiplies two matrices (self * b).
+    ///
+    /// # Note
+    /// This implements standard matrix multiplication where:
+    /// result[i][j] = sum over k (self[i][k] * b[k][j])
+    ///
+    pub fn multiply(&self, b: &Mat4) -> Mat4 {
+        let mut result = [[0.0; 4]; 4];
+        for (i, row) in result.iter_mut().enumerate() {
+            for (j, cell) in row.iter_mut().enumerate() {
+                *cell = self.0[i][0] * b.0[0][j]
+                    + self.0[i][1] * b.0[1][j]
+                    + self.0[i][2] * b.0[2][j]
+                    + self.0[i][3] * b.0[3][j];
+            }
+        }
+        Mat4(result)
     }
 }
 
