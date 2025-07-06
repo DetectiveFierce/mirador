@@ -264,7 +264,7 @@
 <a href=#264 id=264 data-nosnippet>264</a>            <span class="number">0.1</span>,    <span class="comment">// zNear
 <a href=#265 id=265 data-nosnippet>265</a>            </span><span class="number">2000.0</span>, <span class="comment">// zFar
 <a href=#266 id=266 data-nosnippet>266</a>        </span>);
-<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw">let </span>view_proj_matrix = projection_matrix.multiply(<span class="kw-2">&amp;</span>view_matrix);
+<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw">let </span>view_proj_matrix = view_matrix.multiply(<span class="kw-2">&amp;</span>projection_matrix);
 <a href=#268 id=268 data-nosnippet>268</a>
 <a href=#269 id=269 data-nosnippet>269</a>        <span class="comment">// ==============================================
 <a href=#270 id=270 data-nosnippet>270</a>        // 1. RENDER MAZE/FLOOR FIRST
@@ -274,7 +274,7 @@
 <a href=#274 id=274 data-nosnippet>274</a>            </span><span class="kw">let </span>model_matrix = Mat4::identity();
 <a href=#275 id=275 data-nosnippet>275</a>
 <a href=#276 id=276 data-nosnippet>276</a>            <span class="comment">// Combine matrices: Projection * View * Model
-<a href=#277 id=277 data-nosnippet>277</a>            </span><span class="kw">let </span>final_mvp_matrix = view_proj_matrix.multiply(<span class="kw-2">&amp;</span>model_matrix);
+<a href=#277 id=277 data-nosnippet>277</a>            </span><span class="kw">let </span>final_mvp_matrix = model_matrix.multiply(<span class="kw-2">&amp;</span>view_proj_matrix);
 <a href=#278 id=278 data-nosnippet>278</a>
 <a href=#279 id=279 data-nosnippet>279</a>            <span class="kw">let </span>uniforms = Uniforms {
 <a href=#280 id=280 data-nosnippet>280</a>                matrix: final_mvp_matrix.into(),

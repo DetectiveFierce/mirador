@@ -54,14 +54,14 @@
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">let </span>yaw_matrix = Mat4::rotation_y(<span class="self">self</span>.yaw);
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a>        <span class="comment">// Combine rotations: apply yaw first, then pitch
-<a href=#57 id=57 data-nosnippet>57</a>        </span><span class="kw">let </span>rotation_matrix = pitch_matrix.multiply(<span class="kw-2">&amp;</span>yaw_matrix);
+<a href=#57 id=57 data-nosnippet>57</a>        </span><span class="kw">let </span>rotation_matrix = yaw_matrix.multiply(<span class="kw-2">&amp;</span>pitch_matrix);
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="comment">// Create translation matrix (negative because we move the world opposite to camera)
 <a href=#60 id=60 data-nosnippet>60</a>        </span><span class="kw">let </span>translation_matrix =
 <a href=#61 id=61 data-nosnippet>61</a>            Mat4::translation(-<span class="self">self</span>.position[<span class="number">0</span>], -<span class="self">self</span>.position[<span class="number">1</span>], -<span class="self">self</span>.position[<span class="number">2</span>]);
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a>        <span class="comment">// View matrix = rotation * translation
-<a href=#64 id=64 data-nosnippet>64</a>        </span>rotation_matrix.multiply(<span class="kw-2">&amp;</span>translation_matrix)
+<a href=#64 id=64 data-nosnippet>64</a>        </span>translation_matrix.multiply(<span class="kw-2">&amp;</span>rotation_matrix)
 <a href=#65 id=65 data-nosnippet>65</a>    }
 <a href=#66 id=66 data-nosnippet>66</a>
 <a href=#67 id=67 data-nosnippet>67</a>    <span class="kw">pub fn </span>get_view_proj_matrix(<span class="kw-2">&amp;</span><span class="self">self</span>, aspect_ratio: f32, near: f32, far: f32) -&gt; Mat4 {
@@ -74,7 +74,7 @@
 <a href=#74 id=74 data-nosnippet>74</a>        );
 <a href=#75 id=75 data-nosnippet>75</a>
 <a href=#76 id=76 data-nosnippet>76</a>        <span class="comment">// Projection * View (note the order)
-<a href=#77 id=77 data-nosnippet>77</a>        </span>projection_matrix.multiply(<span class="kw-2">&amp;</span>view_matrix)
+<a href=#77 id=77 data-nosnippet>77</a>        </span>view_matrix.multiply(<span class="kw-2">&amp;</span>projection_matrix)
 <a href=#78 id=78 data-nosnippet>78</a>    }
 <a href=#79 id=79 data-nosnippet>79</a>
 <a href=#80 id=80 data-nosnippet>80</a>    <span class="doccomment">/// Updates the player's orientation based on mouse movement.
