@@ -109,80 +109,76 @@
 <a href=#109 id=109 data-nosnippet>109</a>        }
 <a href=#110 id=110 data-nosnippet>110</a>
 <a href=#111 id=111 data-nosnippet>111</a>        <span class="comment">// Handle non-movement keys
-<a href=#112 id=112 data-nosnippet>112</a>        </span><span class="kw">if </span><span class="self">self</span>.is_pressed(GameKey::MouseButtonLeft)
-<a href=#113 id=113 data-nosnippet>113</a>            &amp;&amp; game_state.maze_path.is_some()
-<a href=#114 id=114 data-nosnippet>114</a>            &amp;&amp; game_state.capture_mouse
-<a href=#115 id=115 data-nosnippet>115</a>        {
-<a href=#116 id=116 data-nosnippet>116</a>            <span class="kw">if </span>game_state.current_screen == CurrentScreen::Loading {
-<a href=#117 id=117 data-nosnippet>117</a>                game_state.current_screen = CurrentScreen::Game;
-<a href=#118 id=118 data-nosnippet>118</a>                <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;mut </span>game_state.game_ui.timer {
-<a href=#119 id=119 data-nosnippet>119</a>                    timer.start();
-<a href=#120 id=120 data-nosnippet>120</a>                }
-<a href=#121 id=121 data-nosnippet>121</a>            }
-<a href=#122 id=122 data-nosnippet>122</a>            <span class="kw">if </span>game_state.current_screen == CurrentScreen::GameOver {
-<a href=#123 id=123 data-nosnippet>123</a>                <span class="comment">// cause level generation to start again
-<a href=#124 id=124 data-nosnippet>124</a>
-<a href=#125 id=125 data-nosnippet>125</a>                </span>game_state.current_screen = CurrentScreen::NewGame;
-<a href=#126 id=126 data-nosnippet>126</a>            }
-<a href=#127 id=127 data-nosnippet>127</a>        }
-<a href=#128 id=128 data-nosnippet>128</a>    }
-<a href=#129 id=129 data-nosnippet>129</a>}
-<a href=#130 id=130 data-nosnippet>130</a>
-<a href=#131 id=131 data-nosnippet>131</a><span class="macro">macro_rules!</span> match_char_key {
-<a href=#132 id=132 data-nosnippet>132</a>    (<span class="macro-nonterminal">$c</span>:expr, {
-<a href=#133 id=133 data-nosnippet>133</a>        $(<span class="macro-nonterminal">$key</span>:literal =&gt; <span class="macro-nonterminal">$variant</span>:expr),* $(,)<span class="question-mark">?
-<a href=#134 id=134 data-nosnippet>134</a>    </span>}) =&gt; {{
-<a href=#135 id=135 data-nosnippet>135</a>        <span class="kw">match </span><span class="macro-nonterminal">$c</span>.to_ascii_lowercase().as_str() {
-<a href=#136 id=136 data-nosnippet>136</a>            $(<span class="macro-nonterminal">$key </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro-nonterminal">$variant</span>),)*
-<a href=#137 id=137 data-nosnippet>137</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#138 id=138 data-nosnippet>138</a>        }
-<a href=#139 id=139 data-nosnippet>139</a>    }};
-<a href=#140 id=140 data-nosnippet>140</a>}
-<a href=#141 id=141 data-nosnippet>141</a>
-<a href=#142 id=142 data-nosnippet>142</a><span class="macro">macro_rules!</span> match_named_key {
-<a href=#143 id=143 data-nosnippet>143</a>    (<span class="macro-nonterminal">$k</span>:expr, {
-<a href=#144 id=144 data-nosnippet>144</a>        $(<span class="macro-nonterminal">$key</span>:ident =&gt; <span class="macro-nonterminal">$variant</span>:expr),* $(,)<span class="question-mark">?
-<a href=#145 id=145 data-nosnippet>145</a>    </span>}) =&gt; {{
-<a href=#146 id=146 data-nosnippet>146</a>        <span class="kw">match </span><span class="macro-nonterminal">$k </span>{
-<a href=#147 id=147 data-nosnippet>147</a>            $(winit::keyboard::NamedKey::<span class="macro-nonterminal">$key </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro-nonterminal">$variant</span>),)*
-<a href=#148 id=148 data-nosnippet>148</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#149 id=149 data-nosnippet>149</a>        }
-<a href=#150 id=150 data-nosnippet>150</a>    }};
-<a href=#151 id=151 data-nosnippet>151</a>}
-<a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a><span class="doccomment">/// Converts a winit [`keyboard::Key`] to a [`GameKey`] if it matches a mapped action.
-<a href=#154 id=154 data-nosnippet>154</a>///
-<a href=#155 id=155 data-nosnippet>155</a>/// Supports both named keys (arrows, shift, space, escape) and character keys (WASD, C, Q).
-<a href=#156 id=156 data-nosnippet>156</a>///
-<a href=#157 id=157 data-nosnippet>157</a>/// # Arguments
-<a href=#158 id=158 data-nosnippet>158</a>/// * `key` - The winit key event to convert.
-<a href=#159 id=159 data-nosnippet>159</a>///
-<a href=#160 id=160 data-nosnippet>160</a>/// # Returns
-<a href=#161 id=161 data-nosnippet>161</a>/// * `Some(GameKey)` if the key maps to a game action.
-<a href=#162 id=162 data-nosnippet>162</a>/// * `None` otherwise.
-<a href=#163 id=163 data-nosnippet>163</a></span><span class="kw">pub fn </span>winit_key_to_game_key(key: <span class="kw-2">&amp;</span>keyboard::Key) -&gt; <span class="prelude-ty">Option</span>&lt;GameKey&gt; {
-<a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">match </span>key {
-<a href=#165 id=165 data-nosnippet>165</a>        keyboard::Key::Named(named) =&gt; <span class="macro">match_named_key!</span>(named, {
-<a href=#166 id=166 data-nosnippet>166</a>            ArrowUp =&gt; GameKey::MoveForward,
-<a href=#167 id=167 data-nosnippet>167</a>            ArrowDown =&gt; GameKey::MoveBackward,
-<a href=#168 id=168 data-nosnippet>168</a>            ArrowLeft =&gt; GameKey::MoveLeft,
-<a href=#169 id=169 data-nosnippet>169</a>            ArrowRight =&gt; GameKey::MoveRight,
-<a href=#170 id=170 data-nosnippet>170</a>            Shift =&gt; GameKey::Sprint,
-<a href=#171 id=171 data-nosnippet>171</a>            Space =&gt; GameKey::Jump,
-<a href=#172 id=172 data-nosnippet>172</a>            Escape =&gt; GameKey::Escape,
-<a href=#173 id=173 data-nosnippet>173</a>        }),
-<a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a>        keyboard::Key::Character(c) =&gt; <span class="macro">match_char_key!</span>(c, {
-<a href=#176 id=176 data-nosnippet>176</a>            <span class="string">"w" </span>=&gt; GameKey::MoveForward,
-<a href=#177 id=177 data-nosnippet>177</a>            <span class="string">"s" </span>=&gt; GameKey::MoveBackward,
-<a href=#178 id=178 data-nosnippet>178</a>            <span class="string">"a" </span>=&gt; GameKey::MoveLeft,
-<a href=#179 id=179 data-nosnippet>179</a>            <span class="string">"d" </span>=&gt; GameKey::MoveRight,
-<a href=#180 id=180 data-nosnippet>180</a>            <span class="string">"c" </span>=&gt; GameKey::ToggleSliders,
-<a href=#181 id=181 data-nosnippet>181</a>            <span class="string">"q" </span>=&gt; GameKey::Quit,
-<a href=#182 id=182 data-nosnippet>182</a>            <span class="string">"b" </span>=&gt; GameKey::ToggleBoundingBoxes,
-<a href=#183 id=183 data-nosnippet>183</a>
-<a href=#184 id=184 data-nosnippet>184</a>        }),
-<a href=#185 id=185 data-nosnippet>185</a>
-<a href=#186 id=186 data-nosnippet>186</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#187 id=187 data-nosnippet>187</a>    }
-<a href=#188 id=188 data-nosnippet>188</a>}</code></pre></div></section></main></body></html>
+<a href=#112 id=112 data-nosnippet>112</a>        </span><span class="kw">if </span><span class="self">self</span>.is_pressed(GameKey::MouseButtonLeft) &amp;&amp; game_state.capture_mouse {
+<a href=#113 id=113 data-nosnippet>113</a>            <span class="kw">if </span>game_state.current_screen == CurrentScreen::Loading {
+<a href=#114 id=114 data-nosnippet>114</a>                <span class="kw">if </span>game_state.maze_path.is_some() {
+<a href=#115 id=115 data-nosnippet>115</a>                    game_state.current_screen = CurrentScreen::Game;
+<a href=#116 id=116 data-nosnippet>116</a>                    <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;mut </span>game_state.game_ui.timer {
+<a href=#117 id=117 data-nosnippet>117</a>                        timer.start();
+<a href=#118 id=118 data-nosnippet>118</a>                    }
+<a href=#119 id=119 data-nosnippet>119</a>                }
+<a href=#120 id=120 data-nosnippet>120</a>            } <span class="kw">else if </span>game_state.current_screen == CurrentScreen::GameOver {
+<a href=#121 id=121 data-nosnippet>121</a>                game_state.current_screen = CurrentScreen::NewGame;
+<a href=#122 id=122 data-nosnippet>122</a>            }
+<a href=#123 id=123 data-nosnippet>123</a>        }
+<a href=#124 id=124 data-nosnippet>124</a>    }
+<a href=#125 id=125 data-nosnippet>125</a>}
+<a href=#126 id=126 data-nosnippet>126</a>
+<a href=#127 id=127 data-nosnippet>127</a><span class="macro">macro_rules!</span> match_char_key {
+<a href=#128 id=128 data-nosnippet>128</a>    (<span class="macro-nonterminal">$c</span>:expr, {
+<a href=#129 id=129 data-nosnippet>129</a>        $(<span class="macro-nonterminal">$key</span>:literal =&gt; <span class="macro-nonterminal">$variant</span>:expr),* $(,)<span class="question-mark">?
+<a href=#130 id=130 data-nosnippet>130</a>    </span>}) =&gt; {{
+<a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">match </span><span class="macro-nonterminal">$c</span>.to_ascii_lowercase().as_str() {
+<a href=#132 id=132 data-nosnippet>132</a>            $(<span class="macro-nonterminal">$key </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro-nonterminal">$variant</span>),)*
+<a href=#133 id=133 data-nosnippet>133</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#134 id=134 data-nosnippet>134</a>        }
+<a href=#135 id=135 data-nosnippet>135</a>    }};
+<a href=#136 id=136 data-nosnippet>136</a>}
+<a href=#137 id=137 data-nosnippet>137</a>
+<a href=#138 id=138 data-nosnippet>138</a><span class="macro">macro_rules!</span> match_named_key {
+<a href=#139 id=139 data-nosnippet>139</a>    (<span class="macro-nonterminal">$k</span>:expr, {
+<a href=#140 id=140 data-nosnippet>140</a>        $(<span class="macro-nonterminal">$key</span>:ident =&gt; <span class="macro-nonterminal">$variant</span>:expr),* $(,)<span class="question-mark">?
+<a href=#141 id=141 data-nosnippet>141</a>    </span>}) =&gt; {{
+<a href=#142 id=142 data-nosnippet>142</a>        <span class="kw">match </span><span class="macro-nonterminal">$k </span>{
+<a href=#143 id=143 data-nosnippet>143</a>            $(winit::keyboard::NamedKey::<span class="macro-nonterminal">$key </span>=&gt; <span class="prelude-val">Some</span>(<span class="macro-nonterminal">$variant</span>),)*
+<a href=#144 id=144 data-nosnippet>144</a>            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#145 id=145 data-nosnippet>145</a>        }
+<a href=#146 id=146 data-nosnippet>146</a>    }};
+<a href=#147 id=147 data-nosnippet>147</a>}
+<a href=#148 id=148 data-nosnippet>148</a>
+<a href=#149 id=149 data-nosnippet>149</a><span class="doccomment">/// Converts a winit [`keyboard::Key`] to a [`GameKey`] if it matches a mapped action.
+<a href=#150 id=150 data-nosnippet>150</a>///
+<a href=#151 id=151 data-nosnippet>151</a>/// Supports both named keys (arrows, shift, space, escape) and character keys (WASD, C, Q).
+<a href=#152 id=152 data-nosnippet>152</a>///
+<a href=#153 id=153 data-nosnippet>153</a>/// # Arguments
+<a href=#154 id=154 data-nosnippet>154</a>/// * `key` - The winit key event to convert.
+<a href=#155 id=155 data-nosnippet>155</a>///
+<a href=#156 id=156 data-nosnippet>156</a>/// # Returns
+<a href=#157 id=157 data-nosnippet>157</a>/// * `Some(GameKey)` if the key maps to a game action.
+<a href=#158 id=158 data-nosnippet>158</a>/// * `None` otherwise.
+<a href=#159 id=159 data-nosnippet>159</a></span><span class="kw">pub fn </span>winit_key_to_game_key(key: <span class="kw-2">&amp;</span>keyboard::Key) -&gt; <span class="prelude-ty">Option</span>&lt;GameKey&gt; {
+<a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">match </span>key {
+<a href=#161 id=161 data-nosnippet>161</a>        keyboard::Key::Named(named) =&gt; <span class="macro">match_named_key!</span>(named, {
+<a href=#162 id=162 data-nosnippet>162</a>            ArrowUp =&gt; GameKey::MoveForward,
+<a href=#163 id=163 data-nosnippet>163</a>            ArrowDown =&gt; GameKey::MoveBackward,
+<a href=#164 id=164 data-nosnippet>164</a>            ArrowLeft =&gt; GameKey::MoveLeft,
+<a href=#165 id=165 data-nosnippet>165</a>            ArrowRight =&gt; GameKey::MoveRight,
+<a href=#166 id=166 data-nosnippet>166</a>            Shift =&gt; GameKey::Sprint,
+<a href=#167 id=167 data-nosnippet>167</a>            Space =&gt; GameKey::Jump,
+<a href=#168 id=168 data-nosnippet>168</a>            Escape =&gt; GameKey::Escape,
+<a href=#169 id=169 data-nosnippet>169</a>        }),
+<a href=#170 id=170 data-nosnippet>170</a>
+<a href=#171 id=171 data-nosnippet>171</a>        keyboard::Key::Character(c) =&gt; <span class="macro">match_char_key!</span>(c, {
+<a href=#172 id=172 data-nosnippet>172</a>            <span class="string">"w" </span>=&gt; GameKey::MoveForward,
+<a href=#173 id=173 data-nosnippet>173</a>            <span class="string">"s" </span>=&gt; GameKey::MoveBackward,
+<a href=#174 id=174 data-nosnippet>174</a>            <span class="string">"a" </span>=&gt; GameKey::MoveLeft,
+<a href=#175 id=175 data-nosnippet>175</a>            <span class="string">"d" </span>=&gt; GameKey::MoveRight,
+<a href=#176 id=176 data-nosnippet>176</a>            <span class="string">"c" </span>=&gt; GameKey::ToggleSliders,
+<a href=#177 id=177 data-nosnippet>177</a>            <span class="string">"q" </span>=&gt; GameKey::Quit,
+<a href=#178 id=178 data-nosnippet>178</a>            <span class="string">"b" </span>=&gt; GameKey::ToggleBoundingBoxes,
+<a href=#179 id=179 data-nosnippet>179</a>
+<a href=#180 id=180 data-nosnippet>180</a>        }),
+<a href=#181 id=181 data-nosnippet>181</a>
+<a href=#182 id=182 data-nosnippet>182</a>        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#183 id=183 data-nosnippet>183</a>    }
+<a href=#184 id=184 data-nosnippet>184</a>}</code></pre></div></section></main></body></html>

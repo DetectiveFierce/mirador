@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["compass","debug","enemy","game_over","stars"],"struct":["GameRenderer"]};

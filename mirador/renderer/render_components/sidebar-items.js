@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["CompassRenderer","CompassUniforms","EnemyRenderer","EnemyUniforms","ExitShaderRenderer","ExitShaderUniforms","GameOverRenderer","GameOverUniforms","GameRenderer","LoadingBarRenderer","LoadingBarUniforms","LoadingRenderer","MazeRenderConfig","MazeRenderer"]};
