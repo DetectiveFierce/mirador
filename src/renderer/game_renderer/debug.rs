@@ -5,7 +5,7 @@
 
 use crate::game::collision::CollisionSystem;
 use crate::game::collision::{AABB, BVH, BVHNode};
-use crate::renderer::vertex::Vertex;
+use crate::renderer::primitives::Vertex;
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
 /// Material ID for debug bounding boxes

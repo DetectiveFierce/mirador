@@ -6,7 +6,12 @@ pub mod renderer;
 pub mod ui;
 use winit::event_loop::{ControlFlow, EventLoop};
 
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
 fn main() {
+    #[cfg(feature = "dhat-heap")]
+    let _profiler = dhat::Profiler::new_heap();
     #[cfg(not(target_arch = "wasm32"))]
     {
         pollster::block_on(run());

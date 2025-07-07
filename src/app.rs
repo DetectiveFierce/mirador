@@ -19,9 +19,9 @@ use crate::game::GameTimer;
 use crate::game::player::Player;
 use crate::game::{CurrentScreen, TimerConfig};
 use crate::maze::parse_maze_file;
-use crate::renderer::render_components::LoadingRenderer;
+use crate::renderer::loading_renderer::LoadingRenderer;
+use crate::renderer::primitives::Vertex;
 use crate::renderer::text::TextRenderer;
-use crate::renderer::vertex::Vertex;
 use crate::{
     game::{
         GameState,
@@ -252,6 +252,9 @@ impl AppState {
         // Update score display if needed (example usage)
         // You can call this when the score changes:
         // self.text_renderer.set_score(new_score);
+        if self.game_state.enemy.pathfinder.reached_player {
+            self.game_state.current_screen = CurrentScreen::GameOver;
+        }
     }
 }
 
@@ -413,10 +416,11 @@ impl App {
                 state
                     .game_state
                     .collision_system
-                    .cylinder_intersects_geometry(from, to, 15.0)
+                    .cylinder_intersects_geometry(from, to, 5.0)
             },
         );
 
+        // Handle title screen animation if needed
         // Handle title screen animation if needed
         if state.game_state.current_screen == CurrentScreen::Loading {
             state.game_state.game_ui.stop_timer();
@@ -428,6 +432,8 @@ impl App {
             && state.game_state.player.current_cell == state.game_state.exit_cell
         {
             self.new_level(false);
+        } else if state.game_state.current_screen == CurrentScreen::Game {
+            state.game_state.enemy.pathfinder.locked = false;
         }
     }
 

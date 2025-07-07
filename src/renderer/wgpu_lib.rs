@@ -17,9 +17,9 @@
 
 use crate::game::CurrentScreen;
 use crate::game::GameState;
-use crate::renderer::render_components::GameOverRenderer;
-use crate::renderer::render_components::GameRenderer;
-use crate::renderer::render_components::LoadingRenderer;
+use crate::renderer::game_renderer::GameRenderer;
+use crate::renderer::game_renderer::game_over::GameOverRenderer;
+use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::text::TextRenderer;
 use crate::ui::ui_panel::UiState;
 use egui_wgpu::ScreenDescriptor;

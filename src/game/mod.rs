@@ -79,14 +79,14 @@ impl GameState {
             maze_path: None,
             capture_mouse: true,
             collision_system: CollisionSystem::new(
-                10.0,  // player_radius (adjust based on your player size)
+                5.0,   // player_radius (adjust based on your player size)
                 100.0, // player_height (adjust based on your player size)),
             ),
             exit_reached: false,
             exit_cell: Cell::default(),
             game_ui: GameUIManager::new(),
             current_screen: CurrentScreen::Loading,
-            enemy: Enemy::new([-1370.0, 30.0, 1370.0], 50.0),
+            enemy: Enemy::new([-0.5, 30.0, 0.0], 100.0),
         }
     }
 

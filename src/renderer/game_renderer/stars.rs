@@ -203,7 +203,7 @@ pub fn create_star_pipeline(
 ) -> (wgpu::RenderPipeline, wgpu::BindGroup) {
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Star Shader"),
-        source: wgpu::ShaderSource::Wgsl(include_str!("star_shader.wgsl").into()),
+        source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/star_shader.wgsl").into()),
     });
 
     // Create bind group layout for uniforms

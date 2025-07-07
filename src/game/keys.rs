@@ -109,19 +109,15 @@ impl KeyState {
         }
 
         // Handle non-movement keys
-        if self.is_pressed(GameKey::MouseButtonLeft)
-            && game_state.maze_path.is_some()
-            && game_state.capture_mouse
-        {
+        if self.is_pressed(GameKey::MouseButtonLeft) && game_state.capture_mouse {
             if game_state.current_screen == CurrentScreen::Loading {
-                game_state.current_screen = CurrentScreen::Game;
-                if let Some(timer) = &mut game_state.game_ui.timer {
-                    timer.start();
+                if game_state.maze_path.is_some() {
+                    game_state.current_screen = CurrentScreen::Game;
+                    if let Some(timer) = &mut game_state.game_ui.timer {
+                        timer.start();
+                    }
                 }
-            }
-            if game_state.current_screen == CurrentScreen::GameOver {
-                // cause level generation to start again
-
+            } else if game_state.current_screen == CurrentScreen::GameOver {
                 game_state.current_screen = CurrentScreen::NewGame;
             }
         }
