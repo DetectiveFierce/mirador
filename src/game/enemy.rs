@@ -151,10 +151,10 @@ impl EnemyPathfinder {
 
         if enemy_2d.distance_to(&player_2d) < self.path_radius {
             self.current_target = Some(player_position);
-            if enemy_2d.distance_to(&player_2d) < 5.0 {
+            if enemy_2d.distance_to(&player_2d) < 10.0 {
                 self.reached_player = true;
+                self.position = [0.0, 30.0, 0.0];
                 self.locked = true; // Lock enemy when close to player
-                self.position = [0.0, 30.0, 0.0]
             }
             return;
         }
@@ -314,4 +314,152 @@ impl EnemyPathfinder {
             None => true,
         }
     }
+}
+
+/// Places an enemy strategically between the player and exit position
+///
+/// # Arguments
+/// * `exit_position` - The position of the exit [x, y, z]
+/// * `player_position` - The current position of the player [x, y, z]
+/// * `placement_factor` - How close to the exit to place the enemy (0.0 = at player, 1.0 = at exit)
+/// * `offset_distance` - Optional distance to offset the enemy from the direct line (for more interesting placement)
+/// * `line_intersects_geometry` - Function to check if a line intersects with level geometry
+///
+/// # Returns
+/// * `Enemy` - A new enemy instance positioned between player and exit
+pub fn place_enemy<F>(
+    exit_position: [f32; 3],
+    player_position: [f32; 3],
+    placement_factor: f32,
+    offset_distance: Option<f32>,
+    line_intersects_geometry: F,
+) -> Enemy
+where
+    F: Fn([f32; 3], [f32; 3]) -> bool,
+{
+    let player_vec = Vec3(player_position);
+    let exit_vec = Vec3(exit_position);
+
+    // Calculate the direction from player to exit
+    let direction_to_exit = (exit_vec - player_vec).normalize();
+    let distance_to_exit = player_vec.distance_to(&exit_vec);
+
+    // Clamp placement factor to reasonable range
+    let clamped_factor = placement_factor.clamp(0.1, 0.9);
+
+    // Calculate base position along the line from player to exit
+    let base_position = player_vec + direction_to_exit * (distance_to_exit * clamped_factor);
+
+    // Apply offset if specified (perpendicular to the player-exit line)
+    let final_position = if let Some(offset) = offset_distance {
+        // Create a perpendicular vector for offsetting
+        let perpendicular = Vec3([
+            -direction_to_exit.as_array()[1], // Rotate 90 degrees in 2D
+            direction_to_exit.as_array()[0],
+            0.0,
+        ])
+        .normalize();
+
+        // Try both sides of the line to find a valid position
+        let offset_positions = [
+            base_position + perpendicular * offset,
+            base_position - perpendicular * offset,
+        ];
+
+        // Check which offset position is valid (doesn't intersect geometry)
+        let mut valid_position = base_position;
+        for &test_position in &offset_positions {
+            if !line_intersects_geometry(player_position, *test_position.as_array())
+                && !line_intersects_geometry(*test_position.as_array(), exit_position)
+            {
+                valid_position = test_position;
+                break;
+            }
+        }
+
+        valid_position
+    } else {
+        base_position
+    };
+
+    // Ensure the enemy position doesn't intersect with geometry
+    let validated_position = validate_enemy_position(
+        *final_position.as_array(),
+        player_position,
+        exit_position,
+        &line_intersects_geometry,
+    );
+
+    // Calculate appropriate path radius based on distance to exit
+    let path_radius = (distance_to_exit * 0.3).clamp(50.0, 200.0);
+
+    Enemy::new(validated_position, path_radius)
+}
+
+/// Validates and adjusts enemy position to ensure it doesn't intersect with geometry
+fn validate_enemy_position<F>(
+    proposed_position: [f32; 3],
+    player_position: [f32; 3],
+    exit_position: [f32; 3],
+    line_intersects_geometry: F,
+) -> [f32; 3]
+where
+    F: Fn([f32; 3], [f32; 3]) -> bool,
+{
+    // Check if the proposed position creates line-of-sight issues
+    if line_intersects_geometry(player_position, proposed_position)
+        || line_intersects_geometry(proposed_position, exit_position)
+    {
+        // Try to find a nearby valid position
+        let base_vec = Vec3(proposed_position);
+        let search_radius = 50.0;
+        let search_angles = [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0];
+
+        for &angle in &search_angles {
+            let angle_rad = (angle as f32).to_radians();
+            let offset = Vec3([
+                search_radius * angle_rad.cos(),
+                search_radius * angle_rad.sin(),
+                0.0,
+            ]);
+
+            let test_position = base_vec + offset;
+            let test_pos_array = *test_position.as_array();
+
+            // Check if this position works
+            if !line_intersects_geometry(player_position, test_pos_array)
+                && !line_intersects_geometry(test_pos_array, exit_position)
+            {
+                return test_pos_array;
+            }
+        }
+
+        // If no valid position found, try moving closer to the center between player and exit
+        let player_vec = Vec3(player_position);
+        let exit_vec = Vec3(exit_position);
+        let center_position = (player_vec + exit_vec) * 0.5;
+
+        *center_position.as_array()
+    } else {
+        proposed_position
+    }
+}
+
+/// Convenience function for standard enemy placement
+/// Places enemy at 60% of the distance from player to exit
+pub fn place_enemy_standard<F>(
+    exit_position: [f32; 3],
+    player_position: [f32; 3],
+    line_intersects_geometry: F,
+) -> Enemy
+where
+    F: Fn([f32; 3], [f32; 3]) -> bool,
+{
+    place_enemy(
+        exit_position,
+        player_position,
+        0.6,
+        None,
+        line_intersects_geometry,
+    )
 }

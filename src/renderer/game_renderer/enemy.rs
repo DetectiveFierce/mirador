@@ -33,8 +33,8 @@ impl EnemyRenderer {
         queue: &wgpu::Queue,
         surface_config: &wgpu::SurfaceConfiguration,
     ) -> Self {
-        // Load frankie texture
-        let frankie_texture = Self::load_frankie_texture(device, queue);
+        // Load jeffree texture
+        let jeffree_texture = Self::load_jeffree_texture(device, queue);
 
         let uniforms = EnemyUniforms {
             view_proj_matrix: [[0.0; 4]; 4],
@@ -65,9 +65,9 @@ impl EnemyRenderer {
             ..Default::default()
         });
 
-        // Create bind group for frankie texture
-        let frankie_texture_view =
-            frankie_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        // Create bind group for jeffree texture
+        let jeffree_texture_view =
+            jeffree_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
             entries: &[
@@ -77,7 +77,7 @@ impl EnemyRenderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&frankie_texture_view),
+                    resource: wgpu::BindingResource::TextureView(&jeffree_texture_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
@@ -132,14 +132,14 @@ impl EnemyRenderer {
         }
     }
 
-    fn load_frankie_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-        let path = "assets/frankie.png";
+    fn load_jeffree_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
+        let path = "assets/jeffree.png";
 
         // Load image using image crate
         let img = match image::open(path) {
             Ok(img) => img.to_rgba8(),
             Err(e) => {
-                eprintln!("Failed to load frankie texture {}: {}", path, e);
+                eprintln!("Failed to load jeffree texture {}: {}", path, e);
                 // Create a fallback texture (solid red square)
                 let mut fallback = image::RgbaImage::new(64, 64);
                 for pixel in fallback.pixels_mut() {
@@ -157,7 +157,7 @@ impl EnemyRenderer {
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Frankie Texture"),
+            label: Some("jeffree Texture"),
             size: texture_size,
             mip_level_count: 1,
             sample_count: 1,

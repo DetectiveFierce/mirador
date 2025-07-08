@@ -16,8 +16,10 @@
 //! - Orchestrate maze generation and title screen animation
 //! - Integrate with the winit event loop
 use crate::game::GameTimer;
+use crate::game::enemy::{Enemy, place_enemy_standard};
 use crate::game::player::Player;
 use crate::game::{CurrentScreen, TimerConfig};
+use crate::math::coordinates::maze_to_world;
 use crate::maze::parse_maze_file;
 use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::primitives::Vertex;
@@ -223,9 +225,9 @@ impl AppState {
         {
             // Configure timer with custom settings
             let timer_config = TimerConfig {
-                duration: Duration::from_secs(60),
-                warning_threshold: Duration::from_secs(30),
-                critical_threshold: Duration::from_secs(15),
+                duration: Duration::from_secs(30),
+                warning_threshold: Duration::from_secs(20),
+                critical_threshold: Duration::from_secs(10),
                 normal_color: Color::rgb(100, 255, 100),
                 warning_color: Color::rgb(255, 255, 100),
                 critical_color: Color::rgb(255, 100, 100),
@@ -254,6 +256,8 @@ impl AppState {
         // self.text_renderer.set_score(new_score);
         if self.game_state.enemy.pathfinder.reached_player {
             self.game_state.current_screen = CurrentScreen::GameOver;
+            self.game_state.enemy = Enemy::new([-0.5, 30.0, 0.0], 150.0);
+            self.game_state.enemy.pathfinder.reached_player = false
         }
     }
 }
@@ -349,6 +353,11 @@ impl App {
             .expect("State must be initialized before use");
 
         if state.game_state.current_screen == CurrentScreen::Loading {
+            state
+                .game_state
+                .audio_manager
+                .pause_enemy_audio("enemy")
+                .expect("Failed to pause enemy audio");
             state.handle_loading_screen(window);
         } else {
             state.game_state.player.update_cell(
@@ -366,6 +375,16 @@ impl App {
         state.key_state.update(&mut state.game_state);
         state.update_game_ui(); // Updated to use the new method
         state.update_ui(window);
+        state
+            .game_state
+            .audio_manager
+            .set_listener_position(state.game_state.player.position)
+            .expect("Failed to set listener position");
+        state
+            .game_state
+            .audio_manager
+            .update_enemy_position("enemy", state.game_state.enemy.pathfinder.position)
+            .expect("Failed to update enemy position");
 
         // Prepare rendering commands
         let mut encoder = state
@@ -431,8 +450,15 @@ impl App {
         } else if state.game_state.current_screen == CurrentScreen::Game
             && state.game_state.player.current_cell == state.game_state.exit_cell
         {
+            state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
+            state.game_state.enemy.pathfinder.locked = true;
             self.new_level(false);
         } else if state.game_state.current_screen == CurrentScreen::Game {
+            state
+                .game_state
+                .audio_manager
+                .resume_enemy_audio("enemy")
+                .expect("Failed to resume enemy audio");
             state.game_state.enemy.pathfinder.locked = false;
         }
     }
@@ -615,6 +641,20 @@ impl App {
 
                         if let Some(exit_cell_position) = exit_cell {
                             state.game_state.exit_cell = exit_cell_position;
+                            state.game_state.enemy = place_enemy_standard(
+                                maze_to_world(
+                                    &exit_cell_position,
+                                    maze_lock.get_dimensions(),
+                                    30.0,
+                                ),
+                                state.game_state.player.position,
+                                |from, to| {
+                                    state
+                                        .game_state
+                                        .collision_system
+                                        .cylinder_intersects_geometry(from, to, 5.0)
+                                },
+                            );
                         }
 
                         state

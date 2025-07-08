@@ -3,10 +3,12 @@
 //! This module defines the [`GameState`] struct, which tracks all mutable state for the game loop,
 //! including the player, timing, UI state, and maze path.
 
+pub mod audio;
 pub mod collision;
 pub mod enemy;
 pub mod keys;
 pub mod player;
+use self::audio::GameAudioManager;
 use self::collision::CollisionSystem;
 use self::player::Player;
 use crate::game::enemy::Enemy;
@@ -47,6 +49,7 @@ pub struct GameState {
     pub game_ui: GameUIManager,
     pub current_screen: CurrentScreen,
     pub enemy: Enemy,
+    pub audio_manager: GameAudioManager,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,6 +71,11 @@ impl Default for GameState {
 impl GameState {
     /// Creates a new [`GameState`] with default player, timing, and UI state.
     pub fn new() -> Self {
+        let mut audio_manager =
+            GameAudioManager::new().expect("Failed to initialize audio manager");
+        audio_manager
+            .spawn_enemy("enemy".to_string(), [-0.5, 30.0, 0.0])
+            .expect("Failed to spawn enemy");
         Self {
             player: Player::new(),
             last_frame_time: Instant::now(),
@@ -86,7 +94,8 @@ impl GameState {
             exit_cell: Cell::default(),
             game_ui: GameUIManager::new(),
             current_screen: CurrentScreen::Loading,
-            enemy: Enemy::new([-0.5, 30.0, 0.0], 100.0),
+            enemy: Enemy::new([-0.5, 30.0, 0.0], 150.0),
+            audio_manager,
         }
     }
 

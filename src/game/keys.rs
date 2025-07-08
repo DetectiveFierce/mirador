@@ -98,6 +98,10 @@ impl KeyState {
         let right = self.is_pressed(GameKey::MoveRight);
 
         if game_state.current_screen == CurrentScreen::Game {
+            game_state
+                .audio_manager
+                .start_walking()
+                .expect("Failed to start walking sound");
             game_state.player.move_with_collision(
                 &game_state.collision_system,
                 game_state.delta_time,
@@ -106,6 +110,13 @@ impl KeyState {
                 left,
                 right,
             );
+        }
+
+        if !forward && !backward && !left && !right {
+            game_state
+                .audio_manager
+                .stop_walking()
+                .expect("Failed to stop walking sound");
         }
 
         // Handle non-movement keys
