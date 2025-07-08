@@ -33,8 +33,8 @@
 <a href=#33 id=33 data-nosnippet>33</a>        queue: <span class="kw-2">&amp;</span>wgpu::Queue,
 <a href=#34 id=34 data-nosnippet>34</a>        surface_config: <span class="kw-2">&amp;</span>wgpu::SurfaceConfiguration,
 <a href=#35 id=35 data-nosnippet>35</a>    ) -&gt; <span class="self">Self </span>{
-<a href=#36 id=36 data-nosnippet>36</a>        <span class="comment">// Load frankie texture
-<a href=#37 id=37 data-nosnippet>37</a>        </span><span class="kw">let </span>frankie_texture = <span class="self">Self</span>::load_frankie_texture(device, queue);
+<a href=#36 id=36 data-nosnippet>36</a>        <span class="comment">// Load jeffree texture
+<a href=#37 id=37 data-nosnippet>37</a>        </span><span class="kw">let </span>jeffree_texture = <span class="self">Self</span>::load_jeffree_texture(device, queue);
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>uniforms = EnemyUniforms {
 <a href=#40 id=40 data-nosnippet>40</a>            view_proj_matrix: [[<span class="number">0.0</span>; <span class="number">4</span>]; <span class="number">4</span>],
@@ -65,9 +65,9 @@
 <a href=#65 id=65 data-nosnippet>65</a>            ..Default::default()
 <a href=#66 id=66 data-nosnippet>66</a>        });
 <a href=#67 id=67 data-nosnippet>67</a>
-<a href=#68 id=68 data-nosnippet>68</a>        <span class="comment">// Create bind group for frankie texture
-<a href=#69 id=69 data-nosnippet>69</a>        </span><span class="kw">let </span>frankie_texture_view =
-<a href=#70 id=70 data-nosnippet>70</a>            frankie_texture.create_view(<span class="kw-2">&amp;</span>wgpu::TextureViewDescriptor::default());
+<a href=#68 id=68 data-nosnippet>68</a>        <span class="comment">// Create bind group for jeffree texture
+<a href=#69 id=69 data-nosnippet>69</a>        </span><span class="kw">let </span>jeffree_texture_view =
+<a href=#70 id=70 data-nosnippet>70</a>            jeffree_texture.create_view(<span class="kw-2">&amp;</span>wgpu::TextureViewDescriptor::default());
 <a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">let </span>bind_group = device.create_bind_group(<span class="kw-2">&amp;</span>wgpu::BindGroupDescriptor {
 <a href=#72 id=72 data-nosnippet>72</a>            layout: <span class="kw-2">&amp;</span>bind_group_layout,
 <a href=#73 id=73 data-nosnippet>73</a>            entries: <span class="kw-2">&amp;</span>[
@@ -77,7 +77,7 @@
 <a href=#77 id=77 data-nosnippet>77</a>                },
 <a href=#78 id=78 data-nosnippet>78</a>                wgpu::BindGroupEntry {
 <a href=#79 id=79 data-nosnippet>79</a>                    binding: <span class="number">1</span>,
-<a href=#80 id=80 data-nosnippet>80</a>                    resource: wgpu::BindingResource::TextureView(<span class="kw-2">&amp;</span>frankie_texture_view),
+<a href=#80 id=80 data-nosnippet>80</a>                    resource: wgpu::BindingResource::TextureView(<span class="kw-2">&amp;</span>jeffree_texture_view),
 <a href=#81 id=81 data-nosnippet>81</a>                },
 <a href=#82 id=82 data-nosnippet>82</a>                wgpu::BindGroupEntry {
 <a href=#83 id=83 data-nosnippet>83</a>                    binding: <span class="number">2</span>,
@@ -132,14 +132,14 @@
 <a href=#132 id=132 data-nosnippet>132</a>        </span>}
 <a href=#133 id=133 data-nosnippet>133</a>    }
 <a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">fn </span>load_frankie_texture(device: <span class="kw-2">&amp;</span>wgpu::Device, queue: <span class="kw-2">&amp;</span>wgpu::Queue) -&gt; wgpu::Texture {
-<a href=#136 id=136 data-nosnippet>136</a>        <span class="kw">let </span>path = <span class="string">"assets/frankie.png"</span>;
+<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">fn </span>load_jeffree_texture(device: <span class="kw-2">&amp;</span>wgpu::Device, queue: <span class="kw-2">&amp;</span>wgpu::Queue) -&gt; wgpu::Texture {
+<a href=#136 id=136 data-nosnippet>136</a>        <span class="kw">let </span>path = <span class="string">"assets/jeffree.png"</span>;
 <a href=#137 id=137 data-nosnippet>137</a>
 <a href=#138 id=138 data-nosnippet>138</a>        <span class="comment">// Load image using image crate
 <a href=#139 id=139 data-nosnippet>139</a>        </span><span class="kw">let </span>img = <span class="kw">match </span>image::open(path) {
 <a href=#140 id=140 data-nosnippet>140</a>            <span class="prelude-val">Ok</span>(img) =&gt; img.to_rgba8(),
 <a href=#141 id=141 data-nosnippet>141</a>            <span class="prelude-val">Err</span>(e) =&gt; {
-<a href=#142 id=142 data-nosnippet>142</a>                <span class="macro">eprintln!</span>(<span class="string">"Failed to load frankie texture {}: {}"</span>, path, e);
+<a href=#142 id=142 data-nosnippet>142</a>                <span class="macro">eprintln!</span>(<span class="string">"Failed to load jeffree texture {}: {}"</span>, path, e);
 <a href=#143 id=143 data-nosnippet>143</a>                <span class="comment">// Create a fallback texture (solid red square)
 <a href=#144 id=144 data-nosnippet>144</a>                </span><span class="kw">let </span><span class="kw-2">mut </span>fallback = image::RgbaImage::new(<span class="number">64</span>, <span class="number">64</span>);
 <a href=#145 id=145 data-nosnippet>145</a>                <span class="kw">for </span>pixel <span class="kw">in </span>fallback.pixels_mut() {
@@ -157,7 +157,7 @@
 <a href=#157 id=157 data-nosnippet>157</a>        };
 <a href=#158 id=158 data-nosnippet>158</a>
 <a href=#159 id=159 data-nosnippet>159</a>        <span class="kw">let </span>texture = device.create_texture(<span class="kw-2">&amp;</span>wgpu::TextureDescriptor {
-<a href=#160 id=160 data-nosnippet>160</a>            label: <span class="prelude-val">Some</span>(<span class="string">"Frankie Texture"</span>),
+<a href=#160 id=160 data-nosnippet>160</a>            label: <span class="prelude-val">Some</span>(<span class="string">"jeffree Texture"</span>),
 <a href=#161 id=161 data-nosnippet>161</a>            size: texture_size,
 <a href=#162 id=162 data-nosnippet>162</a>            mip_level_count: <span class="number">1</span>,
 <a href=#163 id=163 data-nosnippet>163</a>            sample_count: <span class="number">1</span>,

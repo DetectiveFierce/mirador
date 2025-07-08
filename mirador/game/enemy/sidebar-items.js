@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Enemy","EnemyPathfinder"]};
+window.SIDEBAR_ITEMS = {"fn":["place_enemy","place_enemy_standard","validate_enemy_position"],"struct":["Enemy","EnemyPathfinder"]};

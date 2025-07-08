@@ -151,11 +151,11 @@
 <a href=#151 id=151 data-nosnippet>151</a>
 <a href=#152 id=152 data-nosnippet>152</a>        <span class="kw">if </span>enemy_2d.distance_to(<span class="kw-2">&amp;</span>player_2d) &lt; <span class="self">self</span>.path_radius {
 <a href=#153 id=153 data-nosnippet>153</a>            <span class="self">self</span>.current_target = <span class="prelude-val">Some</span>(player_position);
-<a href=#154 id=154 data-nosnippet>154</a>            <span class="kw">if </span>enemy_2d.distance_to(<span class="kw-2">&amp;</span>player_2d) &lt; <span class="number">5.0 </span>{
+<a href=#154 id=154 data-nosnippet>154</a>            <span class="kw">if </span>enemy_2d.distance_to(<span class="kw-2">&amp;</span>player_2d) &lt; <span class="number">10.0 </span>{
 <a href=#155 id=155 data-nosnippet>155</a>                <span class="self">self</span>.reached_player = <span class="bool-val">true</span>;
-<a href=#156 id=156 data-nosnippet>156</a>                <span class="self">self</span>.locked = <span class="bool-val">true</span>; <span class="comment">// Lock enemy when close to player
-<a href=#157 id=157 data-nosnippet>157</a>                </span><span class="self">self</span>.position = [<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>]
-<a href=#158 id=158 data-nosnippet>158</a>            }
+<a href=#156 id=156 data-nosnippet>156</a>                <span class="self">self</span>.position = [<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>];
+<a href=#157 id=157 data-nosnippet>157</a>                <span class="self">self</span>.locked = <span class="bool-val">true</span>; <span class="comment">// Lock enemy when close to player
+<a href=#158 id=158 data-nosnippet>158</a>            </span>}
 <a href=#159 id=159 data-nosnippet>159</a>            <span class="kw">return</span>;
 <a href=#160 id=160 data-nosnippet>160</a>        }
 <a href=#161 id=161 data-nosnippet>161</a>
@@ -314,4 +314,152 @@
 <a href=#314 id=314 data-nosnippet>314</a>            <span class="prelude-val">None </span>=&gt; <span class="bool-val">true</span>,
 <a href=#315 id=315 data-nosnippet>315</a>        }
 <a href=#316 id=316 data-nosnippet>316</a>    }
-<a href=#317 id=317 data-nosnippet>317</a>}</code></pre></div></section></main></body></html>
+<a href=#317 id=317 data-nosnippet>317</a>}
+<a href=#318 id=318 data-nosnippet>318</a>
+<a href=#319 id=319 data-nosnippet>319</a><span class="doccomment">/// Places an enemy strategically between the player and exit position
+<a href=#320 id=320 data-nosnippet>320</a>///
+<a href=#321 id=321 data-nosnippet>321</a>/// # Arguments
+<a href=#322 id=322 data-nosnippet>322</a>/// * `exit_position` - The position of the exit [x, y, z]
+<a href=#323 id=323 data-nosnippet>323</a>/// * `player_position` - The current position of the player [x, y, z]
+<a href=#324 id=324 data-nosnippet>324</a>/// * `placement_factor` - How close to the exit to place the enemy (0.0 = at player, 1.0 = at exit)
+<a href=#325 id=325 data-nosnippet>325</a>/// * `offset_distance` - Optional distance to offset the enemy from the direct line (for more interesting placement)
+<a href=#326 id=326 data-nosnippet>326</a>/// * `line_intersects_geometry` - Function to check if a line intersects with level geometry
+<a href=#327 id=327 data-nosnippet>327</a>///
+<a href=#328 id=328 data-nosnippet>328</a>/// # Returns
+<a href=#329 id=329 data-nosnippet>329</a>/// * `Enemy` - A new enemy instance positioned between player and exit
+<a href=#330 id=330 data-nosnippet>330</a></span><span class="kw">pub fn </span>place_enemy&lt;F&gt;(
+<a href=#331 id=331 data-nosnippet>331</a>    exit_position: [f32; <span class="number">3</span>],
+<a href=#332 id=332 data-nosnippet>332</a>    player_position: [f32; <span class="number">3</span>],
+<a href=#333 id=333 data-nosnippet>333</a>    placement_factor: f32,
+<a href=#334 id=334 data-nosnippet>334</a>    offset_distance: <span class="prelude-ty">Option</span>&lt;f32&gt;,
+<a href=#335 id=335 data-nosnippet>335</a>    line_intersects_geometry: F,
+<a href=#336 id=336 data-nosnippet>336</a>) -&gt; Enemy
+<a href=#337 id=337 data-nosnippet>337</a><span class="kw">where
+<a href=#338 id=338 data-nosnippet>338</a>    </span>F: Fn([f32; <span class="number">3</span>], [f32; <span class="number">3</span>]) -&gt; bool,
+<a href=#339 id=339 data-nosnippet>339</a>{
+<a href=#340 id=340 data-nosnippet>340</a>    <span class="kw">let </span>player_vec = Vec3(player_position);
+<a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">let </span>exit_vec = Vec3(exit_position);
+<a href=#342 id=342 data-nosnippet>342</a>
+<a href=#343 id=343 data-nosnippet>343</a>    <span class="comment">// Calculate the direction from player to exit
+<a href=#344 id=344 data-nosnippet>344</a>    </span><span class="kw">let </span>direction_to_exit = (exit_vec - player_vec).normalize();
+<a href=#345 id=345 data-nosnippet>345</a>    <span class="kw">let </span>distance_to_exit = player_vec.distance_to(<span class="kw-2">&amp;</span>exit_vec);
+<a href=#346 id=346 data-nosnippet>346</a>
+<a href=#347 id=347 data-nosnippet>347</a>    <span class="comment">// Clamp placement factor to reasonable range
+<a href=#348 id=348 data-nosnippet>348</a>    </span><span class="kw">let </span>clamped_factor = placement_factor.clamp(<span class="number">0.1</span>, <span class="number">0.9</span>);
+<a href=#349 id=349 data-nosnippet>349</a>
+<a href=#350 id=350 data-nosnippet>350</a>    <span class="comment">// Calculate base position along the line from player to exit
+<a href=#351 id=351 data-nosnippet>351</a>    </span><span class="kw">let </span>base_position = player_vec + direction_to_exit * (distance_to_exit * clamped_factor);
+<a href=#352 id=352 data-nosnippet>352</a>
+<a href=#353 id=353 data-nosnippet>353</a>    <span class="comment">// Apply offset if specified (perpendicular to the player-exit line)
+<a href=#354 id=354 data-nosnippet>354</a>    </span><span class="kw">let </span>final_position = <span class="kw">if let </span><span class="prelude-val">Some</span>(offset) = offset_distance {
+<a href=#355 id=355 data-nosnippet>355</a>        <span class="comment">// Create a perpendicular vector for offsetting
+<a href=#356 id=356 data-nosnippet>356</a>        </span><span class="kw">let </span>perpendicular = Vec3([
+<a href=#357 id=357 data-nosnippet>357</a>            -direction_to_exit.as_array()[<span class="number">1</span>], <span class="comment">// Rotate 90 degrees in 2D
+<a href=#358 id=358 data-nosnippet>358</a>            </span>direction_to_exit.as_array()[<span class="number">0</span>],
+<a href=#359 id=359 data-nosnippet>359</a>            <span class="number">0.0</span>,
+<a href=#360 id=360 data-nosnippet>360</a>        ])
+<a href=#361 id=361 data-nosnippet>361</a>        .normalize();
+<a href=#362 id=362 data-nosnippet>362</a>
+<a href=#363 id=363 data-nosnippet>363</a>        <span class="comment">// Try both sides of the line to find a valid position
+<a href=#364 id=364 data-nosnippet>364</a>        </span><span class="kw">let </span>offset_positions = [
+<a href=#365 id=365 data-nosnippet>365</a>            base_position + perpendicular * offset,
+<a href=#366 id=366 data-nosnippet>366</a>            base_position - perpendicular * offset,
+<a href=#367 id=367 data-nosnippet>367</a>        ];
+<a href=#368 id=368 data-nosnippet>368</a>
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="comment">// Check which offset position is valid (doesn't intersect geometry)
+<a href=#370 id=370 data-nosnippet>370</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>valid_position = base_position;
+<a href=#371 id=371 data-nosnippet>371</a>        <span class="kw">for </span><span class="kw-2">&amp;</span>test_position <span class="kw">in </span><span class="kw-2">&amp;</span>offset_positions {
+<a href=#372 id=372 data-nosnippet>372</a>            <span class="kw">if </span>!line_intersects_geometry(player_position, <span class="kw-2">*</span>test_position.as_array())
+<a href=#373 id=373 data-nosnippet>373</a>                &amp;&amp; !line_intersects_geometry(<span class="kw-2">*</span>test_position.as_array(), exit_position)
+<a href=#374 id=374 data-nosnippet>374</a>            {
+<a href=#375 id=375 data-nosnippet>375</a>                valid_position = test_position;
+<a href=#376 id=376 data-nosnippet>376</a>                <span class="kw">break</span>;
+<a href=#377 id=377 data-nosnippet>377</a>            }
+<a href=#378 id=378 data-nosnippet>378</a>        }
+<a href=#379 id=379 data-nosnippet>379</a>
+<a href=#380 id=380 data-nosnippet>380</a>        valid_position
+<a href=#381 id=381 data-nosnippet>381</a>    } <span class="kw">else </span>{
+<a href=#382 id=382 data-nosnippet>382</a>        base_position
+<a href=#383 id=383 data-nosnippet>383</a>    };
+<a href=#384 id=384 data-nosnippet>384</a>
+<a href=#385 id=385 data-nosnippet>385</a>    <span class="comment">// Ensure the enemy position doesn't intersect with geometry
+<a href=#386 id=386 data-nosnippet>386</a>    </span><span class="kw">let </span>validated_position = validate_enemy_position(
+<a href=#387 id=387 data-nosnippet>387</a>        <span class="kw-2">*</span>final_position.as_array(),
+<a href=#388 id=388 data-nosnippet>388</a>        player_position,
+<a href=#389 id=389 data-nosnippet>389</a>        exit_position,
+<a href=#390 id=390 data-nosnippet>390</a>        <span class="kw-2">&amp;</span>line_intersects_geometry,
+<a href=#391 id=391 data-nosnippet>391</a>    );
+<a href=#392 id=392 data-nosnippet>392</a>
+<a href=#393 id=393 data-nosnippet>393</a>    <span class="comment">// Calculate appropriate path radius based on distance to exit
+<a href=#394 id=394 data-nosnippet>394</a>    </span><span class="kw">let </span>path_radius = (distance_to_exit * <span class="number">0.3</span>).clamp(<span class="number">50.0</span>, <span class="number">200.0</span>);
+<a href=#395 id=395 data-nosnippet>395</a>
+<a href=#396 id=396 data-nosnippet>396</a>    Enemy::new(validated_position, path_radius)
+<a href=#397 id=397 data-nosnippet>397</a>}
+<a href=#398 id=398 data-nosnippet>398</a>
+<a href=#399 id=399 data-nosnippet>399</a><span class="doccomment">/// Validates and adjusts enemy position to ensure it doesn't intersect with geometry
+<a href=#400 id=400 data-nosnippet>400</a></span><span class="kw">fn </span>validate_enemy_position&lt;F&gt;(
+<a href=#401 id=401 data-nosnippet>401</a>    proposed_position: [f32; <span class="number">3</span>],
+<a href=#402 id=402 data-nosnippet>402</a>    player_position: [f32; <span class="number">3</span>],
+<a href=#403 id=403 data-nosnippet>403</a>    exit_position: [f32; <span class="number">3</span>],
+<a href=#404 id=404 data-nosnippet>404</a>    line_intersects_geometry: F,
+<a href=#405 id=405 data-nosnippet>405</a>) -&gt; [f32; <span class="number">3</span>]
+<a href=#406 id=406 data-nosnippet>406</a><span class="kw">where
+<a href=#407 id=407 data-nosnippet>407</a>    </span>F: Fn([f32; <span class="number">3</span>], [f32; <span class="number">3</span>]) -&gt; bool,
+<a href=#408 id=408 data-nosnippet>408</a>{
+<a href=#409 id=409 data-nosnippet>409</a>    <span class="comment">// Check if the proposed position creates line-of-sight issues
+<a href=#410 id=410 data-nosnippet>410</a>    </span><span class="kw">if </span>line_intersects_geometry(player_position, proposed_position)
+<a href=#411 id=411 data-nosnippet>411</a>        || line_intersects_geometry(proposed_position, exit_position)
+<a href=#412 id=412 data-nosnippet>412</a>    {
+<a href=#413 id=413 data-nosnippet>413</a>        <span class="comment">// Try to find a nearby valid position
+<a href=#414 id=414 data-nosnippet>414</a>        </span><span class="kw">let </span>base_vec = Vec3(proposed_position);
+<a href=#415 id=415 data-nosnippet>415</a>        <span class="kw">let </span>search_radius = <span class="number">50.0</span>;
+<a href=#416 id=416 data-nosnippet>416</a>        <span class="kw">let </span>search_angles = [<span class="number">0.0</span>, <span class="number">45.0</span>, <span class="number">90.0</span>, <span class="number">135.0</span>, <span class="number">180.0</span>, <span class="number">225.0</span>, <span class="number">270.0</span>, <span class="number">315.0</span>];
+<a href=#417 id=417 data-nosnippet>417</a>
+<a href=#418 id=418 data-nosnippet>418</a>        <span class="kw">for </span><span class="kw-2">&amp;</span>angle <span class="kw">in </span><span class="kw-2">&amp;</span>search_angles {
+<a href=#419 id=419 data-nosnippet>419</a>            <span class="kw">let </span>angle_rad = (angle <span class="kw">as </span>f32).to_radians();
+<a href=#420 id=420 data-nosnippet>420</a>            <span class="kw">let </span>offset = Vec3([
+<a href=#421 id=421 data-nosnippet>421</a>                search_radius * angle_rad.cos(),
+<a href=#422 id=422 data-nosnippet>422</a>                search_radius * angle_rad.sin(),
+<a href=#423 id=423 data-nosnippet>423</a>                <span class="number">0.0</span>,
+<a href=#424 id=424 data-nosnippet>424</a>            ]);
+<a href=#425 id=425 data-nosnippet>425</a>
+<a href=#426 id=426 data-nosnippet>426</a>            <span class="kw">let </span>test_position = base_vec + offset;
+<a href=#427 id=427 data-nosnippet>427</a>            <span class="kw">let </span>test_pos_array = <span class="kw-2">*</span>test_position.as_array();
+<a href=#428 id=428 data-nosnippet>428</a>
+<a href=#429 id=429 data-nosnippet>429</a>            <span class="comment">// Check if this position works
+<a href=#430 id=430 data-nosnippet>430</a>            </span><span class="kw">if </span>!line_intersects_geometry(player_position, test_pos_array)
+<a href=#431 id=431 data-nosnippet>431</a>                &amp;&amp; !line_intersects_geometry(test_pos_array, exit_position)
+<a href=#432 id=432 data-nosnippet>432</a>            {
+<a href=#433 id=433 data-nosnippet>433</a>                <span class="kw">return </span>test_pos_array;
+<a href=#434 id=434 data-nosnippet>434</a>            }
+<a href=#435 id=435 data-nosnippet>435</a>        }
+<a href=#436 id=436 data-nosnippet>436</a>
+<a href=#437 id=437 data-nosnippet>437</a>        <span class="comment">// If no valid position found, try moving closer to the center between player and exit
+<a href=#438 id=438 data-nosnippet>438</a>        </span><span class="kw">let </span>player_vec = Vec3(player_position);
+<a href=#439 id=439 data-nosnippet>439</a>        <span class="kw">let </span>exit_vec = Vec3(exit_position);
+<a href=#440 id=440 data-nosnippet>440</a>        <span class="kw">let </span>center_position = (player_vec + exit_vec) * <span class="number">0.5</span>;
+<a href=#441 id=441 data-nosnippet>441</a>
+<a href=#442 id=442 data-nosnippet>442</a>        <span class="kw-2">*</span>center_position.as_array()
+<a href=#443 id=443 data-nosnippet>443</a>    } <span class="kw">else </span>{
+<a href=#444 id=444 data-nosnippet>444</a>        proposed_position
+<a href=#445 id=445 data-nosnippet>445</a>    }
+<a href=#446 id=446 data-nosnippet>446</a>}
+<a href=#447 id=447 data-nosnippet>447</a>
+<a href=#448 id=448 data-nosnippet>448</a><span class="doccomment">/// Convenience function for standard enemy placement
+<a href=#449 id=449 data-nosnippet>449</a>/// Places enemy at 60% of the distance from player to exit
+<a href=#450 id=450 data-nosnippet>450</a></span><span class="kw">pub fn </span>place_enemy_standard&lt;F&gt;(
+<a href=#451 id=451 data-nosnippet>451</a>    exit_position: [f32; <span class="number">3</span>],
+<a href=#452 id=452 data-nosnippet>452</a>    player_position: [f32; <span class="number">3</span>],
+<a href=#453 id=453 data-nosnippet>453</a>    line_intersects_geometry: F,
+<a href=#454 id=454 data-nosnippet>454</a>) -&gt; Enemy
+<a href=#455 id=455 data-nosnippet>455</a><span class="kw">where
+<a href=#456 id=456 data-nosnippet>456</a>    </span>F: Fn([f32; <span class="number">3</span>], [f32; <span class="number">3</span>]) -&gt; bool,
+<a href=#457 id=457 data-nosnippet>457</a>{
+<a href=#458 id=458 data-nosnippet>458</a>    place_enemy(
+<a href=#459 id=459 data-nosnippet>459</a>        exit_position,
+<a href=#460 id=460 data-nosnippet>460</a>        player_position,
+<a href=#461 id=461 data-nosnippet>461</a>        <span class="number">0.6</span>,
+<a href=#462 id=462 data-nosnippet>462</a>        <span class="prelude-val">None</span>,
+<a href=#463 id=463 data-nosnippet>463</a>        line_intersects_geometry,
+<a href=#464 id=464 data-nosnippet>464</a>    )
+<a href=#465 id=465 data-nosnippet>465</a>}</code></pre></div></section></main></body></html>
