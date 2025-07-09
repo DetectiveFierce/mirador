@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["GameAudioManager"]};
+window.SIDEBAR_ITEMS = {"enum":["MovementState"],"struct":["GameAudioManager"]};
