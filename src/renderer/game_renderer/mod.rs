@@ -17,6 +17,7 @@ use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::primitives::{Uniforms, Vertex};
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
+use std::time::Instant;
 /// Main renderer for the 3D maze game.
 ///
 /// The `GameRenderer` is responsible for rendering the complete 3D maze environment,
@@ -65,26 +66,21 @@ use egui_wgpu::wgpu::util::DeviceExt;
 /// - `depth_texture` - Optional depth buffer for proper 3D occlusion (recreated on resize)
 /// - `star_renderer` - Background renderer for animated starfield effects
 /// - `debug_renderer` - Development tools for rendering bounding boxes and debug overlays
+// Add this to your GameRenderer struct
 pub struct GameRenderer {
     pub pipeline: wgpu::RenderPipeline,
-    /// Combined vertex buffer containing both floor and wall geometry data.
     pub vertex_buffer: wgpu::Buffer,
-    /// Total number of vertices to render from the combined buffer.
     pub vertex_count: u32,
-    /// GPU buffer storing model-view-projection matrix for vertex transformations.
     pub uniform_buffer: wgpu::Buffer,
-    /// WebGPU bind group linking uniform buffer to shader binding point 0.
     pub uniform_bind_group: wgpu::BindGroup,
-    /// Optional depth buffer for proper 3D occlusion (recreated on resize).
     pub depth_texture: Option<wgpu::Texture>,
-    /// Background renderer for animated starfield effects.
     pub star_renderer: StarRenderer,
-    /// Development tools for rendering bounding boxes and debug overlays.
     pub debug_renderer: DebugRenderer,
-    /// Renderer for compass
     pub compass_renderer: CompassRenderer,
     pub exit_position: Option<(f32, f32)>,
     pub enemy_renderer: EnemyRenderer,
+    // Add this field to track start time for animation
+    pub start_time: Instant,
 }
 
 impl GameRenderer {
@@ -162,6 +158,7 @@ impl GameRenderer {
             compass_renderer,
             exit_position: None,
             enemy_renderer,
+            start_time: Instant::now(), // Initialize start time
         }
     }
 
@@ -228,8 +225,13 @@ impl GameRenderer {
             // Combine matrices: Projection * View * Model
             let final_mvp_matrix = model_matrix.multiply(&view_proj_matrix);
 
+            // Calculate elapsed time for animation
+            let elapsed = self.start_time.elapsed().as_secs_f32();
+
             let uniforms = Uniforms {
                 matrix: final_mvp_matrix.into(),
+                time: elapsed,
+                _padding: [0.0; 7],
             };
 
             // Upload uniform values for the maze/floor
@@ -264,7 +266,7 @@ impl GameRenderer {
             );
 
             // Actually render the enemy
-            self.enemy_renderer.render(pass); // You might need to pass the actual window here
+            self.enemy_renderer.render(pass);
         }
     }
 }

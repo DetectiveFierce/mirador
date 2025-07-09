@@ -45,7 +45,7 @@ pub struct GameState {
     pub collision_system: CollisionSystem,
     /// Whether the exit has been reached.
     pub exit_reached: bool,
-    pub exit_cell: Cell,
+    pub exit_cell: Option<Cell>,
     pub game_ui: GameUIManager,
     pub current_screen: CurrentScreen,
     pub enemy: Enemy,
@@ -91,7 +91,7 @@ impl GameState {
                 100.0, // player_height (adjust based on your player size)),
             ),
             exit_reached: false,
-            exit_cell: Cell::default(),
+            exit_cell: None,
             game_ui: GameUIManager::new(),
             current_screen: CurrentScreen::Loading,
             enemy: Enemy::new([-0.5, 30.0, 0.0], 150.0),
@@ -249,6 +249,10 @@ impl GameTimer {
 
     pub fn get_total_time(&self) -> Duration {
         self.config.duration
+    }
+
+    pub fn subtract_time(&mut self, duration: Duration) {
+        self.config.duration = self.config.duration.saturating_sub(duration);
     }
 }
 

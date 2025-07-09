@@ -84,25 +84,52 @@ impl KeyState {
     /// - Handles mouse and escape key actions.
     pub fn update(&mut self, game_state: &mut GameState) {
         // Handle sprint speed changes
-        if self.is_pressed(GameKey::Sprint) {
+        let is_sprinting = self.is_pressed(GameKey::Sprint);
+        if is_sprinting {
             game_state.player.speed = game_state.player.base_speed * 2.0;
-        }
-        if !self.is_pressed(GameKey::Sprint) {
+        } else {
             game_state.player.speed = game_state.player.base_speed;
         }
 
-        // NEW: Replace individual movement calls with collision-aware movement
+        // Check movement keys
         let forward = self.is_pressed(GameKey::MoveForward);
         let backward = self.is_pressed(GameKey::MoveBackward);
         let left = self.is_pressed(GameKey::MoveLeft);
         let right = self.is_pressed(GameKey::MoveRight);
+        let is_moving = forward || backward || left || right;
 
-        if game_state.current_screen == CurrentScreen::Game {
+        if game_state.current_screen != CurrentScreen::Game {
             game_state
                 .audio_manager
-                .start_walking()
-                .expect("Failed to start walking sound");
+                .stop_movement()
+                .expect("Failed to start sprinting sound");
+        }
+
+        if game_state.current_screen == CurrentScreen::Game {
+            // Handle movement audio based on current state
+            if is_moving {
+                if is_sprinting {
+                    // Switch to sprint audio if not already sprinting
+                    if !game_state.audio_manager.is_sprinting() {
+                        game_state
+                            .audio_manager
+                            .start_sprinting()
+                            .expect("Failed to start sprinting sound");
+                    }
+                } else {
+                    // Switch to walking audio if not already walking
+                    if !game_state.audio_manager.is_walking() {
+                        game_state
+                            .audio_manager
+                            .start_walking()
+                            .expect("Failed to start walking sound");
+                    }
+                }
+            }
+
+            // Handle player movement with collision
             game_state.player.move_with_collision(
+                &mut game_state.audio_manager,
                 &game_state.collision_system,
                 game_state.delta_time,
                 forward,
@@ -110,13 +137,6 @@ impl KeyState {
                 left,
                 right,
             );
-        }
-
-        if !forward && !backward && !left && !right {
-            game_state
-                .audio_manager
-                .stop_walking()
-                .expect("Failed to stop walking sound");
         }
 
         // Handle non-movement keys

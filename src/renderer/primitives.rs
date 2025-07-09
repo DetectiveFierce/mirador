@@ -4,88 +4,83 @@
 //! (such as transformation matrices) to the GPU, as well as helper methods for buffer and bind group creation.
 
 use crate::maze::generator::Cell;
+use bytemuck::{Pod, Zeroable};
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
 /// Uniforms for the main render pipeline.
 ///
 /// This struct stores a 4x4 matrix (typically Model-View-Projection) to be sent to the GPU as a uniform buffer.
+// Updated Uniforms structure to include time for animation
+// Updated Uniforms structure to include time for animation
 #[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Copy, Clone, Pod, Zeroable)]
 pub struct Uniforms {
-    /// The 4x4 transformation matrix (e.g., MVP matrix).
     pub matrix: [[f32; 4]; 4],
+    pub time: f32,
+    pub _padding: [f32; 7], // Padding for 16-byte alignment
 }
 
 impl Default for Uniforms {
-    /// Returns a new [`Uniforms`] with all elements set to zero.
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl Uniforms {
-    /// Creates a new [`Uniforms`] with all elements set to zero.
     pub fn new() -> Self {
         Self {
-            matrix: [[0.0; 4]; 4],
+            matrix: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            time: 0.0,
+            _padding: [0.0; 7],
         }
     }
 
-    /// Returns the raw bytes of the uniform struct for uploading to the GPU.
-    pub fn as_bytes(&self) -> &[u8] {
-        bytemuck::bytes_of(self)
-    }
-
-    /// Creates a GPU buffer containing the uniform data.
-    ///
-    /// # Arguments
-    /// * `device` - The wgpu device to create the buffer with.
-    ///
-    /// # Returns
-    /// A [`wgpu::Buffer`] with the uniform data, ready for use as a uniform buffer.
     pub fn create_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
-            contents: self.as_bytes(),
+            contents: bytemuck::bytes_of(self),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         })
     }
 
-    /// Creates a bind group and layout for the uniform buffer.
-    ///
-    /// # Arguments
-    /// * `buffer` - The uniform buffer to bind.
-    /// * `device` - The wgpu device to create the bind group and layout.
-    ///
-    /// # Returns
-    /// A tuple of (`wgpu::BindGroup`, `wgpu::BindGroupLayout`) for binding the uniform buffer in a pipeline.
     pub fn create_bind_group(
         &self,
         buffer: &wgpu::Buffer,
         device: &wgpu::Device,
     ) -> (wgpu::BindGroup, wgpu::BindGroupLayout) {
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Uniform Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX, // Visible in vertex shader
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size: None, // Or Some(std::num::NonZeroU64::new(std::mem::size_of::<Uniforms>() as u64))
+                    min_binding_size: None,
                 },
                 count: None,
             }],
-            label: Some("uniform_bind_group_layout"),
         });
+
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Uniform Bind Group"),
             layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: buffer.as_entire_binding(),
             }],
-            label: Some("uniform_bind_group"),
         });
+
         (bind_group, layout)
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        bytemuck::bytes_of(self)
     }
 }
 

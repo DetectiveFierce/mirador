@@ -161,7 +161,7 @@ impl AppState {
 
         self.wgpu_renderer
             .loading_screen_renderer
-            .update_loading_bar(&self.wgpu_renderer.queue, progress);
+            .update_loading_bar(&self.wgpu_renderer.queue, progress, window);
 
         self.wgpu_renderer
             .loading_screen_renderer
@@ -431,6 +431,7 @@ impl App {
         state.game_state.enemy.update(
             state.game_state.player.position,
             state.game_state.delta_time,
+            state.game_state.game_ui.level as u32,
             |from, to| {
                 state
                     .game_state
@@ -448,7 +449,7 @@ impl App {
             state.text_renderer.hide_game_over_display();
             self.new_level(true);
         } else if state.game_state.current_screen == CurrentScreen::Game
-            && state.game_state.player.current_cell == state.game_state.exit_cell
+            && Some(state.game_state.player.current_cell) == state.game_state.exit_cell
         {
             state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
             state.game_state.enemy.pathfinder.locked = true;
@@ -468,68 +469,140 @@ impl App {
             .state
             .as_mut()
             .expect("State must be initialized before use");
-
         state.game_state.current_screen = CurrentScreen::Loading;
         state.game_state.maze_path = None;
         state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
             &state.wgpu_renderer.device,
             &state.wgpu_renderer.surface_config,
         );
+
+        // Clear previous level state
         state.game_state.player = Player::new();
+        state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
+        state.game_state.enemy.pathfinder.locked = true;
+        state.game_state.exit_cell = None; // Clear exit cell to prevent accidental win condition
+
+        // Stop and reset timer
+        if let Some(timer) = &mut state.game_state.game_ui.timer {
+            timer.stop();
+            timer.reset();
+        }
 
         if game_over {
-            state.game_state.game_ui.level = 1;
-            state.game_state.game_ui.score = 0;
+            state.game_state.set_level(&mut state.text_renderer, 1);
+            state.game_state.set_score(&mut state.text_renderer, 0);
             state.game_state.game_ui.timer = Some(GameTimer::new(TimerConfig::default()));
+            state
+                .text_renderer
+                .update_game_ui(&mut state.game_state.game_ui);
+            // Ensure clean state for new game
+            state.game_state.exit_cell = None;
         } else {
-            let base_score = 100 * state.game_state.game_ui.level as u32;
+            let current_level = state.game_state.game_ui.level;
 
-            // Calculate speed bonus based on remaining time
-            let speed_bonus = if let Some(timer) = &state.game_state.game_ui.timer {
+            // Calculate completion time and performance metrics
+            let (completion_time, time_bonus) = if let Some(timer) = &state.game_state.game_ui.timer
+            {
                 let remaining_time = timer.get_remaining_time().as_secs_f32();
-                let total_time = timer.config.duration.as_secs_f32(); // Assuming this method exists
+                let total_time = timer.config.duration.as_secs_f32();
+                let completion_time = total_time - remaining_time;
 
-                if total_time > 0.0 {
-                    // Calculate percentage of time remaining (0.0 to 1.0)
-                    let time_ratio = remaining_time / total_time;
-
-                    // Bonus multiplier: more time left = higher bonus
-                    // Scale: 0% time left = 0x bonus, 100% time left = 2x bonus
-                    let bonus_multiplier = (time_ratio * 2.0).max(0.0);
-
-                    // Apply bonus to base score
-                    (base_score as f32 * bonus_multiplier) as u32
+                // Performance-based time bonus calculation
+                // Optimal time: 15 seconds, Average time: 25 seconds, Slow time: 35+ seconds
+                let time_bonus = if completion_time <= 15.0 {
+                    // Exceptional performance: 15-25 seconds added
+                    let performance_ratio = (15.0 - completion_time).max(0.0) / 15.0;
+                    15.0 + (performance_ratio * 10.0)
+                } else if completion_time <= 25.0 {
+                    // Good performance: 8-15 seconds added
+                    let performance_ratio = (25.0 - completion_time) / 10.0;
+                    8.0 + (performance_ratio * 7.0)
+                } else if completion_time <= 35.0 {
+                    // Average performance: 3-8 seconds added
+                    let performance_ratio = (35.0 - completion_time) / 10.0;
+                    3.0 + (performance_ratio * 5.0)
                 } else {
-                    0
-                }
+                    // Slow completion: 1-3 seconds added
+                    let performance_ratio = (45.0 - completion_time).max(0.0) / 10.0;
+                    1.0 + (performance_ratio * 2.0)
+                };
+
+                (completion_time, time_bonus)
+            } else {
+                (30.0, 3.0) // Fallback values
+            };
+
+            // Enhanced scoring system
+            let base_score = 150 * current_level as u32; // Increased base score
+
+            // Speed bonus calculation
+            let speed_bonus = if completion_time <= 15.0 {
+                // Exceptional: 3x to 5x multiplier
+                let multiplier = 3.0 + ((15.0 - completion_time) / 15.0) * 2.0;
+                (base_score as f32 * multiplier) as u32
+            } else if completion_time <= 25.0 {
+                // Good: 1.5x to 3x multiplier
+                let multiplier = 1.5 + ((25.0 - completion_time) / 10.0) * 1.5;
+                (base_score as f32 * multiplier) as u32
+            } else if completion_time <= 35.0 {
+                // Average: 0.5x to 1.5x multiplier
+                let multiplier = 0.5 + ((35.0 - completion_time) / 10.0) * 1.0;
+                (base_score as f32 * multiplier) as u32
+            } else {
+                // Slow: 0.1x to 0.5x multiplier
+                let multiplier = 0.1 + ((45.0 - completion_time).max(0.0) / 10.0) * 0.4;
+                (base_score as f32 * multiplier) as u32
+            };
+
+            // Level progression bonus (small bonus for reaching higher levels)
+            let level_bonus = if current_level > 5 {
+                (current_level - 5) as u32 * 50
             } else {
                 0
             };
 
-            // Set total score (base + speed bonus)
-            let total_score = base_score + speed_bonus;
+            // Consecutive level bonus (reward for sustained performance)
+            let consecutive_bonus = if completion_time <= 20.0 {
+                // Only give consecutive bonus for good performance
+                current_level as u32 * 25
+            } else {
+                0
+            };
+
+            let total_score = base_score + speed_bonus + level_bonus + consecutive_bonus;
+
+            // Update score and level
             state.game_state.set_score(
                 &mut state.text_renderer,
                 state.game_state.game_ui.score + total_score,
             );
-
             state
                 .game_state
-                .set_level(&mut state.text_renderer, state.game_state.game_ui.level + 1);
+                .set_level(&mut state.text_renderer, current_level + 1);
 
+            // Enhanced time management
             if let Some(timer) = &mut state.game_state.game_ui.timer {
-                let mut time_back = Duration::ZERO;
-                if timer.prev_time > timer.get_remaining_time() {
-                    time_back = (timer.prev_time - timer.get_remaining_time()) / 2;
-                } else if timer.prev_time < timer.get_remaining_time() {
-                    time_back = (timer.get_remaining_time() - timer.prev_time) / 2;
-                }
+                // Add the calculated time bonus
+                let time_to_add = Duration::from_secs_f32(time_bonus);
+                timer.add_time(time_to_add);
+
+                // Update previous time for next level calculation
                 timer.prev_time = timer.get_remaining_time();
-                timer.add_time(time_back);
+
+                // Optional: Add a small level progression penalty to maintain difficulty
+                // As levels increase, subtract a small amount of time to keep pressure
+                if current_level > 3 {
+                    let level_penalty = Duration::from_secs_f32(
+                        ((current_level - 3) as f32 * 0.5).min(3.0), // Max 3 seconds penalty
+                    );
+                    // Only apply penalty if player has more than 40 seconds
+                    if timer.get_remaining_time() > Duration::from_secs(40) {
+                        timer.subtract_time(level_penalty);
+                    }
+                }
             }
         }
     }
-
     /// Updates frame timing, FPS, and delta time in the game state.
     ///
     /// # Arguments
@@ -600,6 +673,7 @@ impl App {
 
             // Report progress
             let (current, total) = renderer.generator.get_progress();
+
             if current % 50 == 0 || renderer.generator.is_complete() {
                 println!(
                     "Progress: {}/{} ({:.1}%)",
@@ -607,6 +681,16 @@ impl App {
                     total,
                     (current as f32 * 100.0 / total.max(1) as f32)
                 );
+            }
+            if renderer.generator.is_complete() && state.game_state.maze_path.is_none() {
+                println!("Maze generation complete! Saving to file...");
+
+                // Play completion sound
+                state
+                    .game_state
+                    .audio_manager
+                    .complete()
+                    .expect("Failed to play complete sound!");
 
                 // Handle completion
                 if renderer.generator.is_complete() {
@@ -640,7 +724,7 @@ impl App {
                             });
 
                         if let Some(exit_cell_position) = exit_cell {
-                            state.game_state.exit_cell = exit_cell_position;
+                            state.game_state.exit_cell = Some(exit_cell_position);
                             state.game_state.enemy = place_enemy_standard(
                                 maze_to_world(
                                     &exit_cell_position,
@@ -648,6 +732,7 @@ impl App {
                                     30.0,
                                 ),
                                 state.game_state.player.position,
+                                state.game_state.game_ui.level,
                                 |from, to| {
                                     state
                                         .game_state

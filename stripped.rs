@@ -79,14 +79,8 @@ impl LoadingRenderer {
         );
     }
 
-    pub fn update_loading_bar(&self, queue: &wgpu::Queue, progress: f32, window: &Window) {
-        // Update both progress and time/resolution for the animated effect
-        let window_size = window.inner_size();
-        let resolution = [window_size.width as f32, window_size.height as f32];
-        let time = self.loading_bar_renderer.start_time.elapsed().as_secs_f32();
-
-        self.loading_bar_renderer
-            .update_uniforms(queue, progress, resolution, time);
+    pub fn update_loading_bar(&self, queue: &wgpu::Queue, progress: f32) {
+        self.loading_bar_renderer.update_progress(queue, progress);
     }
 
     pub fn update_exit_shader(&self, queue: &wgpu::Queue, window: &Window) {
@@ -101,8 +95,8 @@ impl LoadingRenderer {
         // Render maze background
         self.maze_renderer.render(render_pass);
 
-        // Render loading bar overlay with animated effect
-        self.loading_bar_renderer.render(render_pass, window);
+        // Render loading bar overlay
+        self.loading_bar_renderer.render(render_pass);
 
         // Render exit cell effect if maze has an exit
         if let Ok(maze_guard) = self.maze.lock() {
@@ -134,14 +128,11 @@ impl LoadingRenderer {
     }
 }
 
-// Updated uniforms structure to include animation data
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct LoadingBarUniforms {
     pub progress: f32,
-    pub time: f32,
-    pub resolution: [f32; 2],
-    pub _padding: [f32; 2],
+    pub _padding: [f32; 3],
 }
 
 #[repr(C)]
@@ -212,25 +203,23 @@ impl MazeRenderer {
 
 pub struct LoadingBarRenderer {
     pub pipeline: wgpu::RenderPipeline,
+    pub vertex_buffer: wgpu::Buffer,
     pub uniform_buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
-    pub start_time: Instant, // Added to track animation time
 }
 
 impl LoadingBarRenderer {
     pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
         let uniforms = LoadingBarUniforms {
             progress: 0.0,
-            time: 0.0,
-            resolution: [800.0, 600.0], // Default resolution
-            _padding: [0.0; 2],
+            _padding: [0.0; 3],
         };
 
         let uniform_buffer = create_uniform_buffer(device, &uniforms, "Loading Bar Uniform Buffer");
 
         let bind_group_layout = BindGroupLayoutBuilder::new(device)
             .with_label("Loading Bar Bind Group Layout")
-            .with_uniform_buffer(0, wgpu::ShaderStages::VERTEX_FRAGMENT)
+            .with_uniform_buffer(0, wgpu::ShaderStages::FRAGMENT)
             .build();
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -242,52 +231,37 @@ impl LoadingBarRenderer {
             label: Some("Loading Bar Bind Group"),
         });
 
-        // Use the same exit shader for animated effect
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Loading Bar Pipeline")
-            .with_shader(include_str!("./shaders/loading-bar.wgsl")) // New shader file
+            .with_shader(include_str!("./shaders/loading-bar-shader.wgsl"))
+            .with_vertex_buffer(create_vertex_2d_layout())
             .with_bind_group_layout(&bind_group_layout)
             .with_alpha_blending()
             .build();
 
+        let vertex_buffer = create_fullscreen_vertices(device);
+
         Self {
             pipeline,
+            vertex_buffer,
             uniform_buffer,
             bind_group,
-            start_time: Instant::now(),
         }
     }
 
-    pub fn update_uniforms(
-        &self,
-        queue: &wgpu::Queue,
-        progress: f32,
-        resolution: [f32; 2],
-        time: f32,
-    ) {
+    pub fn update_progress(&self, queue: &wgpu::Queue, progress: f32) {
         let uniforms = LoadingBarUniforms {
             progress: progress.clamp(0.0, 1.0),
-            time,
-            resolution,
-            _padding: [0.0; 2],
+            _padding: [0.0; 3],
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
 
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass, window: &Window) {
-        // Calculate loading bar position (thin bar across very top of screen)
-        let window_size = window.inner_size();
-        let bar_width = window_size.width; // Full width of screen
-        let bar_height = 8u32; // Thin bar height
-
-        let bar_x = 0u32;
-        let bar_y = 0u32; // Very top of screen
-
-        // Set scissor rect to constrain the animated effect to the loading bar area
-        render_pass.set_scissor_rect(bar_x, bar_y, bar_width, bar_height);
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
-        render_pass.draw(0..3, 0..1); // Full-screen triangle, but clipped to loading bar
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.draw(0..6, 0..1);
     }
 }
 

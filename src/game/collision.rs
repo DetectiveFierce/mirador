@@ -26,8 +26,8 @@
 //! The BVH structure provides O(log n) collision detection in the average case, compared to
 //! O(n) for naive approaches, making it suitable for environments with many collision objects.
 
+use crate::game::GameAudioManager;
 use crate::game::Player;
-
 /// Axis-Aligned Bounding Box (AABB) for efficient collision detection.
 ///
 /// An AABB is a rectangular box whose faces are aligned with the world coordinate axes.
@@ -957,6 +957,7 @@ impl CollisionSystem {
     /// through confined spaces.
     pub fn check_and_resolve_collision(
         &self,
+        audio_manager: &mut GameAudioManager,
         current_pos: [f32; 3],
         desired_pos: [f32; 3],
     ) -> [f32; 3] {
@@ -1037,8 +1038,13 @@ impl CollisionSystem {
                 resolved_pos[2] - current_pos[2],
             ];
 
-            resolved_pos =
-                self.resolve_wall_collision(current_pos, resolved_pos, movement, closest_face);
+            resolved_pos = self.resolve_wall_collision(
+                audio_manager,
+                current_pos,
+                resolved_pos,
+                movement,
+                closest_face,
+            );
 
             // If position didn't change significantly, we're stuck - break out
             let epsilon = 0.0001;
@@ -1179,6 +1185,7 @@ impl CollisionSystem {
     /// ```
     fn resolve_wall_collision(
         &self,
+        audio_manager: &mut GameAudioManager,
         current_pos: [f32; 3],
         desired_pos: [f32; 3],
         movement: [f32; 3],
@@ -1211,6 +1218,9 @@ impl CollisionSystem {
 
         // Only resolve if moving into the wall
         if movement_dot < 0.0 {
+            audio_manager
+                .wall_hit()
+                .expect("Failed to play wall hit sound");
             let slide_movement = [
                 movement[0] - movement_dot * effective_normal[0],
                 movement[1] - movement_dot * effective_normal[1],
@@ -1637,8 +1647,10 @@ impl Player {
     ///
     /// The movement respects the physics of the environment by preventing
     /// penetration into walls and allowing for realistic sliding along surfaces.
+    #[allow(clippy::too_many_arguments)]
     pub fn move_with_collision(
         &mut self,
+        audio_manager: &mut GameAudioManager,
         collision_system: &CollisionSystem,
         delta_time: f32,
         forward: bool,
@@ -1676,6 +1688,7 @@ impl Player {
         }
 
         // Resolve collisions and update position
-        self.position = collision_system.check_and_resolve_collision(current_pos, desired_pos);
+        self.position =
+            collision_system.check_and_resolve_collision(audio_manager, current_pos, desired_pos);
     }
 }
