@@ -22,7 +22,6 @@ use crate::renderer::game_renderer::game_over::GameOverRenderer;
 use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::text::TextRenderer;
 use crate::ui::ui_panel::UiState;
-use egui_wgpu::ScreenDescriptor;
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
 
@@ -84,9 +83,8 @@ impl WgpuRenderer {
         ui_state: &UiState,
         game_state: &GameState,
         text_renderer: &mut TextRenderer,
-    ) -> Result<(TextureView, ScreenDescriptor, SurfaceTexture), String> {
+    ) -> Result<(TextureView, SurfaceTexture), String> {
         let (surface_texture, surface_view) = self.get_surface_texture_and_view()?;
-        let screen_descriptor = self.create_screen_descriptor(window);
         let depth_texture_view = self.update_depth_texture();
 
         match game_state.current_screen {
@@ -104,7 +102,7 @@ impl WgpuRenderer {
                     window,
                 );
             }
-            CurrentScreen::Game => {
+            CurrentScreen::Game | CurrentScreen::Pause => {
                 self.render_game_screen(
                     encoder,
                     &surface_view,
@@ -118,7 +116,7 @@ impl WgpuRenderer {
             _ => {}
         }
 
-        Ok((surface_view, screen_descriptor, surface_texture))
+        Ok((surface_view, surface_texture))
     }
 
     // Private helper methods
@@ -194,13 +192,6 @@ impl WgpuRenderer {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         Ok((surface_texture, surface_view))
-    }
-
-    fn create_screen_descriptor(&self, window: &winit::window::Window) -> ScreenDescriptor {
-        ScreenDescriptor {
-            size_in_pixels: [self.surface_config.width, self.surface_config.height],
-            pixels_per_point: window.scale_factor() as f32,
-        }
     }
 
     fn update_depth_texture(&mut self) -> TextureView {

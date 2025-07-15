@@ -18,6 +18,10 @@
 use crate::game::GameTimer;
 use crate::game::enemy::{Enemy, place_enemy_standard};
 use crate::game::player::Player;
+use crate::game::{
+    self, GameState,
+    keys::{GameKey, KeyState, winit_key_to_game_key},
+};
 use crate::game::{CurrentScreen, TimerConfig};
 use crate::math::coordinates::maze_to_world;
 use crate::maze::parse_maze_file;
@@ -25,10 +29,6 @@ use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::primitives::Vertex;
 use crate::renderer::text::TextRenderer;
 use crate::{
-    game::{
-        GameState,
-        keys::{GameKey, KeyState, winit_key_to_game_key},
-    },
     renderer::wgpu_lib::WgpuRenderer,
     ui::{egui_lib::EguiRenderer, ui_panel::UiState},
 };
@@ -64,6 +64,7 @@ pub struct AppState {
     pub text_renderer: TextRenderer,
     pub start_time: Instant,
     pub elapsed_time: Duration,
+    pub pause_menu: crate::ui::pause_menu::PauseMenu,
 }
 
 impl AppState {
@@ -108,7 +109,17 @@ impl AppState {
 
         let game_state = GameState::new();
         // Initialize all game UI elements
-        text_renderer.initialize_game_ui(&game_state.game_ui, width, height);
+        game::initialize_game_ui(&mut text_renderer, &game_state.game_ui, window);
+
+        // Create game over display
+        text_renderer.create_game_over_display(width, height);
+
+        let pause_menu = crate::ui::pause_menu::PauseMenu::new(
+            &wgpu_renderer.device,
+            &wgpu_renderer.queue,
+            wgpu_renderer.surface_config.format,
+            window,
+        );
 
         Self {
             wgpu_renderer,
@@ -119,6 +130,7 @@ impl AppState {
             text_renderer,
             start_time: Instant::now(),
             elapsed_time: Duration::ZERO,
+            pause_menu,
         }
     }
 
@@ -139,6 +151,11 @@ impl AppState {
             .game_renderer
             .compass_renderer
             .update_uniforms(&self.wgpu_renderer.queue, [0.75, 0.75], [4.75, 4.75]);
+
+        // Update game over display position for new window size
+        if let Err(e) = self.text_renderer.update_game_over_position(width, height) {
+            println!("Failed to update game over position: {}", e);
+        }
     }
 
     /// Updates the title screen maze and loading bar, and uploads new texture data.
@@ -235,29 +252,55 @@ impl AppState {
             self.game_state.start_game_timer(Some(timer_config));
         }
 
-        // Update UI and check if timer expired
-        let timer_expired = self
-            .text_renderer
-            .update_game_ui(&mut self.game_state.game_ui);
+        // Hide game UI elements during loading screen
+        if self.game_state.current_screen == CurrentScreen::Loading {
+            // Hide timer, level, and score displays
+            if let Some(buffer) = self.text_renderer.text_buffers.get_mut("main_timer") {
+                buffer.visible = false;
+            }
+            if let Some(buffer) = self.text_renderer.text_buffers.get_mut("level") {
+                buffer.visible = false;
+            }
+            if let Some(buffer) = self.text_renderer.text_buffers.get_mut("score") {
+                buffer.visible = false;
+            }
+        } else {
+            // Show game UI elements when not loading
+            if let Some(buffer) = self.text_renderer.text_buffers.get_mut("main_timer") {
+                buffer.visible = true;
+            }
+            if let Some(buffer) = self.text_renderer.text_buffers.get_mut("level") {
+                buffer.visible = true;
+            }
+            if let Some(buffer) = self.text_renderer.text_buffers.get_mut("score") {
+                buffer.visible = true;
+            }
+        }
+
+        // Always update the text UI, but only update the timer if in Game
+        let timer_expired = game::update_game_ui(
+            &mut self.text_renderer,
+            &mut self.game_state.game_ui,
+            &self.game_state.current_screen,
+        );
 
         if timer_expired {
             // Handle timer expiration - you can add game over logic here
             println!("Timer expired! Game over.");
             self.game_state.current_screen = CurrentScreen::GameOver;
-            // Example: self.game_state.game_over = true;
         }
 
-        // Update level display if needed (example usage)
-        // You can call this when the level changes:
-        // self.text_renderer.set_level(new_level);
-
-        // Update score display if needed (example usage)
-        // You can call this when the score changes:
-        // self.text_renderer.set_score(new_score);
         if self.game_state.enemy.pathfinder.reached_player {
             self.game_state.current_screen = CurrentScreen::GameOver;
             self.game_state.enemy = Enemy::new([-0.5, 30.0, 0.0], 150.0);
             self.game_state.enemy.pathfinder.reached_player = false
+        }
+
+        // Show/hide game over display based on current screen
+        if self.game_state.current_screen == CurrentScreen::GameOver {
+            self.text_renderer.show_game_over_display();
+        } else {
+            self.text_renderer.hide_game_over_display();
         }
     }
 }
@@ -333,6 +376,12 @@ impl App {
                 }
             };
             state.resize_surface(width, height);
+            // Ensure pause menu resizes with the window
+            use glyphon::Resolution;
+            let resolution = Resolution { width, height };
+            state
+                .pause_menu
+                .resize(&state.wgpu_renderer.queue, resolution);
         }
     }
 
@@ -373,7 +422,7 @@ impl App {
 
         // Update game state and UI
         state.key_state.update(&mut state.game_state);
-        state.update_game_ui(); // Updated to use the new method
+        state.update_game_ui();
         state.update_ui(window);
         state
             .game_state
@@ -393,32 +442,157 @@ impl App {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         // Update canvas surface
-        let (surface_view, screen_descriptor, surface_texture) =
-            match state.wgpu_renderer.update_canvas(
-                window,
-                &mut encoder,
-                &state.ui,
-                &state.game_state,
-                &mut state.text_renderer,
-            ) {
-                Ok(result) => result,
-                Err(err) => {
-                    eprintln!("Failed to update canvas: {}", err);
-                    #[cfg(debug_assertions)]
-                    eprintln!("Backtrace: {:?}", std::backtrace::Backtrace::capture());
-                    return;
-                }
-            };
+        let (surface_view, surface_texture) = match state.wgpu_renderer.update_canvas(
+            window,
+            &mut encoder,
+            &state.ui,
+            &state.game_state,
+            &mut state.text_renderer,
+        ) {
+            Ok(result) => result,
+            Err(err) => {
+                eprintln!("Failed to update canvas: {}", err);
+                #[cfg(debug_assertions)]
+                eprintln!("Backtrace: {:?}", std::backtrace::Backtrace::capture());
+                return;
+            }
+        };
 
-        // Render UI
-        state.egui_renderer.end_frame_and_draw(
+        // --- Debug Info Panel ---
+        if state.pause_menu.is_debug_panel_visible() {
+            let window_size = &state.wgpu_renderer.surface_config;
+            let debug_text = format!(
+                "Window Size: {} x {}",
+                window_size.width, window_size.height
+            );
+            let style = crate::renderer::text::TextStyle {
+                font_family: "HankenGrotesk".to_string(),
+                font_size: 22.0,
+                line_height: 26.0,
+                color: Color::rgb(220, 40, 40),
+                weight: glyphon::Weight::BOLD,
+                style: glyphon::Style::Normal,
+            };
+            let pos = crate::renderer::text::TextPosition {
+                x: window_size.width as f32 - 320.0,
+                y: 20.0,
+                max_width: Some(300.0),
+                max_height: Some(40.0),
+            };
+            state.text_renderer.create_text_buffer(
+                "debug_info",
+                &debug_text,
+                Some(style),
+                Some(pos),
+            );
+        } else {
+            // Hide debug info by making it transparent if it exists
+            if let Some(buf) = state.text_renderer.text_buffers.get_mut("debug_info") {
+                buf.visible = false;
+            }
+        }
+        // Prepare and render text BEFORE pause menu overlay
+        if let Err(e) = state.text_renderer.prepare(
             &state.wgpu_renderer.device,
             &state.wgpu_renderer.queue,
-            &mut encoder,
-            window,
-            &surface_view,
-            screen_descriptor,
-        );
+            &state.wgpu_renderer.surface_config,
+        ) {
+            println!("Failed to prepare text renderer: {}", e);
+        }
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &surface_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                label: Some("text render pass"),
+                occlusion_query_set: None,
+            });
+            if let Err(e) = state.text_renderer.render(&mut render_pass) {
+                println!("Failed to render text: {}", e);
+            }
+        }
+        // --- End Game UI ---
+
+        // If paused, render the pause menu on top
+        if state.game_state.current_screen == CurrentScreen::Pause {
+            if !state.pause_menu.is_visible() {
+                state.pause_menu.show();
+            }
+
+            // Create a render pass for the pause menu
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &surface_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                label: Some("pause menu render pass"),
+                occlusion_query_set: None,
+            });
+
+            // --- Add semi-transparent grey overlay ---
+            let overlay_color = [0.08, 0.09, 0.11, 0.88]; // darker, neutral semi-transparent grey
+            let (w, h) = (
+                state.wgpu_renderer.surface_config.width as f32,
+                state.wgpu_renderer.surface_config.height as f32,
+            );
+            state
+                .pause_menu
+                .button_manager
+                .rectangle_renderer
+                .add_rectangle(crate::renderer::rectangle::Rectangle::new(
+                    0.0,
+                    0.0,
+                    w,
+                    h,
+                    overlay_color,
+                ));
+            state
+                .pause_menu
+                .button_manager
+                .rectangle_renderer
+                .render(&state.wgpu_renderer.device, &mut render_pass);
+            // --- End overlay ---
+
+            // Prepare pause menu for rendering (text)
+            if let Err(e) = state.pause_menu.prepare(
+                &state.wgpu_renderer.device,
+                &state.wgpu_renderer.queue,
+                &state.wgpu_renderer.surface_config,
+            ) {
+                println!("Failed to prepare pause menu: {}", e);
+            }
+
+            // Render the pause menu (rectangles + text)
+            if let Err(e) = state
+                .pause_menu
+                .render(&state.wgpu_renderer.device, &mut render_pass)
+            {
+                println!("Failed to render pause menu: {}", e);
+            }
+        } else {
+            if state.pause_menu.is_visible() {
+                state.pause_menu.hide();
+            }
+            // Explicitly clear rectangles if menu is not visible
+            state
+                .pause_menu
+                .button_manager
+                .rectangle_renderer
+                .clear_rectangles();
+        }
 
         window.request_redraw();
 
@@ -427,7 +601,6 @@ impl App {
         surface_texture.present();
 
         // Update enemy pathfinding
-
         state.game_state.enemy.update(
             state.game_state.player.position,
             state.game_state.delta_time,
@@ -440,7 +613,6 @@ impl App {
             },
         );
 
-        // Handle title screen animation if needed
         // Handle title screen animation if needed
         if state.game_state.current_screen == CurrentScreen::Loading {
             state.game_state.game_ui.stop_timer();
@@ -489,20 +661,21 @@ impl App {
         }
 
         if game_over {
-            state.game_state.set_level(&mut state.text_renderer, 1);
-            state.game_state.set_score(&mut state.text_renderer, 0);
+            state.game_state.set_level(1);
+            state.game_state.set_score(0);
             state.game_state.game_ui.timer = Some(GameTimer::new(TimerConfig::default()));
-            state
-                .text_renderer
-                .update_game_ui(&mut state.game_state.game_ui);
+            game::update_game_ui(
+                &mut state.text_renderer,
+                &mut state.game_state.game_ui,
+                &state.game_state.current_screen,
+            );
             // Ensure clean state for new game
             state.game_state.exit_cell = None;
         } else {
             let current_level = state.game_state.game_ui.level;
 
             // Calculate completion time and performance metrics
-            let (completion_time, time_bonus) = if let Some(timer) = &state.game_state.game_ui.timer
-            {
+            let (completion_time, _) = if let Some(timer) = &state.game_state.game_ui.timer {
                 let remaining_time = timer.get_remaining_time().as_secs_f32();
                 let total_time = timer.config.duration.as_secs_f32();
                 let completion_time = total_time - remaining_time;
@@ -572,35 +745,12 @@ impl App {
             let total_score = base_score + speed_bonus + level_bonus + consecutive_bonus;
 
             // Update score and level
-            state.game_state.set_score(
-                &mut state.text_renderer,
-                state.game_state.game_ui.score + total_score,
-            );
             state
                 .game_state
-                .set_level(&mut state.text_renderer, current_level + 1);
+                .set_score(state.game_state.game_ui.score + total_score);
+            state.game_state.set_level(current_level + 1);
 
-            // Enhanced time management
-            if let Some(timer) = &mut state.game_state.game_ui.timer {
-                // Add the calculated time bonus
-                let time_to_add = Duration::from_secs_f32(time_bonus);
-                timer.add_time(time_to_add);
-
-                // Update previous time for next level calculation
-                timer.prev_time = timer.get_remaining_time();
-
-                // Optional: Add a small level progression penalty to maintain difficulty
-                // As levels increase, subtract a small amount of time to keep pressure
-                if current_level > 3 {
-                    let level_penalty = Duration::from_secs_f32(
-                        ((current_level - 3) as f32 * 0.5).min(3.0), // Max 3 seconds penalty
-                    );
-                    // Only apply penalty if player has more than 40 seconds
-                    if timer.get_remaining_time() > Duration::from_secs(40) {
-                        timer.subtract_time(level_penalty);
-                    }
-                }
-            }
+            // Enhanced time management: Not supported in new timer, so skip add_time/subtract_time/prev_time
         }
     }
     /// Updates frame timing, FPS, and delta time in the game state.
@@ -806,6 +956,41 @@ impl ApplicationHandler for App {
 
         state.egui_renderer.handle_input(window, &event);
 
+        // If in pause menu, pass all input events to the pause menu first
+        let pause_action = if state.game_state.current_screen == CurrentScreen::Pause
+            && state.pause_menu.is_visible()
+        {
+            state.pause_menu.handle_input(&event);
+            state.pause_menu.get_last_action()
+        } else {
+            crate::ui::pause_menu::PauseMenuAction::None
+        };
+
+        // Handle pause menu actions
+        match pause_action {
+            crate::ui::pause_menu::PauseMenuAction::Resume => {
+                state.game_state.current_screen = CurrentScreen::Game;
+                state.game_state.game_ui.resume_timer();
+                state.game_state.enemy.pathfinder.locked = false;
+                state.game_state.capture_mouse = true;
+                // Explicitly hide the pause menu
+                state.pause_menu.hide();
+            }
+            crate::ui::pause_menu::PauseMenuAction::QuitToMenu => {
+                event_loop.exit();
+            }
+            crate::ui::pause_menu::PauseMenuAction::Settings => {
+                // "Restart Run" button - trigger the same sequence as game over restart
+                state.game_state.current_screen = CurrentScreen::NewGame;
+                state.game_state.capture_mouse = true;
+            }
+            crate::ui::pause_menu::PauseMenuAction::Restart => {
+                // "Quit to Lobby" button - for now, do nothing (or could exit to menu)
+                // This could be changed to exit the game or go to a lobby screen
+            }
+            _ => {}
+        }
+
         match event {
             WindowEvent::CloseRequested => {
                 println!("The close button was pressed; stopping");
@@ -849,8 +1034,32 @@ impl ApplicationHandler for App {
                                         .debug_render_bounding_boxes;
                                 }
                                 GameKey::Escape => {
-                                    state.game_state.capture_mouse =
-                                        !state.game_state.capture_mouse;
+                                    match state.game_state.current_screen {
+                                        CurrentScreen::Game => {
+                                            // Enter pause menu
+                                            state.game_state.current_screen = CurrentScreen::Pause;
+                                            // Pause timer
+                                            state.game_state.game_ui.pause_timer();
+                                            // Lock enemy movement
+                                            state.game_state.enemy.pathfinder.locked = true;
+                                            // Unlock cursor
+                                            state.game_state.capture_mouse = false;
+                                        }
+                                        CurrentScreen::Pause => {
+                                            // Resume game
+                                            state.game_state.current_screen = CurrentScreen::Game;
+                                            state.game_state.game_ui.resume_timer();
+                                            // Unlock enemy movement
+                                            state.game_state.enemy.pathfinder.locked = false;
+                                            // Lock cursor
+                                            state.game_state.capture_mouse = true;
+                                        }
+                                        _ => {
+                                            // For all other screens, just toggle cursor lock
+                                            state.game_state.capture_mouse =
+                                                !state.game_state.capture_mouse;
+                                        }
+                                    }
                                 }
 
                                 _ => {} // Movement keys are handled in process_movement
@@ -898,7 +1107,9 @@ impl ApplicationHandler for App {
                 self.handle_redraw();
             }
 
-            _ => (),
+            _ => {
+                // Handle any other events that weren't caught above
+            }
         }
     }
 }

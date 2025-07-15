@@ -7,5 +7,6 @@ pub mod game_renderer;
 pub mod loading_renderer;
 pub mod pipeline_builder;
 pub mod primitives;
+pub mod rectangle;
 pub mod text;
 pub mod wgpu_lib;

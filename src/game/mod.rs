@@ -13,10 +13,13 @@ use self::collision::CollisionSystem;
 use self::player::Player;
 use crate::game::enemy::Enemy;
 use crate::maze::generator::Cell;
+use crate::renderer::text::TextPosition;
 use crate::renderer::text::TextRenderer;
+use crate::renderer::text::TextStyle;
 use glyphon::Color;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
+use winit::window::Window;
 /// Represents the entire mutable state of the game.
 ///
 /// This struct is updated every frame and contains:
@@ -50,6 +53,12 @@ pub struct GameState {
     pub current_screen: CurrentScreen,
     pub enemy: Enemy,
     pub audio_manager: GameAudioManager,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PauseMenuState {
+    Open,
+    Closed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -120,28 +129,21 @@ impl GameState {
     }
 
     /// Update game level
-    pub fn set_level(&mut self, text_renderer: &mut TextRenderer, level: i32) {
+    pub fn set_level(&mut self, level: i32) {
         self.game_ui.set_level(level);
-        if let Err(e) = text_renderer.update_text("level", &self.game_ui.get_level_text()) {
-            println!("Failed to update level text: {}", e);
-        }
     }
 
     /// Update game score
-    pub fn set_score(&mut self, text_renderer: &mut TextRenderer, score: u32) {
+    pub fn set_score(&mut self, score: u32) {
         self.game_ui.set_score(score);
-        if let Err(e) = text_renderer.update_text("score", &self.game_ui.get_score_text()) {
-            println!("Failed to update score text: {}", e);
-        }
     }
 }
 
-/// Timer configuration for game elements
 #[derive(Debug, Clone)]
 pub struct TimerConfig {
     pub duration: Duration,
-    pub warning_threshold: Duration,  // When to turn yellow
-    pub critical_threshold: Duration, // When to turn red
+    pub warning_threshold: Duration,
+    pub critical_threshold: Duration,
     pub normal_color: Color,
     pub warning_color: Color,
     pub critical_color: Color,
@@ -150,9 +152,9 @@ pub struct TimerConfig {
 impl Default for TimerConfig {
     fn default() -> Self {
         Self {
-            duration: Duration::from_secs(60),
-            warning_threshold: Duration::from_secs(30),
-            critical_threshold: Duration::from_secs(15),
+            duration: Duration::from_secs(30),
+            warning_threshold: Duration::from_secs(20),
+            critical_threshold: Duration::from_secs(10),
             normal_color: Color::rgb(100, 255, 100),
             warning_color: Color::rgb(255, 255, 100),
             critical_color: Color::rgb(255, 100, 100),
@@ -160,14 +162,14 @@ impl Default for TimerConfig {
     }
 }
 
-/// Game timer state
 #[derive(Debug)]
 pub struct GameTimer {
     pub start_time: Instant,
     pub config: TimerConfig,
     pub is_running: bool,
     pub is_expired: bool,
-    pub prev_time: Duration,
+    pub paused_at: Option<Instant>,
+    pub elapsed_paused: Duration,
 }
 
 impl GameTimer {
@@ -177,7 +179,8 @@ impl GameTimer {
             config,
             is_running: false,
             is_expired: false,
-            prev_time: Duration::from_secs(60),
+            paused_at: None,
+            elapsed_paused: Duration::ZERO,
         }
     }
 
@@ -185,6 +188,20 @@ impl GameTimer {
         self.start_time = Instant::now();
         self.is_running = true;
         self.is_expired = false;
+        self.paused_at = None;
+        self.elapsed_paused = Duration::ZERO;
+    }
+
+    pub fn pause(&mut self) {
+        if self.is_running && self.paused_at.is_none() {
+            self.paused_at = Some(Instant::now());
+        }
+    }
+
+    pub fn resume(&mut self) {
+        if let Some(paused_at) = self.paused_at.take() {
+            self.elapsed_paused += paused_at.elapsed();
+        }
     }
 
     pub fn stop(&mut self) {
@@ -194,14 +211,19 @@ impl GameTimer {
     pub fn reset(&mut self) {
         self.start_time = Instant::now();
         self.is_expired = false;
+        self.paused_at = None;
+        self.elapsed_paused = Duration::ZERO;
     }
 
     pub fn get_remaining_time(&self) -> Duration {
         if !self.is_running || self.is_expired {
             return Duration::ZERO;
         }
-
-        let elapsed = self.start_time.elapsed();
+        let elapsed = if let Some(paused_at) = self.paused_at {
+            paused_at.duration_since(self.start_time) - self.elapsed_paused
+        } else {
+            Instant::now().duration_since(self.start_time) - self.elapsed_paused
+        };
         self.config
             .duration
             .checked_sub(elapsed)
@@ -213,21 +235,17 @@ impl GameTimer {
     }
 
     pub fn update(&mut self) -> bool {
-        if !self.is_running {
+        if !self.is_running || self.paused_at.is_some() {
             return false;
         }
-
         let remaining = self.get_remaining_time();
         let was_expired = self.is_expired;
         self.is_expired = remaining.is_zero();
-
-        // Return true if timer just expired (transition from running to expired)
         !was_expired && self.is_expired
     }
 
     pub fn get_current_color(&self) -> Color {
         let remaining = self.get_remaining_time();
-
         if remaining <= self.config.critical_threshold {
             self.config.critical_color
         } else if remaining <= self.config.warning_threshold {
@@ -242,21 +260,8 @@ impl GameTimer {
         let seconds = remaining.as_secs_f64();
         format!("{:05.2}", seconds)
     }
-
-    pub fn add_time(&mut self, duration: Duration) {
-        self.config.duration += duration;
-    }
-
-    pub fn get_total_time(&self) -> Duration {
-        self.config.duration
-    }
-
-    pub fn subtract_time(&mut self, duration: Duration) {
-        self.config.duration = self.config.duration.saturating_sub(duration);
-    }
 }
 
-/// Manages game-specific UI elements like timers, scores, levels, etc.
 pub struct GameUIManager {
     pub timer: Option<GameTimer>,
     pub level: i32,
@@ -345,4 +350,155 @@ impl GameUIManager {
     pub fn get_score_text(&self) -> String {
         format!("Score: {}", self.score)
     }
+
+    pub fn pause_timer(&mut self) {
+        if let Some(timer) = &mut self.timer {
+            timer.pause();
+        }
+    }
+
+    pub fn resume_timer(&mut self) {
+        if let Some(timer) = &mut self.timer {
+            timer.resume();
+        }
+    }
+}
+
+/// Sets up the timer, score, and level display using the TextRenderer
+pub fn initialize_game_ui(
+    text_renderer: &mut TextRenderer,
+    game_ui: &GameUIManager,
+    window: &Window,
+) {
+    let size = window.inner_size();
+    let width = size.width;
+    let height = size.height;
+
+    // --- Responsive scaling logic ---
+    // If the window is large, scale up the text; otherwise, use default sizes
+    let (timer_font_size, timer_line_height, timer_max_width, timer_max_height) = if width >= 1920 {
+        (80.0, 100.0, 300.0, 120.0)
+    } else if width >= 1600 || height >= 900 {
+        (60.0, 76.0, 200.0, 80.0)
+    } else {
+        (48.0, 60.0, 150.0, 60.0)
+    };
+    let (label_font_size, label_line_height, label_max_width, label_max_height) =
+        if width >= 1600 || height >= 900 {
+            (24.0, 28.0, 160.0, 32.0)
+        } else {
+            (18.0, 22.0, 120.0, 25.0)
+        };
+
+    // Timer display (centered at top)
+    let timer_style = TextStyle {
+        font_family: "HankenGrotesk".to_string(),
+        font_size: timer_font_size,
+        line_height: timer_line_height,
+        color: Color::rgb(100, 255, 100),
+        weight: glyphon::Weight::BOLD,
+        style: glyphon::Style::Normal,
+    };
+    let timer_position = TextPosition {
+        x: (width as f32 / 2.0) - (timer_max_width / 2.75),
+        y: 10.0,
+        max_width: Some(timer_max_width),
+        max_height: Some(timer_max_height),
+    };
+    text_renderer.create_text_buffer(
+        "main_timer",
+        &game_ui.get_timer_text(),
+        Some(timer_style),
+        Some(timer_position),
+    );
+
+    // Level display (top left, above score)
+    let level_style = TextStyle {
+        font_family: "HankenGrotesk".to_string(),
+        font_size: label_font_size,
+        line_height: label_line_height,
+        color: Color::rgb(255, 255, 150),
+        weight: glyphon::Weight::NORMAL,
+        style: glyphon::Style::Normal,
+    };
+    let level_position = TextPosition {
+        x: 20.0,
+        y: 20.0,
+        max_width: Some(label_max_width),
+        max_height: Some(label_max_height),
+    };
+    text_renderer.create_text_buffer(
+        "level",
+        &game_ui.get_level_text(),
+        Some(level_style),
+        Some(level_position),
+    );
+
+    // Score display (top left, below level, left edge aligned)
+    let score_style = TextStyle {
+        font_family: "HankenGrotesk".to_string(),
+        font_size: label_font_size,
+        line_height: label_line_height,
+        color: Color::rgb(150, 255, 255),
+        weight: glyphon::Weight::NORMAL,
+        style: glyphon::Style::Normal,
+    };
+    let score_position = TextPosition {
+        x: 20.0,
+        y: 50.0,
+        max_width: Some(label_max_width),
+        max_height: Some(label_max_height),
+    };
+    text_renderer.create_text_buffer(
+        "score",
+        &game_ui.get_score_text(),
+        Some(score_style),
+        Some(score_position),
+    );
+}
+
+/// Helper to update the text content of a buffer and re-apply style
+fn update_text_content(
+    text_renderer: &mut TextRenderer,
+    id: &str,
+    new_text: &str,
+) -> Result<(), String> {
+    if let Some(buffer) = text_renderer.text_buffers.get_mut(id) {
+        buffer.text_content = new_text.to_string();
+        // Re-apply style to update the buffer
+        let style = buffer.style.clone();
+        text_renderer.update_style(id, style)
+    } else {
+        Err(format!("Text buffer '{}' not found", id))
+    }
+}
+
+/// Call this every frame to update the timer, score, and level displays
+pub fn update_game_ui(
+    text_renderer: &mut TextRenderer,
+    game_ui: &mut GameUIManager,
+    current_screen: &CurrentScreen,
+) -> bool {
+    // Only update the timer if in Game
+    let timer_expired = if let CurrentScreen::Game = current_screen {
+        game_ui.update_timer()
+    } else {
+        false
+    };
+
+    // Update timer display
+    let timer_text = game_ui.get_timer_text();
+    let _ = update_text_content(text_renderer, "main_timer", &timer_text);
+    // Update timer color by updating style
+    if let Some(buffer) = text_renderer.text_buffers.get_mut("main_timer") {
+        let mut style = buffer.style.clone();
+        style.color = game_ui.get_timer_color();
+        let _ = text_renderer.update_style("main_timer", style);
+    }
+
+    // Update level and score displays
+    let _ = update_text_content(text_renderer, "level", &game_ui.get_level_text());
+    let _ = update_text_content(text_renderer, "score", &game_ui.get_score_text());
+
+    timer_expired
 }
