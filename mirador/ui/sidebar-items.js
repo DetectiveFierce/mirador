@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["egui_lib","ui_panel"]};
+window.SIDEBAR_ITEMS = {"mod":["buttons","egui_lib","pause_menu","ui_panel"]};
