@@ -43,7 +43,7 @@ impl GameAudioManager {
 
         // Load audio files
         let footstep_data = StaticSoundData::from_file("assets/audio/single_step.wav")?;
-        let enemy_data = StaticSoundData::from_file("assets/audio/jeffree-star-asmr.ogg")?;
+        let enemy_data = StaticSoundData::from_file("assets/audio/slime-track.ogg")?;
         let complete_data = StaticSoundData::from_file("assets/audio/complete.wav")?;
         let wall_hit_data = StaticSoundData::from_file("assets/audio/wall.wav")?;
 
@@ -147,7 +147,7 @@ impl GameAudioManager {
                 ))),
         )?;
 
-        let sound_handle = spatial_track.play(self.enemy_data.clone().loop_region(0.0..1089.0))?;
+        let sound_handle = spatial_track.play(self.enemy_data.clone().loop_region(..))?;
 
         self.spatial_tracks.insert(enemy_id.clone(), spatial_track);
         self.enemy_sounds.insert(enemy_id, sound_handle);

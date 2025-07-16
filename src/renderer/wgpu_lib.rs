@@ -44,6 +44,8 @@ pub struct WgpuRenderer {
     pub loading_screen_renderer: LoadingRenderer,
     /// Renderer for the game over screen.
     pub game_over_renderer: GameOverRenderer,
+    /// Renderer for the title screen.
+    pub title_renderer: crate::renderer::title::TitleRenderer,
 }
 
 impl WgpuRenderer {
@@ -63,6 +65,8 @@ impl WgpuRenderer {
         let game_renderer = GameRenderer::new(&device, &queue, &surface_config);
         let loading_screen_renderer = LoadingRenderer::new(&device, &surface_config);
         let game_over_renderer = GameOverRenderer::new(&device, &surface_config);
+        let title_renderer =
+            crate::renderer::title::TitleRenderer::new(&device, &queue, &surface_config);
 
         Self {
             surface,
@@ -72,6 +76,7 @@ impl WgpuRenderer {
             game_renderer,
             loading_screen_renderer,
             game_over_renderer,
+            title_renderer,
         }
     }
 
@@ -117,6 +122,38 @@ impl WgpuRenderer {
         }
 
         Ok((surface_view, surface_texture))
+    }
+
+    /// Renders the title screen.
+    pub fn render_title_screen(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        surface_view: &TextureView,
+        _window: &winit::window::Window,
+    ) {
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Title Screen Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: surface_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 1.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+        render_pass.set_pipeline(&self.title_renderer.pipeline);
+        render_pass.set_bind_group(0, &self.title_renderer.bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.title_renderer.vertex_buffer.slice(..));
+        render_pass.draw(0..6, 0..1);
     }
 
     // Private helper methods
@@ -176,7 +213,9 @@ impl WgpuRenderer {
         }
     }
 
-    fn get_surface_texture_and_view(&self) -> Result<(SurfaceTexture, TextureView), String> {
+    pub fn get_surface_texture_and_view(
+        &mut self,
+    ) -> Result<(SurfaceTexture, TextureView), String> {
         let surface_texture = match self.surface.get_current_texture() {
             Ok(texture) => texture,
             Err(wgpu::SurfaceError::Outdated) => {
@@ -472,7 +511,7 @@ impl WgpuRenderer {
         self.game_over_renderer.render(&mut game_over_pass, window);
     }
 
-    fn render_text(
+    pub fn render_text(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         surface_view: &TextureView,

@@ -9,4 +9,5 @@ pub mod pipeline_builder;
 pub mod primitives;
 pub mod rectangle;
 pub mod text;
+pub mod title;
 pub mod wgpu_lib;

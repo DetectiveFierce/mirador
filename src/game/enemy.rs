@@ -41,12 +41,16 @@ impl Enemy {
             // Move towards the target
             if let Some(direction) = self.pathfinder.get_movement_direction() {
                 let direction_vec = Vec3(direction);
-                let movement = direction_vec * self.current_speed * delta_time;
-
-                let position_vec = Vec3(self.pathfinder.position);
-                let new_position = position_vec + movement;
-
-                self.pathfinder.set_position(*new_position.as_array());
+                if let Some(target) = self.pathfinder.current_target {
+                    let position_vec = Vec3(self.pathfinder.position);
+                    let target_vec = Vec3(target);
+                    let distance_to_target = position_vec.distance_to(&target_vec);
+                    let max_step = self.current_speed * delta_time;
+                    let step = max_step.min(distance_to_target);
+                    let movement = direction_vec * step;
+                    let new_position = position_vec + movement;
+                    self.pathfinder.set_position(*new_position.as_array());
+                }
             }
         }
     }

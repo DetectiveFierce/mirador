@@ -34,7 +34,7 @@ impl EnemyRenderer {
         surface_config: &wgpu::SurfaceConfiguration,
     ) -> Self {
         // Load jeffree texture
-        let jeffree_texture = Self::load_jeffree_texture(device, queue);
+        let jeffree_texture = Self::load_slime_texture(device, queue);
 
         let uniforms = EnemyUniforms {
             view_proj_matrix: [[0.0; 4]; 4],
@@ -132,14 +132,14 @@ impl EnemyRenderer {
         }
     }
 
-    fn load_jeffree_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-        let path = "assets/jeffree.png";
+    fn load_slime_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
+        let path = "assets/Slime.png";
 
         // Load image using image crate
         let img = match image::open(path) {
             Ok(img) => img.to_rgba8(),
             Err(e) => {
-                eprintln!("Failed to load jeffree texture {}: {}", path, e);
+                eprintln!("Failed to load slime texture {}: {}", path, e);
                 // Create a fallback texture (solid red square)
                 let mut fallback = image::RgbaImage::new(64, 64);
                 for pixel in fallback.pixels_mut() {

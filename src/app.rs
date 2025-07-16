@@ -28,6 +28,7 @@ use crate::maze::parse_maze_file;
 use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::primitives::Vertex;
 use crate::renderer::text::TextRenderer;
+use crate::renderer::title;
 use crate::{
     renderer::wgpu_lib::WgpuRenderer,
     ui::{egui_lib::EguiRenderer, ui_panel::UiState},
@@ -119,6 +120,56 @@ impl AppState {
             &wgpu_renderer.queue,
             wgpu_renderer.surface_config.format,
             window,
+        );
+
+        // Add big bold 'Mirador' text in the top right for the title screen
+        let width = wgpu_renderer.surface_config.width as f32;
+        let height = wgpu_renderer.surface_config.height as f32;
+        let mirador_style = crate::renderer::text::TextStyle {
+            font_family: "HankenGrotesk".to_string(),
+            font_size: 125.0,
+            line_height: 150.0,
+            color: Color::rgb(58, 53, 70), // #3A3546
+            weight: glyphon::Weight::BOLD,
+            style: glyphon::Style::Normal,
+        };
+        // Estimate text width for right alignment
+        let text_width = 620.0; // Conservative estimate for large text
+        let text_height = 150.0;
+        let mirador_position = crate::renderer::text::TextPosition {
+            x: width - text_width - 20.0, // 20px margin from right
+            y: 100.0,                     // 100px margin from top
+            max_width: Some(text_width),
+            max_height: Some(text_height),
+        };
+        text_renderer.create_text_buffer(
+            "title_mirador_overlay",
+            "Mirador",
+            Some(mirador_style),
+            Some(mirador_position.clone()),
+        );
+        // Add subtitle text at the same x, 60px from the bottom
+        let subtitle_style = crate::renderer::text::TextStyle {
+            font_family: "HankenGrotesk".to_string(),
+            font_size: 48.0,
+            line_height: 72.0,
+            color: Color::rgb(58, 53, 70), // #3A3546
+            weight: glyphon::Weight::MEDIUM,
+            style: glyphon::Style::Normal,
+        };
+        let subtitle_text = "Click anywhere to get lost.";
+        let subtitle_text_height = 72.0;
+        let subtitle_position = crate::renderer::text::TextPosition {
+            x: mirador_position.x - 120.0,
+            y: height + 100.0,
+            max_width: Some(text_width),
+            max_height: Some(4.0 * subtitle_text_height),
+        };
+        text_renderer.create_text_buffer(
+            "title_subtitle_overlay",
+            subtitle_text,
+            Some(subtitle_style),
+            Some(subtitle_position),
         );
 
         Self {
@@ -235,7 +286,7 @@ impl AppState {
     }
 
     /// Updates all game UI elements including timer, level, and score displays.
-    pub fn update_game_ui(&mut self) {
+    pub fn update_game_ui(&mut self, window: &winit::window::Window) {
         // Start timer when game begins (not on title screen)
         if self.game_state.current_screen == CurrentScreen::Game
             && self.game_state.game_ui.timer.is_none()
@@ -252,8 +303,10 @@ impl AppState {
             self.game_state.start_game_timer(Some(timer_config));
         }
 
-        // Hide game UI elements during loading screen
-        if self.game_state.current_screen == CurrentScreen::Loading {
+        // Hide game UI elements during loading screen or title screen
+        if self.game_state.current_screen == CurrentScreen::Loading
+            || self.game_state.current_screen == CurrentScreen::Title
+        {
             // Hide timer, level, and score displays
             if let Some(buffer) = self.text_renderer.text_buffers.get_mut("main_timer") {
                 buffer.visible = false;
@@ -282,6 +335,7 @@ impl AppState {
             &mut self.text_renderer,
             &mut self.game_state.game_ui,
             &self.game_state.current_screen,
+            window,
         );
 
         if timer_expired {
@@ -408,6 +462,9 @@ impl App {
                 .pause_enemy_audio("enemy")
                 .expect("Failed to pause enemy audio");
             state.handle_loading_screen(window);
+        } else if state.game_state.current_screen == CurrentScreen::Title {
+            title::handle_title(state, window);
+            return;
         } else {
             state.game_state.player.update_cell(
                 &state
@@ -422,7 +479,7 @@ impl App {
 
         // Update game state and UI
         state.key_state.update(&mut state.game_state);
-        state.update_game_ui();
+        state.update_game_ui(window);
         state.update_ui(window);
         state
             .game_state
@@ -668,6 +725,9 @@ impl App {
                 &mut state.text_renderer,
                 &mut state.game_state.game_ui,
                 &state.game_state.current_screen,
+                self.window
+                    .as_ref()
+                    .expect("Window must be initialized before use"),
             );
             // Ensure clean state for new game
             state.game_state.exit_cell = None;
@@ -814,7 +874,11 @@ impl App {
             }
 
             // Process animation steps
-            let steps = if renderer.generator.fast_mode { 30 } else { 10 };
+            let steps = if renderer.generator.fast_mode {
+                300
+            } else {
+                100
+            };
             for _ in 0..steps {
                 if !renderer.generator.step() {
                     break;
@@ -1072,11 +1136,38 @@ impl ApplicationHandler for App {
                 }
             }
 
-            WindowEvent::MouseInput { state, button, .. } => match state {
+            WindowEvent::MouseInput {
+                state: mouse_state,
+                button,
+                ..
+            } => match mouse_state {
                 ElementState::Pressed => {
                     if let Some(app_state) = self.state.as_mut() {
                         match button {
                             MouseButton::Left => {
+                                // If on title screen, transition to loading
+                                if app_state.game_state.current_screen == CurrentScreen::Title {
+                                    app_state.game_state.current_screen = CurrentScreen::Loading;
+                                    // Optionally, lock mouse here if needed
+                                    app_state.game_state.capture_mouse = true;
+                                    // Hide the overlay text
+                                    if let Some(buf) = app_state
+                                        .text_renderer
+                                        .text_buffers
+                                        .get_mut("title_mirador_overlay")
+                                    {
+                                        buf.visible = false;
+                                    }
+                                    // Hide the subtitle overlay
+                                    if let Some(buf) = app_state
+                                        .text_renderer
+                                        .text_buffers
+                                        .get_mut("title_subtitle_overlay")
+                                    {
+                                        buf.visible = false;
+                                    }
+                                    return;
+                                }
                                 app_state.key_state.press_key(GameKey::MouseButtonLeft);
                             }
                             MouseButton::Right => {

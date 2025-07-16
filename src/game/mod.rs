@@ -63,6 +63,7 @@ pub enum PauseMenuState {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CurrentScreen {
+    Title,
     Loading,
     Game,
     Pause,
@@ -102,7 +103,7 @@ impl GameState {
             exit_reached: false,
             exit_cell: None,
             game_ui: GameUIManager::new(),
-            current_screen: CurrentScreen::Loading,
+            current_screen: CurrentScreen::Title,
             enemy: Enemy::new([-0.5, 30.0, 0.0], 150.0),
             audio_manager,
         }
@@ -400,7 +401,7 @@ pub fn initialize_game_ui(
         style: glyphon::Style::Normal,
     };
     let timer_position = TextPosition {
-        x: (width as f32 / 2.0) - (timer_max_width / 2.75),
+        x: (width as f32 - timer_max_width) / 2.0, // Perfectly centered
         y: 10.0,
         max_width: Some(timer_max_width),
         max_height: Some(timer_max_height),
@@ -478,6 +479,7 @@ pub fn update_game_ui(
     text_renderer: &mut TextRenderer,
     game_ui: &mut GameUIManager,
     current_screen: &CurrentScreen,
+    window: &Window,
 ) -> bool {
     // Only update the timer if in Game
     let timer_expired = if let CurrentScreen::Game = current_screen {
@@ -499,6 +501,27 @@ pub fn update_game_ui(
     // Update level and score displays
     let _ = update_text_content(text_renderer, "level", &game_ui.get_level_text());
     let _ = update_text_content(text_renderer, "score", &game_ui.get_score_text());
+
+    // Adjust timer position if window size changes
+    let size = window.inner_size();
+    let width = size.width;
+    let height = size.height;
+    let (timer_max_width, timer_max_height) = if width >= 1920 {
+        (300.0, 120.0)
+    } else if width >= 1600 || height >= 900 {
+        (200.0, 80.0)
+    } else {
+        (150.0, 60.0)
+    };
+    let timer_position = TextPosition {
+        x: (width as f32 - timer_max_width) / 2.0, // Perfectly centered
+        y: 10.0,
+        max_width: Some(timer_max_width),
+        max_height: Some(timer_max_height),
+    };
+    if let Some(buffer) = text_renderer.text_buffers.get_mut("main_timer") {
+        buffer.position = timer_position;
+    }
 
     timer_expired
 }
