@@ -216,6 +216,60 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     if let Some(buffer) = state.text_renderer.text_buffers.get_mut("score") {
         buffer.visible = false;
     }
+
+    // --- Dynamic placement for title and subtitle overlays ---
+    let width = state.wgpu_renderer.surface_config.width as f32;
+    let height = state.wgpu_renderer.surface_config.height as f32;
+    // Gather info for both overlays first to avoid borrow checker issues
+    let title_overlay_info = state
+        .text_renderer
+        .text_buffers
+        .get("title_mirador_overlay")
+        .map(|buf| {
+            let style = buf.style.clone();
+            let text = buf.text_content.clone();
+            (style, text)
+        });
+    let subtitle_overlay_info = state
+        .text_renderer
+        .text_buffers
+        .get("title_subtitle_overlay")
+        .map(|buf| {
+            let style = buf.style.clone();
+            let text = buf.text_content.clone();
+            (style, text)
+        });
+    // Now update positions mutably
+    if let Some((style, text)) = title_overlay_info {
+        let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
+        let margin_right = 60.0;
+        let margin_top = 80.0;
+        let pos = crate::renderer::text::TextPosition {
+            x: width - text_width - margin_right,
+            y: margin_top,
+            max_width: Some(text_width),
+            max_height: Some(text_height),
+        };
+        let _ = state
+            .text_renderer
+            .update_position("title_mirador_overlay", pos);
+    }
+    if let Some((style, text)) = subtitle_overlay_info {
+        let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
+        let margin_right = 80.0;
+        let margin_bottom = 80.0;
+        let pos = crate::renderer::text::TextPosition {
+            x: width - text_width - margin_right,
+            y: height - text_height - margin_bottom,
+            max_width: Some(text_width),
+            max_height: Some(text_height),
+        };
+        let _ = state
+            .text_renderer
+            .update_position("title_subtitle_overlay", pos);
+    }
+    // --- End dynamic placement ---
+
     // Animate the subtitle text color (fade from black to white and back)
     let subtitle_color = {
         if let Some(buf) = state

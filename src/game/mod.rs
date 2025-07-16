@@ -3,6 +3,7 @@
 //! This module defines the [`GameState`] struct, which tracks all mutable state for the game loop,
 //! including the player, timing, UI state, and maze path.
 
+// Timer decimal alignment: The timer's decimal point is always aligned with the vertical center of the screen by measuring the width of the timer string up to and including the decimal and offsetting the x position accordingly. See initialize_game_ui and update_game_ui for details.
 pub mod audio;
 pub mod collision;
 pub mod enemy;
@@ -391,7 +392,8 @@ pub fn initialize_game_ui(
             (18.0, 22.0, 120.0, 25.0)
         };
 
-    // Timer display (centered at top)
+    // Timer display (decimal-aligned at top)
+    let timer_text = game_ui.get_timer_text();
     let timer_style = TextStyle {
         font_family: "HankenGrotesk".to_string(),
         font_size: timer_font_size,
@@ -400,15 +402,19 @@ pub fn initialize_game_ui(
         weight: glyphon::Weight::BOLD,
         style: glyphon::Style::Normal,
     };
+    // Find decimal position in timer_text
+    let decimal_index = timer_text.find('.').unwrap_or(timer_text.len() - 1) + 1;
+    let decimal_substr = &timer_text[..decimal_index];
+    let (_min_x, decimal_offset, _h) = text_renderer.measure_text(decimal_substr, &timer_style);
     let timer_position = TextPosition {
-        x: (width as f32 - timer_max_width) / 2.0, // Perfectly centered
+        x: (width as f32 / 2.0) - decimal_offset,
         y: 10.0,
         max_width: Some(timer_max_width),
         max_height: Some(timer_max_height),
     };
     text_renderer.create_text_buffer(
         "main_timer",
-        &game_ui.get_timer_text(),
+        &timer_text,
         Some(timer_style),
         Some(timer_position),
     );
@@ -513,8 +519,17 @@ pub fn update_game_ui(
     } else {
         (150.0, 60.0)
     };
+    // Align decimal point with center
+    let timer_style = if let Some(buffer) = text_renderer.text_buffers.get("main_timer") {
+        buffer.style.clone()
+    } else {
+        TextStyle::default()
+    };
+    let decimal_index = timer_text.find('.').unwrap_or(timer_text.len() - 1) + 1;
+    let decimal_substr = &timer_text[..decimal_index];
+    let (_min_x, decimal_offset, _h) = text_renderer.measure_text(decimal_substr, &timer_style);
     let timer_position = TextPosition {
-        x: (width as f32 - timer_max_width) / 2.0, // Perfectly centered
+        x: (width as f32 / 2.0) - decimal_offset,
         y: 10.0,
         max_width: Some(timer_max_width),
         max_height: Some(timer_max_height),

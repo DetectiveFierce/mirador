@@ -466,35 +466,7 @@ impl ButtonManager {
             let _ = self
                 .text_renderer
                 .update_style(&button.text_id, new_style.clone());
-
-            // Recalculate text width and update position for correct centering and wrapping
-            let (actual_x, actual_y) = button.position.calculate_actual_position();
-            let horizontal_padding = button.style.padding.0;
-            let vertical_padding = button.style.padding.1;
-            let max_text_width = button.position.width - 2.0 * horizontal_padding;
-            let (_min_x, _wrap_width, wrap_height) =
-                self.text_renderer.measure_text(&button.text, &new_style);
-            button.position.height = wrap_height + 2.0 * vertical_padding;
-            let text_x = match button.style.text_align {
-                TextAlign::Left => actual_x + horizontal_padding,
-                TextAlign::Right => {
-                    actual_x + button.position.width - horizontal_padding - _wrap_width
-                }
-                TextAlign::Center => actual_x + (button.position.width - _wrap_width) / 2.0,
-            };
-            let text_y = actual_y + vertical_padding;
-            let text_position = TextPosition {
-                x: text_x,
-                y: text_y,
-                max_width: Some(max_text_width),
-                max_height: Some(wrap_height),
-            };
-            if let Err(e) = self
-                .text_renderer
-                .update_position(&button.text_id, text_position)
-            {
-                println!("Failed to update button position: {}", e);
-            }
+            // Do NOT recalculate text position or height here!
         }
     }
 
@@ -506,8 +478,7 @@ impl ButtonManager {
             let (_min_x, wrap_width, wrap_height) = self
                 .text_renderer
                 .measure_text(&button.text, &button.style.text_style);
-            // Do NOT overwrite button.position.height here!
-            // Instead, center the text vertically within the button rectangle
+            // Center text vertically in the button
             let text_x = match button.style.text_align {
                 TextAlign::Left => actual_x + horizontal_padding,
                 TextAlign::Right => {
@@ -515,7 +486,6 @@ impl ButtonManager {
                 }
                 TextAlign::Center => actual_x + (button.position.width - wrap_width) / 2.0,
             };
-            // Center text vertically in the button
             let text_y = actual_y + (button.position.height - wrap_height) / 2.0;
             let text_position = TextPosition {
                 x: text_x,
@@ -529,6 +499,8 @@ impl ButtonManager {
             {
                 println!("Failed to update button position: {}", e);
             }
+            // Only update height here
+            button.position.height = wrap_height + 2.0 * button.style.padding.1;
         }
     }
 
