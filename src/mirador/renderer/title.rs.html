@@ -242,9 +242,9 @@
 <a href=#242 id=242 data-nosnippet>242</a>    <span class="comment">// Now update positions mutably
 <a href=#243 id=243 data-nosnippet>243</a>    </span><span class="kw">if let </span><span class="prelude-val">Some</span>((style, text)) = title_overlay_info {
 <a href=#244 id=244 data-nosnippet>244</a>        <span class="kw">let </span>(_min_x, text_width, text_height) = state.text_renderer.measure_text(<span class="kw-2">&amp;</span>text, <span class="kw-2">&amp;</span>style);
-<a href=#245 id=245 data-nosnippet>245</a>        <span class="kw">let </span>margin_right = <span class="number">60.0</span>;
-<a href=#246 id=246 data-nosnippet>246</a>        <span class="kw">let </span>margin_top = <span class="number">80.0</span>;
-<a href=#247 id=247 data-nosnippet>247</a>        <span class="kw">let </span>pos = <span class="kw">crate</span>::renderer::text::TextPosition {
+<a href=#245 id=245 data-nosnippet>245</a>        <span class="kw">let </span>margin_right = width * <span class="number">0.045</span>; <span class="comment">// 4.5% of width
+<a href=#246 id=246 data-nosnippet>246</a>        </span><span class="kw">let </span>margin_top = height * <span class="number">0.10</span>; <span class="comment">// 10% of height
+<a href=#247 id=247 data-nosnippet>247</a>        </span><span class="kw">let </span>pos = <span class="kw">crate</span>::renderer::text::TextPosition {
 <a href=#248 id=248 data-nosnippet>248</a>            x: width - text_width - margin_right,
 <a href=#249 id=249 data-nosnippet>249</a>            y: margin_top,
 <a href=#250 id=250 data-nosnippet>250</a>            max_width: <span class="prelude-val">Some</span>(text_width),
@@ -256,9 +256,9 @@
 <a href=#256 id=256 data-nosnippet>256</a>    }
 <a href=#257 id=257 data-nosnippet>257</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>((style, text)) = subtitle_overlay_info {
 <a href=#258 id=258 data-nosnippet>258</a>        <span class="kw">let </span>(_min_x, text_width, text_height) = state.text_renderer.measure_text(<span class="kw-2">&amp;</span>text, <span class="kw-2">&amp;</span>style);
-<a href=#259 id=259 data-nosnippet>259</a>        <span class="kw">let </span>margin_right = <span class="number">80.0</span>;
-<a href=#260 id=260 data-nosnippet>260</a>        <span class="kw">let </span>margin_bottom = <span class="number">80.0</span>;
-<a href=#261 id=261 data-nosnippet>261</a>        <span class="kw">let </span>pos = <span class="kw">crate</span>::renderer::text::TextPosition {
+<a href=#259 id=259 data-nosnippet>259</a>        <span class="kw">let </span>margin_right = width * <span class="number">0.06</span>; <span class="comment">// 6% of width
+<a href=#260 id=260 data-nosnippet>260</a>        </span><span class="kw">let </span>margin_bottom = height * <span class="number">0.10</span>; <span class="comment">// 10% of height
+<a href=#261 id=261 data-nosnippet>261</a>        </span><span class="kw">let </span>pos = <span class="kw">crate</span>::renderer::text::TextPosition {
 <a href=#262 id=262 data-nosnippet>262</a>            x: width - text_width - margin_right,
 <a href=#263 id=263 data-nosnippet>263</a>            y: height - text_height - margin_bottom,
 <a href=#264 id=264 data-nosnippet>264</a>            max_width: <span class="prelude-val">Some</span>(text_width),
