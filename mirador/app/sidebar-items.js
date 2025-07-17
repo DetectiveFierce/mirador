@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["App","AppState"]};
+window.SIDEBAR_ITEMS = {"mod":["app_state","event_handler","update"]};

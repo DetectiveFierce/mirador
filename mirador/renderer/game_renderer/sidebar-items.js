@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["compass","debug","enemy","game_over","stars"],"struct":["GameRenderer"]};
+window.SIDEBAR_ITEMS = {"mod":["compass","debug","enemy","game_over","stars"],"struct":["GameRenderer","TimerBarRenderer","TimerBarUniforms"]};
