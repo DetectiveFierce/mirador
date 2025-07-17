@@ -63,9 +63,10 @@ impl PauseMenu {
     }
 
     fn create_menu_buttons(button_manager: &mut ButtonManager, window_size: PhysicalSize<u32>) {
-        let button_width = 420.0;
-        let button_height = window_size.height as f32 * 0.09; // 9% of window height (was 13%)
-        let button_spacing = 2.0; // was 8.0, now much closer
+        // Make button width proportional to window width, clamped to a reasonable range
+        let button_width = (window_size.width as f32 * 0.38).clamp(180.0, 480.0); // 38% of width, min 180, max 480
+        let button_height = (window_size.height as f32 * 0.09).clamp(32.0, 120.0); // 9% of height, min 32, max 120
+        let button_spacing = (window_size.height as f32 * 0.015).clamp(2.0, 16.0); // 1.5% of height, min 2, max 16
         let total_height = button_height * 5.0 + button_spacing * 4.0; // 5 buttons now
         let center_x = window_size.width as f32 / 2.0;
         let start_y = (window_size.height as f32 - total_height) / 2.0;
@@ -251,9 +252,10 @@ impl PauseMenu {
 
     fn recreate_buttons_for_new_size(&mut self) {
         let window_size = self.button_manager.window_size;
-        let button_width = 420.0;
-        let button_height = window_size.height as f32 * 0.13; // 20% of window height
-        let button_spacing = 8.0;
+        // Make button width proportional to window width, clamped to a reasonable range
+        let button_width = (window_size.width as f32 * 0.38).clamp(180.0, 480.0); // 38% of width, min 180, max 480
+        let button_height = (window_size.height as f32 * 0.09).clamp(32.0, 120.0); // 9% of height, min 32, max 120
+        let button_spacing = (window_size.height as f32 * 0.015).clamp(2.0, 16.0); // 1.5% of height, min 2, max 16
         let total_height = button_height * 5.0 + button_spacing * 4.0; // 5 buttons now
         let center_x = window_size.width as f32 / 2.0;
         let start_y = (window_size.height as f32 - total_height) / 2.0;

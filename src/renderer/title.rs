@@ -242,8 +242,8 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     // Now update positions mutably
     if let Some((style, text)) = title_overlay_info {
         let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
-        let margin_right = 60.0;
-        let margin_top = 80.0;
+        let margin_right = width * 0.045; // 4.5% of width
+        let margin_top = height * 0.10; // 10% of height
         let pos = crate::renderer::text::TextPosition {
             x: width - text_width - margin_right,
             y: margin_top,
@@ -256,8 +256,8 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     }
     if let Some((style, text)) = subtitle_overlay_info {
         let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
-        let margin_right = 80.0;
-        let margin_bottom = 80.0;
+        let margin_right = width * 0.06; // 6% of width
+        let margin_bottom = height * 0.10; // 10% of height
         let pos = crate::renderer::text::TextPosition {
             x: width - text_width - margin_right,
             y: height - text_height - margin_bottom,
