@@ -3,11 +3,11 @@
 //! This module provides the [`Uniforms`] struct for storing and uploading uniform data
 //! (such as transformation matrices) to the GPU, as well as helper methods for buffer and bind group creation.
 
+use crate::game::maze::generator::Cell;
 use crate::math::coordinates::constants::get_floor_size;
-use crate::maze::generator::Cell;
 use bytemuck::{Pod, Zeroable};
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
+use wgpu;
+use wgpu::util::DeviceExt;
 /// Uniforms for the main render pipeline.
 ///
 /// This struct stores a 4x4 matrix (typically Model-View-Projection) to be sent to the GPU as a uniform buffer.

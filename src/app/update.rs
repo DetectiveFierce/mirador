@@ -3,17 +3,17 @@
 //! Contains update and game logic methods for the App struct.
 use crate::game::GameTimer;
 use crate::game::enemy::place_enemy_standard;
+use crate::game::maze::parse_maze_file;
 use crate::game::player::Player;
 use crate::game::{self, CurrentScreen, TimerConfig};
 use crate::math::coordinates::maze_to_world;
-use crate::maze::parse_maze_file;
 use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::primitives::Vertex;
 use crate::test_mode::setup_test_environment;
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
 use std::time::Duration;
 use std::time::Instant;
+use wgpu;
+use wgpu::util::DeviceExt;
 
 use super::event_handler::App;
 
@@ -60,7 +60,6 @@ impl App {
         // Update game state and UI
         state.key_state.update(&mut state.game_state);
         state.update_game_ui(window);
-        state.update_ui(window);
         state
             .game_state
             .audio_manager
@@ -82,7 +81,6 @@ impl App {
         let (surface_view, surface_texture) = match state.wgpu_renderer.update_canvas(
             window,
             &mut encoder,
-            &state.ui,
             &state.game_state,
             &mut state.text_renderer,
         ) {
@@ -311,7 +309,6 @@ impl App {
             let duration = current_time.duration_since(state.game_state.last_fps_time);
 
             state.elapsed_time = current_time.duration_since(state.start_time);
-            state.ui.elapsed_time += 1.0;
             state.game_state.frame_count += 1;
 
             if duration.as_secs_f32() >= 1.0 {

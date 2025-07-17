@@ -304,9 +304,9 @@ impl Maze {
     /// - The generated file can be found in `src/maze/saved-mazes/generated/`.
     pub fn save_to_file(&self) -> Result<PathBuf, std::io::Error> {
         let timestamp = Local::now().format("Maze_%m-%d-%y_%I-%M%p.mz").to_string();
-        let output_path = Path::new("src/maze/saved-mazes/generated").join(timestamp);
+        let output_path = Path::new("src/game/maze/saved-mazes/generated").join(timestamp);
 
-        if let Err(e) = fs::create_dir_all("src/maze/saved-mazes/generated") {
+        if let Err(e) = fs::create_dir_all("src/game/maze/saved-mazes/generated") {
             eprintln!("Failed to create output directory: {}", e);
             return Err(e);
         }

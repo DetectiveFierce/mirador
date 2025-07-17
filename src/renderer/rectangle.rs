@@ -1,9 +1,9 @@
-use egui_wgpu::wgpu::{
+use std::mem;
+use wgpu::{
     self, BlendState, BufferUsages, ColorTargetState, ColorWrites, Device, FragmentState,
     MultisampleState, PrimitiveState, RenderPass, RenderPipeline, VertexAttribute,
     VertexBufferLayout, VertexFormat, VertexState, util::DeviceExt,
 };
-use std::mem;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

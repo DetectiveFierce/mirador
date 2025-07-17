@@ -1,4 +1,3 @@
-use egui_wgpu::wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use glyphon::{
     Attrs, Buffer, Cache, Color, Family, FontSystem, Metrics, Resolution, Shaping, Style,
     SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer as GlyphonTextRenderer, Viewport,
@@ -7,6 +6,7 @@ use glyphon::{
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use winit::window::Window;
 
 #[derive(Debug, Clone, PartialEq)]

@@ -1,8 +1,8 @@
 use crate::renderer::pipeline_builder::BindGroupLayoutBuilder;
 use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::pipeline_builder::create_uniform_buffer;
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
+use wgpu;
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]

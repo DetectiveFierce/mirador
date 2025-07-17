@@ -3,9 +3,9 @@
 //! This module defines the [`Player`] struct, which tracks the player's position, orientation,
 //! and movement parameters, and provides methods for movement and view matrix calculation.
 
+use crate::game::maze::generator::Cell;
 use crate::math::coordinates::{self, constants::PLAYER_HEIGHT};
 use crate::math::mat::Mat4;
-use crate::maze::generator::Cell;
 
 /// Represents the player character's state in the world.
 ///

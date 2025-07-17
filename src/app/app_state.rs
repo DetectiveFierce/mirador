@@ -7,11 +7,10 @@ use crate::game::enemy::Enemy;
 use crate::game::{self, CurrentScreen, GameState, TimerConfig, keys::KeyState};
 use crate::renderer::text::TextRenderer;
 use crate::renderer::wgpu_lib::WgpuRenderer;
-use crate::ui::{egui_lib::EguiRenderer, ui_panel::UiState};
-use egui_wgpu::wgpu;
 use glyphon::Color;
 use std::time::Duration;
 use std::time::Instant;
+use wgpu;
 use winit::window::Window;
 
 /// Holds all state required for a running Mirador game session.
@@ -20,10 +19,6 @@ use winit::window::Window;
 pub struct AppState {
     /// The WGPU renderer for the main game and background.
     pub wgpu_renderer: WgpuRenderer,
-    /// The egui renderer for UI overlays.
-    pub egui_renderer: EguiRenderer,
-    /// The current UI state (sliders, colors, etc.).
-    pub ui: UiState,
     /// The main game state (player, timing, maze, etc.).
     pub game_state: GameState,
     /// The current input state (pressed keys, etc.).
@@ -32,7 +27,7 @@ pub struct AppState {
     pub text_renderer: TextRenderer,
     pub start_time: Instant,
     pub elapsed_time: Duration,
-    pub pause_menu: crate::ui::pause_menu::PauseMenu,
+    pub pause_menu: crate::renderer::ui::pause_menu::PauseMenu,
 }
 
 impl AppState {
@@ -53,13 +48,6 @@ impl AppState {
     ) -> Self {
         window.set_cursor_visible(false);
         let wgpu_renderer = WgpuRenderer::new(instance, surface, width, height).await;
-        let egui_renderer = EguiRenderer::new(
-            &wgpu_renderer.device,
-            wgpu_renderer.surface_config.format,
-            None,
-            1,
-            window,
-        );
 
         let mut text_renderer = TextRenderer::new(
             &wgpu_renderer.device,
@@ -82,7 +70,7 @@ impl AppState {
         // Create game over display
         text_renderer.create_game_over_display(width, height);
 
-        let pause_menu = crate::ui::pause_menu::PauseMenu::new(
+        let pause_menu = crate::renderer::ui::pause_menu::PauseMenu::new(
             &wgpu_renderer.device,
             &wgpu_renderer.queue,
             wgpu_renderer.surface_config.format,
@@ -141,13 +129,11 @@ impl AppState {
 
         Self {
             wgpu_renderer,
-            egui_renderer,
-            ui: UiState::new(),
             game_state,
-            key_state: KeyState::new(),
+            key_state: KeyState::default(),
             text_renderer,
             start_time: Instant::now(),
-            elapsed_time: Duration::ZERO,
+            elapsed_time: Duration::default(),
             pause_menu,
         }
     }

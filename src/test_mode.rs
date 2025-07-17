@@ -7,13 +7,13 @@
 use crate::game::GameState;
 use crate::game::TimerConfig;
 use crate::game::enemy::Enemy;
-use crate::maze::generator::Cell;
+use crate::game::maze::generator::Cell;
 use crate::renderer::primitives::Vertex;
 use crate::renderer::wgpu_lib::WgpuRenderer;
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
 use glyphon::Color;
 use std::time::Duration;
+use wgpu;
+use wgpu::util::DeviceExt;
 
 /// Test maze dimensions (smaller than normal maze)
 const TEST_MAZE_WIDTH: usize = 6;

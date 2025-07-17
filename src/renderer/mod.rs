@@ -10,4 +10,5 @@ pub mod primitives;
 pub mod rectangle;
 pub mod text;
 pub mod title;
+pub mod ui;
 pub mod wgpu_lib;

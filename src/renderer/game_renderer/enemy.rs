@@ -3,7 +3,7 @@ use crate::game::enemy::Enemy;
 use crate::renderer::pipeline_builder::{
     BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
 };
-use egui_wgpu::wgpu::{self, util::DeviceExt};
+use wgpu::{self, util::DeviceExt};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

@@ -2,8 +2,8 @@ use crate::app::AppState;
 use crate::renderer::pipeline_builder::{
     BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
 };
-use egui_wgpu::wgpu::{self, util::DeviceExt};
 use std::time::Instant;
+use wgpu::{self, util::DeviceExt};
 use winit::window::Window;
 
 #[repr(C)]
@@ -297,7 +297,7 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     let mut encoder = state
         .wgpu_renderer
         .device
-        .create_command_encoder(&egui_wgpu::wgpu::CommandEncoderDescriptor { label: None });
+        .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
     let (surface_view, surface_texture) = match state.wgpu_renderer.get_surface_texture_and_view() {
         Ok((surface_texture, surface_view)) => (surface_view, surface_texture),
         Err(e) => {

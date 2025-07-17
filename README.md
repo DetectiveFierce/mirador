@@ -1,6 +1,6 @@
 # Mirador
 
-**Mirador** is a modular, interactive 3D maze game written in Rust, focused on real-time rendering, procedural maze generation, and immersive gameplay. It leverages modern GPU technologies and immediate-mode GUI frameworks to provide a responsive and visually engaging experience.
+**Mirador** is a modular, interactive 3D maze game written in Rust, focused on real-time rendering, procedural maze generation, and immersive gameplay. It leverages modern GPU technologies to provide a responsive and visually engaging experience.
 
 ---
 
@@ -15,7 +15,6 @@ Mirador is a work in progress 3D maze game engine written entirely in Rust. It i
 - **Enemy AI** with pathfinding and level-based aggression scaling
 - **Scoring system** with time-based bonuses and level progression
 - **Game state management** with multiple screens (Loading, Game, Pause, Game Over)
-- **Integration with egui** for overlays, controls, and interactive panels
 - **Responsive input handling** with WASD movement, mouse look, and sprint mechanics
 
 ---
@@ -51,7 +50,7 @@ Mirador is organized into several core modules:
 - **[Game](/src/game/)**: Contains logic for player state, input handling, collision detection, enemy AI, audio management, and core gameplay mechanics.
 - **[Maze](/src/maze/)**: Handles procedural maze generation using Kruskal's algorithm, storage, and rendering data.
 - **[Renderer](/src/renderer/)**: Manages all rendering pipelines including game scene, loading screen, and UI overlays.
-- **[UI](/src/ui/)**: Implements egui-based overlays for development, debugging, and game interface.
+- **[UI](/src/ui/)**: Implements user interface elements for the game (no longer uses egui).
 - **[Math](/src/math/)**: Provides vector and matrix utilities for graphics and game logic.
 
 The application initializes a WGPU instance and event loop, sets up rendering and UI pipelines, and manages all state transitions and user interactions through a central `App` struct.
@@ -62,7 +61,6 @@ The application initializes a WGPU instance and event loop, sets up rendering an
 
 - **[Rust](https://www.rust-lang.org/)** (edition 2024): Systems programming language for performance and safety
 - **[WGPU](https://wgpu.rs)**: Modern, portable graphics API for GPU rendering
-- **[egui](https://github.com/emilk/egui)**: Immediate-mode GUI library for Rust
 - **[winit](https://github.com/rust-windowing/winit)**: Cross-platform window and event loop management
 - **[Kira](https://github.com/tesselode/kira)**: Spatial audio engine for 3D sound effects
 - **[rand](https://github.com/rust-random/rand)**: Random number generation for procedural content
@@ -123,10 +121,6 @@ mirador/
 │   ├── maze/               # Maze generation and parsing
 │   ├── renderer/           # Graphics and rendering
 │   ├── ui/                 # User interface
-│   └── math/               # Mathematical utilities
-├── assets/                 # Game assets (audio, images)
-├── fonts/                  # Typography resources
-└── Cargo.toml             # Project dependencies
 ```
 
 ### Key Features Implementation

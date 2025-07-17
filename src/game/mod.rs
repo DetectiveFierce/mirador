@@ -8,12 +8,14 @@ pub mod audio;
 pub mod collision;
 pub mod enemy;
 pub mod keys;
+pub mod maze;
 pub mod player;
 use self::audio::GameAudioManager;
 use self::collision::CollisionSystem;
 use self::player::Player;
 use crate::game::enemy::Enemy;
-use crate::maze::generator::Cell;
+
+use crate::game::maze::generator::Cell;
 use crate::renderer::text::TextPosition;
 use crate::renderer::text::TextRenderer;
 use crate::renderer::text::TextStyle;

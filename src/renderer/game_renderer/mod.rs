@@ -16,9 +16,9 @@ use crate::renderer::pipeline_builder::{
     BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
 };
 use crate::renderer::primitives::{Uniforms, Vertex};
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
 use std::time::Instant;
+use wgpu;
+use wgpu::util::DeviceExt;
 
 // TimerBarUniforms for the timer bar WGSL
 #[repr(C)]

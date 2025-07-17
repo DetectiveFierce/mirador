@@ -4,8 +4,8 @@
 
 use crate::app::app_state::AppState;
 use crate::renderer::loading_renderer::LoadingRenderer;
-use egui_wgpu::wgpu;
 use std::{sync::Arc, time::Instant};
+use wgpu;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -23,7 +23,7 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let instance = egui_wgpu::wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
         Self {
             instance,
             state: None,
@@ -116,14 +116,6 @@ impl ApplicationHandler for App {
                 panic!("State not initialized");
             }
         };
-        let window = match self.window.as_ref() {
-            Some(window) => window,
-            None => {
-                panic!("Window not initialized");
-            }
-        };
-
-        state.egui_renderer.handle_input(window, &event);
 
         // If in pause menu, pass all input events to the pause menu first
         let pause_action = if state.game_state.current_screen == crate::game::CurrentScreen::Pause
@@ -132,12 +124,12 @@ impl ApplicationHandler for App {
             state.pause_menu.handle_input(&event);
             state.pause_menu.get_last_action()
         } else {
-            crate::ui::pause_menu::PauseMenuAction::None
+            crate::renderer::ui::pause_menu::PauseMenuAction::None
         };
 
         // Handle pause menu actions
         match pause_action {
-            crate::ui::pause_menu::PauseMenuAction::Resume => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::Resume => {
                 // Return to previous screen or default to Game
                 if let Some(previous_screen) = state.game_state.previous_screen {
                     state.game_state.current_screen = previous_screen;
@@ -170,7 +162,7 @@ impl ApplicationHandler for App {
                 }
                 state.pause_menu.hide();
             }
-            crate::ui::pause_menu::PauseMenuAction::Settings => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::Settings => {
                 // Restart current run - handle this after the match to avoid borrow issues
                 state.game_state.current_screen = crate::game::CurrentScreen::NewGame;
                 state.game_state.previous_screen = None; // Clear previous screen
@@ -192,7 +184,7 @@ impl ApplicationHandler for App {
                     buf.visible = false;
                 }
             }
-            crate::ui::pause_menu::PauseMenuAction::ToggleTestMode => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::ToggleTestMode => {
                 // Toggle between test mode and normal mode
                 if state.game_state.is_test_mode {
                     // Currently in test mode, switch to normal mode (loading screen)
@@ -274,7 +266,7 @@ impl ApplicationHandler for App {
                     buf.visible = false;
                 }
             }
-            crate::ui::pause_menu::PauseMenuAction::Restart => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::Restart => {
                 // Quit to lobby (title screen)
                 state.game_state.current_screen = crate::game::CurrentScreen::Title;
                 state.game_state.previous_screen = None; // Clear previous screen
@@ -297,11 +289,11 @@ impl ApplicationHandler for App {
                     buf.visible = true;
                 }
             }
-            crate::ui::pause_menu::PauseMenuAction::QuitToMenu => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::QuitToMenu => {
                 // Quit the application
                 std::process::exit(0);
             }
-            crate::ui::pause_menu::PauseMenuAction::None => {}
+            crate::renderer::ui::pause_menu::PauseMenuAction::None => {}
         }
 
         match event {
@@ -338,9 +330,6 @@ impl ApplicationHandler for App {
                             // Handle non-movement keys immediately on press
                             match game_key {
                                 crate::game::keys::GameKey::Quit => event_loop.exit(),
-                                crate::game::keys::GameKey::ToggleSliders => {
-                                    state.ui.show_sliders = !state.ui.show_sliders
-                                }
                                 crate::game::keys::GameKey::ToggleBoundingBoxes => {
                                     state
                                         .wgpu_renderer

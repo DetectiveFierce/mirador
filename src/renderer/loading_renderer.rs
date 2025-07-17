@@ -2,13 +2,13 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use crate::{
-    maze::generator::{Maze, MazeGenerator},
+    game::maze::generator::{Maze, MazeGenerator},
     renderer::pipeline_builder::{
         BindGroupLayoutBuilder, PipelineBuilder, create_fullscreen_vertices, create_uniform_buffer,
         create_vertex_2d_layout,
     },
 };
-use egui_wgpu::wgpu::{self};
+use wgpu;
 use winit::window::Window;
 
 pub struct LoadingRenderer {

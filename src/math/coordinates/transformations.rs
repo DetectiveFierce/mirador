@@ -4,7 +4,7 @@
 //! world coordinates, making it clear how to map between these systems.
 
 use super::constants::get_floor_size;
-use crate::maze::generator::Cell;
+use crate::game::maze::generator::Cell;
 
 /// Converts a maze grid cell to world coordinates.
 ///

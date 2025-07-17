@@ -1,17 +1,10 @@
-use crate::ui::buttons::{
-    Button,
-    ButtonAnchor,
-    ButtonManager,
-    ButtonPosition,
-    TextAlign,
-    create_danger_button_style,
-    create_goldenrod_button_style,
-    create_lobby_button_style, // new styles
-    create_primary_button_style,
+use crate::renderer::ui::buttons::{
+    Button, ButtonAnchor, ButtonManager, ButtonPosition, TextAlign, create_danger_button_style,
+    create_goldenrod_button_style, create_lobby_button_style, create_primary_button_style,
     create_warning_button_style,
 };
-use egui_wgpu::wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use glyphon::Resolution;
+use wgpu::{Device, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
 use winit::window::Window;
@@ -61,7 +54,7 @@ impl PauseMenu {
             font_family: "HankenGrotesk".to_string(),
             font_size,
             line_height,
-            color: crate::ui::buttons::create_primary_button_style()
+            color: crate::renderer::ui::buttons::create_primary_button_style()
                 .text_style
                 .color,
             weight: glyphon::Weight::MEDIUM,
@@ -142,7 +135,7 @@ impl PauseMenu {
         debug_style.text_style.font_size = text_style.font_size * 0.5;
         debug_style.text_style.line_height = text_style.line_height * 0.5;
         debug_style.padding = (2.0, 6.0); // minimal horizontal, some vertical padding
-        debug_style.spacing = crate::ui::buttons::ButtonSpacing::Wrap;
+        debug_style.spacing = crate::renderer::ui::buttons::ButtonSpacing::Wrap;
         // Measure the text width for three lines
         let (_min_x, text_width, text_height) = button_manager
             .text_renderer
@@ -324,7 +317,7 @@ impl PauseMenu {
         // Update debug button position for new window size
         let (style, padding) =
             if let Some(debug_button) = self.button_manager.get_button_mut("debug") {
-                debug_button.style.spacing = crate::ui::buttons::ButtonSpacing::Wrap;
+                debug_button.style.spacing = crate::renderer::ui::buttons::ButtonSpacing::Wrap;
                 (
                     debug_button.style.text_style.clone(),
                     debug_button.style.padding,

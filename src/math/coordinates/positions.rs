@@ -3,7 +3,7 @@
 //! This module provides functions to find and work with special positions
 //! in the maze, such as the entrance, exit, and cardinal directions.
 
-use crate::maze::generator::Cell;
+use crate::game::maze::generator::Cell;
 
 /// Enum representing cardinal directions in the maze
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

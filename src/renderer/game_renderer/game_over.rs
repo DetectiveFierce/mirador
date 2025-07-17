@@ -2,7 +2,7 @@ use crate::renderer::pipeline_builder::{
     BindGroupLayoutBuilder, PipelineBuilder, create_fullscreen_vertices, create_uniform_buffer,
     create_vertex_2d_layout,
 };
-use egui_wgpu::wgpu;
+use wgpu;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -49,8 +49,8 @@ impl GameOverRenderer {
     ///
     /// ```rust,no_run
     /// # use crate::renderer::maze_renderer::GameOverRenderer;
-    /// # let device: egui_wgpu::wgpu::Device = unimplemented!();
-    /// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+    /// # let device: wgpu::Device = unimplemented!();
+    /// # let surface_config: wgpu::SurfaceConfiguration = unimplemented!();
     ///
     /// let renderer = GameOverRenderer::new(&device, &surface_config);
     /// ```
@@ -115,7 +115,7 @@ impl GameOverRenderer {
     /// ```rust,no_run
     /// # use crate::renderer::maze_renderer::GameOverRenderer;
     /// # let renderer: GameOverRenderer = unimplemented!();
-    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+    /// # let queue: wgpu::Queue = unimplemented!();
     ///
     /// // Update with elapsed time for animations
     /// let elapsed = start_time.elapsed().as_secs_f32();
@@ -153,7 +153,7 @@ impl GameOverRenderer {
     /// ```rust,no_run
     /// # use crate::renderer::maze_renderer::GameOverRenderer;
     /// # let renderer: GameOverRenderer = unimplemented!();
-    /// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+    /// # let mut render_pass: wgpu::RenderPass = unimplemented!();
     /// # let window: &winit::window::Window = unimplemented!();
     ///
     /// // Render game scene first

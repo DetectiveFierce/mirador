@@ -4,9 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-egui = "0.31.1"
-egui-wgpu = { version = "0.31.1", features = ["winit"] }
-egui-winit = "0.31.1"
 winit = "0.30.9"
 pollster = "0.4.0"
 bytemuck = { version = "1.15", features = ["derive"] }
@@ -16,6 +13,7 @@ glyphon = "0.8.0"
 image = "0.25.6"
 kira = {version = "0.10.8", features = ["mp3", "ogg"]}
 dhat = { version = "0.3", optional = true }
+wgpu = "24.0.5"
 
 [features]
 dhat-heap = ["dhat"]

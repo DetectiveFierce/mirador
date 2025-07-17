@@ -32,8 +32,8 @@
 //!     .build();
 //! ```
 
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
+use wgpu;
+use wgpu::util::DeviceExt;
 
 /// Builder for creating render pipelines with common patterns used in the maze renderer.
 ///
@@ -65,7 +65,7 @@ use egui_wgpu::wgpu::util::DeviceExt;
 /// ## Example
 ///
 /// ```rust,no_run
-/// # use egui_wgpu::wgpu;
+/// # use wgpu;
 /// # let device: wgpu::Device = unimplemented!();
 /// # let surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
 /// # let shader_source = "";
@@ -114,7 +114,7 @@ impl<'a> PipelineBuilder<'a> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use egui_wgpu::wgpu;
+    /// # use wgpu;
     /// # let device: wgpu::Device = unimplemented!();
     /// # let surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
     /// use crate::renderer::pipeline_builder::PipelineBuilder;
@@ -286,7 +286,7 @@ impl<'a> PipelineBuilder<'a> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use egui_wgpu::wgpu;
+    /// # use wgpu;
     /// # use crate::renderer::pipeline_builder::PipelineBuilder;
     /// # let builder: PipelineBuilder = unimplemented!();
     /// let custom_blend = wgpu::BlendState {
@@ -353,7 +353,7 @@ impl<'a> PipelineBuilder<'a> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use egui_wgpu::wgpu;
+    /// # use wgpu;
     /// # use crate::renderer::pipeline_builder::PipelineBuilder;
     /// # let builder: PipelineBuilder = unimplemented!();
     /// let depth_stencil = wgpu::DepthStencilState {
@@ -468,7 +468,7 @@ impl<'a> PipelineBuilder<'a> {
 /// to create the layout:
 ///
 /// ```rust,no_run
-/// # use egui_wgpu::wgpu;
+/// # use wgpu;
 /// # let device: wgpu::Device = unimplemented!();
 /// use crate::renderer::pipeline_builder::BindGroupLayoutBuilder;
 ///
@@ -495,7 +495,7 @@ impl<'a> BindGroupLayoutBuilder<'a> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use egui_wgpu::wgpu;
+    /// # use wgpu;
     /// # let device: wgpu::Device = unimplemented!();
     /// use crate::renderer::pipeline_builder::BindGroupLayoutBuilder;
     ///
@@ -547,7 +547,7 @@ impl<'a> BindGroupLayoutBuilder<'a> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use egui_wgpu::wgpu;
+    /// # use wgpu;
     /// # use crate::renderer::pipeline_builder::BindGroupLayoutBuilder;
     /// # let builder: BindGroupLayoutBuilder = unimplemented!();
     /// let builder = builder.with_texture(0, wgpu::ShaderStages::FRAGMENT);
@@ -586,7 +586,7 @@ impl<'a> BindGroupLayoutBuilder<'a> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use egui_wgpu::wgpu;
+    /// # use wgpu;
     /// # use crate::renderer::pipeline_builder::BindGroupLayoutBuilder;
     /// # let builder: BindGroupLayoutBuilder = unimplemented!();
     /// let builder = builder.with_sampler(1, wgpu::ShaderStages::FRAGMENT);
@@ -625,7 +625,7 @@ impl<'a> BindGroupLayoutBuilder<'a> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use egui_wgpu::wgpu;
+    /// # use wgpu;
     /// # use crate::renderer::pipeline_builder::BindGroupLayoutBuilder;
     /// # let builder: BindGroupLayoutBuilder = unimplemented!();
     /// let builder = builder.with_uniform_buffer(2, wgpu::ShaderStages::VERTEX_FRAGMENT);
@@ -694,8 +694,8 @@ impl<'a> BindGroupLayoutBuilder<'a> {
 ///
 /// ```rust,no_run
 /// use crate::renderer::pipeline_builder::{PipelineBuilder, create_vertex_2d_layout};
-/// # let device: egui_wgpu::wgpu::Device = unimplemented!();
-/// # let surface_format = egui_wgpu::wgpu::TextureFormat::Bgra8UnormSrgb;
+/// # let device: wgpu::Device = unimplemented!();
+/// # let surface_format = wgpu::TextureFormat::Bgra8UnormSrgb;
 /// # let shader_source = "";
 ///
 /// let pipeline = PipelineBuilder::new(&device, surface_format)
@@ -753,8 +753,8 @@ pub fn create_vertex_2d_layout() -> wgpu::VertexBufferLayout<'static> {
 ///
 /// Draw with:
 /// ```rust,no_run
-/// # let render_pass: &mut egui_wgpu::wgpu::RenderPass = unimplemented!();
-/// # let vertex_buffer: egui_wgpu::wgpu::Buffer = unimplemented!();
+/// # let render_pass: &mut wgpu::RenderPass = unimplemented!();
+/// # let vertex_buffer: wgpu::Buffer = unimplemented!();
 /// render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
 /// render_pass.draw(0..6, 0..1); // Draw 6 vertices as triangle list
 /// ```
@@ -772,12 +772,12 @@ pub fn create_vertex_2d_layout() -> wgpu::VertexBufferLayout<'static> {
 ///
 /// ```rust,no_run
 /// use crate::renderer::pipeline_builder::create_fullscreen_vertices;
-/// # let device: egui_wgpu::wgpu::Device = unimplemented!();
+/// # let device: wgpu::Device = unimplemented!();
 ///
 /// let vertex_buffer = create_fullscreen_vertices(&device);
 ///
 /// // In render loop:
-/// # let render_pass: &mut egui_wgpu::wgpu::RenderPass = unimplemented!();
+/// # let render_pass: &mut wgpu::RenderPass = unimplemented!();
 /// render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
 /// render_pass.draw(0..6, 0..1);
 /// ```

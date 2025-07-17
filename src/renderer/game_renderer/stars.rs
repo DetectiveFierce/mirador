@@ -5,9 +5,9 @@
 //!
 //! The renderer supports updating the background color and animating stars over time via uniform buffers.
 
-use egui_wgpu::wgpu::util::DeviceExt;
-use egui_wgpu::wgpu::{self, Buffer};
 use rand::Rng;
+use wgpu::util::DeviceExt;
+use wgpu::{self, Buffer};
 
 /// Represents a single star in the starfield.
 ///

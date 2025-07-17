@@ -1,8 +1,8 @@
 use crate::renderer::rectangle::{Rectangle, RectangleRenderer};
 use crate::renderer::text::{TextPosition, TextRenderer, TextStyle};
-use egui_wgpu::wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use glyphon::{Color, Style, Weight};
 use std::collections::HashMap;
+use wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::window::Window;

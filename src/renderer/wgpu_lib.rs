@@ -21,9 +21,8 @@ use crate::renderer::game_renderer::GameRenderer;
 use crate::renderer::game_renderer::game_over::GameOverRenderer;
 use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::text::TextRenderer;
-use crate::ui::ui_panel::UiState;
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::{SurfaceTexture, TextureView};
+use wgpu;
+use wgpu::{SurfaceTexture, TextureView};
 
 /// Main WGPU renderer for the Mirador game.
 ///
@@ -85,7 +84,6 @@ impl WgpuRenderer {
         &mut self,
         window: &winit::window::Window,
         encoder: &mut wgpu::CommandEncoder,
-        ui_state: &UiState,
         game_state: &GameState,
         text_renderer: &mut TextRenderer,
     ) -> Result<(TextureView, SurfaceTexture), String> {
@@ -101,7 +99,6 @@ impl WgpuRenderer {
                     encoder,
                     &surface_view,
                     &depth_texture_view,
-                    ui_state,
                     game_state,
                     text_renderer,
                     window,
@@ -112,7 +109,6 @@ impl WgpuRenderer {
                     encoder,
                     &surface_view,
                     &depth_texture_view,
-                    ui_state,
                     game_state,
                     text_renderer,
                     window,
@@ -282,19 +278,18 @@ impl WgpuRenderer {
         encoder: &mut wgpu::CommandEncoder,
         surface_view: &TextureView,
         depth_texture_view: &TextureView,
-        ui_state: &UiState,
         game_state: &GameState,
         text_renderer: &mut TextRenderer,
         window: &winit::window::Window,
     ) {
         let aspect = self.surface_config.width as f32 / self.surface_config.height as f32;
-        let background_color = [ui_state.r, ui_state.g, ui_state.b, 1.0];
+        let background_color = [0.003, 0.0003, 0.007, 1.0];
 
         // Clear pass
         self.clear_render_target(encoder, surface_view, depth_texture_view, background_color);
 
         // Render stars
-        self.render_stars(encoder, surface_view, ui_state, background_color);
+        self.render_stars(encoder, surface_view, background_color);
 
         // Render game objects (frozen state)
         self.render_game_objects(
@@ -312,7 +307,7 @@ impl WgpuRenderer {
         let restart_color = {
             if let Some(buf) = text_renderer.text_buffers.get_mut("game_over_restart") {
                 let now = std::time::Instant::now();
-                let elapsed = now.duration_since(ui_state.start_time).as_secs_f32();
+                let elapsed = now.elapsed().as_secs_f32();
                 // Fade: t goes 0..1..0 over a slower period (e.g., 6 seconds for a full cycle)
                 let t = 0.5 * (1.0 + ((elapsed / 3.0) * std::f32::consts::PI).sin());
                 let c = (t * 255.0).round() as u8;
@@ -386,19 +381,18 @@ impl WgpuRenderer {
         encoder: &mut wgpu::CommandEncoder,
         surface_view: &TextureView,
         depth_texture_view: &TextureView,
-        ui_state: &UiState,
         game_state: &GameState,
         text_renderer: &mut TextRenderer,
         window: &winit::window::Window,
     ) {
         let aspect = self.surface_config.width as f32 / self.surface_config.height as f32;
-        let background_color = [ui_state.r, ui_state.g, ui_state.b, 1.0];
+        let background_color = [0.003, 0.0003, 0.007, 1.0];
 
         // Clear pass
         self.clear_render_target(encoder, surface_view, depth_texture_view, background_color);
 
         // Render stars
-        self.render_stars(encoder, surface_view, ui_state, background_color);
+        self.render_stars(encoder, surface_view, background_color);
 
         // Render game objects
         self.render_game_objects(
@@ -458,10 +452,9 @@ impl WgpuRenderer {
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
         surface_view: &TextureView,
-        ui_state: &UiState,
         background_color: [f32; 4],
     ) {
-        let elapsed_time = ui_state.start_time.elapsed().as_secs_f32();
+        let elapsed_time = std::time::Instant::now().elapsed().as_secs_f32();
 
         // Update star renderer state
         self.game_renderer

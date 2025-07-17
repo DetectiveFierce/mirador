@@ -6,8 +6,8 @@
 use crate::game::collision::CollisionSystem;
 use crate::game::collision::{AABB, BVH, BVHNode};
 use crate::renderer::primitives::Vertex;
-use egui_wgpu::wgpu;
-use egui_wgpu::wgpu::util::DeviceExt;
+use wgpu;
+use wgpu::util::DeviceExt;
 /// Material ID for debug bounding boxes
 pub const BOUNDING_BOX_MATERIAL: u32 = 2;
 
