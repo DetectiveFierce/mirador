@@ -12,11 +12,88 @@ use crate::renderer::game_renderer::compass::CompassRenderer;
 use crate::renderer::game_renderer::debug::DebugRenderer;
 use crate::renderer::game_renderer::enemy::EnemyRenderer;
 use crate::renderer::game_renderer::stars::StarRenderer;
-use crate::renderer::pipeline_builder::PipelineBuilder;
+use crate::renderer::pipeline_builder::{
+    BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
+};
 use crate::renderer::primitives::{Uniforms, Vertex};
 use egui_wgpu::wgpu;
 use egui_wgpu::wgpu::util::DeviceExt;
 use std::time::Instant;
+
+// TimerBarUniforms for the timer bar WGSL
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct TimerBarUniforms {
+    pub progress: f32,
+    pub time: f32,
+    pub resolution: [f32; 2],
+    pub _padding: [f32; 2],
+}
+
+pub struct TimerBarRenderer {
+    pub pipeline: wgpu::RenderPipeline,
+    pub uniform_buffer: wgpu::Buffer,
+    pub bind_group: wgpu::BindGroup,
+    pub start_time: Instant,
+}
+
+impl TimerBarRenderer {
+    pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
+        let uniforms = TimerBarUniforms {
+            progress: 1.0,
+            time: 0.0,
+            resolution: [800.0, 600.0],
+            _padding: [0.0; 2],
+        };
+        let uniform_buffer = create_uniform_buffer(device, &uniforms, "Timer Bar Uniform Buffer");
+        let bind_group_layout = BindGroupLayoutBuilder::new(device)
+            .with_label("Timer Bar Bind Group Layout")
+            .with_uniform_buffer(0, wgpu::ShaderStages::VERTEX_FRAGMENT)
+            .build();
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+            label: Some("Timer Bar Bind Group"),
+        });
+        let pipeline = PipelineBuilder::new(device, surface_config.format)
+            .with_label("Timer Bar Pipeline")
+            .with_shader(include_str!("../shaders/timer-bar.wgsl"))
+            .with_bind_group_layout(&bind_group_layout)
+            .with_alpha_blending()
+            .build();
+        Self {
+            pipeline,
+            uniform_buffer,
+            bind_group,
+            start_time: Instant::now(),
+        }
+    }
+    pub fn update_uniforms(
+        &self,
+        queue: &wgpu::Queue,
+        progress: f32,
+        resolution: [f32; 2],
+        time: f32,
+    ) {
+        let uniforms = TimerBarUniforms {
+            progress: progress.clamp(0.0, 1.0),
+            time,
+            resolution,
+            _padding: [0.0; 2],
+        };
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
+        // No need for scissor rect, shader handles bar placement
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.draw(0..3, 0..1);
+    }
+}
+
 /// Main renderer for the 3D maze game.
 ///
 /// The `GameRenderer` is responsible for rendering the complete 3D maze environment,
@@ -80,6 +157,7 @@ pub struct GameRenderer {
     pub enemy_renderer: EnemyRenderer,
     // Add this field to track start time for animation
     pub start_time: Instant,
+    pub timer_bar_renderer: TimerBarRenderer,
 }
 
 impl GameRenderer {
@@ -135,6 +213,7 @@ impl GameRenderer {
         let compass_renderer = CompassRenderer::new(device, queue, surface_config);
         let enemy = Enemy::new([-1370.0, 50.0, 1370.0], 100.0);
         let enemy_renderer = EnemyRenderer::new(enemy, device, queue, surface_config);
+        let timer_bar_renderer = TimerBarRenderer::new(device, surface_config);
         Self {
             pipeline,
             vertex_buffer,
@@ -148,6 +227,7 @@ impl GameRenderer {
             exit_position: None,
             enemy_renderer,
             start_time: Instant::now(), // Initialize start time
+            timer_bar_renderer,
         }
     }
 

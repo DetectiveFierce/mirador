@@ -99,8 +99,13 @@ impl AppState {
                                 "Exit Position: {:?}",
                                 self.wgpu_renderer.game_renderer.exit_position
                             ));
-                            ui.label(format!("FPS: {}", self.game_state.current_fps));
+                            ui.label(format!(
+                                "FPS: {}, self.game_state.current_fps",
+                                self.game_state.current_fps
+                            ));
                             ui.label(format!("Maze Path: {:?}", self.game_state.maze_path));
+
+                            // Remove timer information from here - it's now in the glyphon debug panel
 
                             ui.separator();
 

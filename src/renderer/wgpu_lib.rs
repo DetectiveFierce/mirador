@@ -308,8 +308,76 @@ impl WgpuRenderer {
         // Render game over overlay
         self.render_game_over_overlay(encoder, surface_view, window);
 
+        // Animate the game over restart text color (fade from black to white and back)
+        let restart_color = {
+            if let Some(buf) = text_renderer.text_buffers.get_mut("game_over_restart") {
+                let now = std::time::Instant::now();
+                let elapsed = now.duration_since(ui_state.start_time).as_secs_f32();
+                // Fade: t goes 0..1..0 over a slower period (e.g., 6 seconds for a full cycle)
+                let t = 0.5 * (1.0 + ((elapsed / 3.0) * std::f32::consts::PI).sin());
+                let c = (t * 255.0).round() as u8;
+                buf.style.color = glyphon::Color::rgb(c, c, c);
+                Some(buf.style.clone())
+            } else {
+                None
+            }
+        };
+        if let Some(style) = restart_color {
+            let _ = text_renderer.update_style("game_over_restart", style);
+        }
+
         // Render text
         self.render_game_over_text(encoder, surface_view, text_renderer);
+    }
+
+    fn render_timer_bar_overlay(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        surface_view: &TextureView,
+        game_state: &GameState,
+        window: &winit::window::Window,
+    ) {
+        if game_state.current_screen != crate::game::CurrentScreen::Game {
+            return;
+        }
+        let (progress, time) = if let Some(timer) = &game_state.game_ui.timer {
+            let remaining = timer.get_remaining_time().as_secs_f32();
+            let total = timer.config.duration.as_secs_f32();
+            let progress = if total > 0.0 {
+                (remaining / total).clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            let time = timer.start_time.elapsed().as_secs_f32();
+            (progress, time)
+        } else {
+            (1.0, 0.0)
+        };
+        let window_size = window.inner_size();
+        let resolution = [window_size.width as f32, window_size.height as f32];
+        self.game_renderer.timer_bar_renderer.update_uniforms(
+            &self.queue,
+            progress,
+            resolution,
+            time,
+        );
+        let mut overlay_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Timer Bar Overlay Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: surface_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+        self.game_renderer
+            .timer_bar_renderer
+            .render(&mut overlay_pass);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -340,6 +408,9 @@ impl WgpuRenderer {
             game_state,
             aspect,
         );
+
+        // Render timer bar overlay (after main pass, no depth)
+        self.render_timer_bar_overlay(encoder, surface_view, game_state, window);
 
         // Render compass
         self.render_compass(encoder, surface_view, game_state, window);
