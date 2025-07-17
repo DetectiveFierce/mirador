@@ -3,11 +3,11 @@
 <a href=#3 id=3 data-nosnippet>3</a>//! This module provides the [`Uniforms`] struct for storing and uploading uniform data
 <a href=#4 id=4 data-nosnippet>4</a>//! (such as transformation matrices) to the GPU, as well as helper methods for buffer and bind group creation.
 <a href=#5 id=5 data-nosnippet>5</a>
-<a href=#6 id=6 data-nosnippet>6</a></span><span class="kw">use </span><span class="kw">crate</span>::math::coordinates::constants::get_floor_size;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::maze::generator::Cell;
+<a href=#6 id=6 data-nosnippet>6</a></span><span class="kw">use </span><span class="kw">crate</span>::game::maze::generator::Cell;
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::math::coordinates::constants::get_floor_size;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>bytemuck::{Pod, Zeroable};
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>egui_wgpu::wgpu;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>egui_wgpu::wgpu::util::DeviceExt;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>wgpu;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>wgpu::util::DeviceExt;
 <a href=#11 id=11 data-nosnippet>11</a><span class="doccomment">/// Uniforms for the main render pipeline.
 <a href=#12 id=12 data-nosnippet>12</a>///
 <a href=#13 id=13 data-nosnippet>13</a>/// This struct stores a 4x4 matrix (typically Model-View-Projection) to be sent to the GPU as a uniform buffer.

@@ -2,8 +2,8 @@
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::renderer::pipeline_builder::{
 <a href=#3 id=3 data-nosnippet>3</a>    BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
 <a href=#4 id=4 data-nosnippet>4</a>};
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>egui_wgpu::wgpu::{<span class="self">self</span>, util::DeviceExt};
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>std::time::Instant;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>std::time::Instant;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>wgpu::{<span class="self">self</span>, util::DeviceExt};
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>winit::window::Window;
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[repr(C)]
@@ -297,7 +297,7 @@
 <a href=#297 id=297 data-nosnippet>297</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>encoder = state
 <a href=#298 id=298 data-nosnippet>298</a>        .wgpu_renderer
 <a href=#299 id=299 data-nosnippet>299</a>        .device
-<a href=#300 id=300 data-nosnippet>300</a>        .create_command_encoder(<span class="kw-2">&amp;</span>egui_wgpu::wgpu::CommandEncoderDescriptor { label: <span class="prelude-val">None </span>});
+<a href=#300 id=300 data-nosnippet>300</a>        .create_command_encoder(<span class="kw-2">&amp;</span>wgpu::CommandEncoderDescriptor { label: <span class="prelude-val">None </span>});
 <a href=#301 id=301 data-nosnippet>301</a>    <span class="kw">let </span>(surface_view, surface_texture) = <span class="kw">match </span>state.wgpu_renderer.get_surface_texture_and_view() {
 <a href=#302 id=302 data-nosnippet>302</a>        <span class="prelude-val">Ok</span>((surface_texture, surface_view)) =&gt; (surface_view, surface_texture),
 <a href=#303 id=303 data-nosnippet>303</a>        <span class="prelude-val">Err</span>(e) =&gt; {

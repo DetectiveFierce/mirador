@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["custom_slider"],"struct":["UiState"]};

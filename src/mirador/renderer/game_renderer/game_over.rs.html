@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a>    BindGroupLayoutBuilder, PipelineBuilder, create_fullscreen_vertices, create_uniform_buffer,
 <a href=#3 id=3 data-nosnippet>3</a>    create_vertex_2d_layout,
 <a href=#4 id=4 data-nosnippet>4</a>};
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>egui_wgpu::wgpu;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>wgpu;
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="attr">#[repr(C)]
 <a href=#8 id=8 data-nosnippet>8</a>#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -49,8 +49,8 @@
 <a href=#49 id=49 data-nosnippet>49</a>    ///
 <a href=#50 id=50 data-nosnippet>50</a>    /// ```rust,no_run
 <a href=#51 id=51 data-nosnippet>51</a>    /// # use crate::renderer::maze_renderer::GameOverRenderer;
-<a href=#52 id=52 data-nosnippet>52</a>    /// # let device: egui_wgpu::wgpu::Device = unimplemented!();
-<a href=#53 id=53 data-nosnippet>53</a>    /// # let surface_config: egui_wgpu::wgpu::SurfaceConfiguration = unimplemented!();
+<a href=#52 id=52 data-nosnippet>52</a>    /// # let device: wgpu::Device = unimplemented!();
+<a href=#53 id=53 data-nosnippet>53</a>    /// # let surface_config: wgpu::SurfaceConfiguration = unimplemented!();
 <a href=#54 id=54 data-nosnippet>54</a>    ///
 <a href=#55 id=55 data-nosnippet>55</a>    /// let renderer = GameOverRenderer::new(&amp;device, &amp;surface_config);
 <a href=#56 id=56 data-nosnippet>56</a>    /// ```
@@ -115,7 +115,7 @@
 <a href=#115 id=115 data-nosnippet>115</a>    /// ```rust,no_run
 <a href=#116 id=116 data-nosnippet>116</a>    /// # use crate::renderer::maze_renderer::GameOverRenderer;
 <a href=#117 id=117 data-nosnippet>117</a>    /// # let renderer: GameOverRenderer = unimplemented!();
-<a href=#118 id=118 data-nosnippet>118</a>    /// # let queue: egui_wgpu::wgpu::Queue = unimplemented!();
+<a href=#118 id=118 data-nosnippet>118</a>    /// # let queue: wgpu::Queue = unimplemented!();
 <a href=#119 id=119 data-nosnippet>119</a>    ///
 <a href=#120 id=120 data-nosnippet>120</a>    /// // Update with elapsed time for animations
 <a href=#121 id=121 data-nosnippet>121</a>    /// let elapsed = start_time.elapsed().as_secs_f32();
@@ -153,7 +153,7 @@
 <a href=#153 id=153 data-nosnippet>153</a>    /// ```rust,no_run
 <a href=#154 id=154 data-nosnippet>154</a>    /// # use crate::renderer::maze_renderer::GameOverRenderer;
 <a href=#155 id=155 data-nosnippet>155</a>    /// # let renderer: GameOverRenderer = unimplemented!();
-<a href=#156 id=156 data-nosnippet>156</a>    /// # let mut render_pass: egui_wgpu::wgpu::RenderPass = unimplemented!();
+<a href=#156 id=156 data-nosnippet>156</a>    /// # let mut render_pass: wgpu::RenderPass = unimplemented!();
 <a href=#157 id=157 data-nosnippet>157</a>    /// # let window: &amp;winit::window::Window = unimplemented!();
 <a href=#158 id=158 data-nosnippet>158</a>    ///
 <a href=#159 id=159 data-nosnippet>159</a>    /// // Render game scene first

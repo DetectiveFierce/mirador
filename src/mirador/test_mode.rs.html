@@ -7,13 +7,13 @@
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span><span class="kw">crate</span>::game::GameState;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::game::TimerConfig;
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::game::enemy::Enemy;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::maze::generator::Cell;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span><span class="kw">crate</span>::game::maze::generator::Cell;
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span><span class="kw">crate</span>::renderer::primitives::Vertex;
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::renderer::wgpu_lib::WgpuRenderer;
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>egui_wgpu::wgpu;
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>egui_wgpu::wgpu::util::DeviceExt;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>glyphon::Color;
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>std::time::Duration;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>glyphon::Color;
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>std::time::Duration;
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>wgpu;
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>wgpu::util::DeviceExt;
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a><span class="doccomment">/// Test maze dimensions (smaller than normal maze)
 <a href=#19 id=19 data-nosnippet>19</a></span><span class="kw">const </span>TEST_MAZE_WIDTH: usize = <span class="number">6</span>;
