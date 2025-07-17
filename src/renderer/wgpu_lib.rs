@@ -86,6 +86,7 @@ impl WgpuRenderer {
         encoder: &mut wgpu::CommandEncoder,
         game_state: &GameState,
         text_renderer: &mut TextRenderer,
+        app_start_time: std::time::Instant,
     ) -> Result<(TextureView, SurfaceTexture), String> {
         let (surface_texture, surface_view) = self.get_surface_texture_and_view()?;
         let depth_texture_view = self.update_depth_texture();
@@ -102,6 +103,7 @@ impl WgpuRenderer {
                     game_state,
                     text_renderer,
                     window,
+                    app_start_time,
                 );
             }
             CurrentScreen::Game | CurrentScreen::Pause => {
@@ -281,6 +283,7 @@ impl WgpuRenderer {
         game_state: &GameState,
         text_renderer: &mut TextRenderer,
         window: &winit::window::Window,
+        app_start_time: std::time::Instant,
     ) {
         let aspect = self.surface_config.width as f32 / self.surface_config.height as f32;
         let background_color = [0.003, 0.0003, 0.007, 1.0];
@@ -306,6 +309,22 @@ impl WgpuRenderer {
         // Animate the game over restart text color (fade from black to white and back)
         let restart_color = {
             if let Some(buf) = text_renderer.text_buffers.get_mut("game_over_restart") {
+                let elapsed = app_start_time.elapsed().as_secs_f32();
+                let t = 0.5 * (1.0 + ((elapsed / 3.0) * std::f32::consts::PI).sin());
+                let c = (t * 255.0) as u8;
+                buf.style.color = glyphon::Color::rgb(c, c, c);
+                Some(buf.style.clone())
+            } else {
+                None
+            }
+        };
+        if let Some(style) = restart_color {
+            let _ = text_renderer.update_style("game_over_restart", style);
+        }
+
+        // Animate the game over subtitle text color (if present) with the same animation as the title screen subtitle
+        let subtitle_color = {
+            if let Some(buf) = text_renderer.text_buffers.get_mut("game_over_subtitle") {
                 let now = std::time::Instant::now();
                 let elapsed = now.elapsed().as_secs_f32();
                 // Fade: t goes 0..1..0 over a slower period (e.g., 6 seconds for a full cycle)
@@ -317,8 +336,8 @@ impl WgpuRenderer {
                 None
             }
         };
-        if let Some(style) = restart_color {
-            let _ = text_renderer.update_style("game_over_restart", style);
+        if let Some(style) = subtitle_color {
+            let _ = text_renderer.update_style("game_over_subtitle", style);
         }
 
         // Render text

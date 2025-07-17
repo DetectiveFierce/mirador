@@ -429,26 +429,55 @@ impl TextRenderer {
     }
 
     /// Update game over display for different screen sizes (call on window resize)
+    /// Update game over display for different screen sizes (call on window resize)
     pub fn update_game_over_position(&mut self, width: u32, height: u32) -> Result<(), String> {
+        // Get the styles from existing buffers to measure text
+        let game_over_style = self
+            .text_buffers
+            .get("game_over_title")
+            .map(|buffer| buffer.style.clone())
+            .unwrap_or_else(|| TextStyle {
+                font_family: "HankenGrotesk".to_string(),
+                font_size: 72.0,
+                line_height: 90.0,
+                color: Color::rgb(255, 255, 255),
+                weight: Weight::BOLD,
+                style: Style::Normal,
+            });
+
+        let restart_style = self
+            .text_buffers
+            .get("game_over_restart")
+            .map(|buffer| buffer.style.clone())
+            .unwrap_or_else(|| TextStyle {
+                font_family: "HankenGrotesk".to_string(),
+                font_size: 24.0,
+                line_height: 30.0,
+                color: Color::rgb(255, 255, 255),
+                weight: Weight::NORMAL,
+                style: Style::Normal,
+            });
+
+        // Measure the actual text dimensions
+        let (_, text_width, text_height) = self.measure_text("Game Over!", &game_over_style);
+        let (_, restart_text_width, restart_text_height) =
+            self.measure_text("Click anywhere to play again.", &restart_style);
+
         // Update main title position
-        let text_width = 450.0;
-        let text_height = 90.0;
         let game_over_position = TextPosition {
             x: (width as f32 / 2.0) - (text_width / 2.0),
             y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0,
-            max_width: Some(text_width),
-            max_height: Some(text_height),
+            max_width: Some(text_width + 20.0), // Add some padding
+            max_height: Some(text_height + 10.0), // Add some padding
         };
         self.update_position("game_over_title", game_over_position)?;
 
         // Update restart text position
-        let restart_text_width = 350.0;
-        let restart_text_height = 30.0;
         let restart_position = TextPosition {
             x: (width as f32 / 2.0) - (restart_text_width / 2.0),
             y: (height as f32 / 2.0) + 40.0,
-            max_width: Some(restart_text_width),
-            max_height: Some(restart_text_height),
+            max_width: Some(restart_text_width + 20.0), // Add some padding
+            max_height: Some(restart_text_height + 10.0), // Add some padding
         };
         self.update_position("game_over_restart", restart_position)?;
 

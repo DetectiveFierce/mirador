@@ -83,6 +83,7 @@ impl App {
             &mut encoder,
             &state.game_state,
             &mut state.text_renderer,
+            state.start_time,
         ) {
             Ok(result) => result,
             Err(err) => {

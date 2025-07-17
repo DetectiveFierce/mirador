@@ -220,13 +220,20 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     // --- Dynamic placement for title and subtitle overlays ---
     let width = state.wgpu_renderer.surface_config.width as f32;
     let height = state.wgpu_renderer.surface_config.height as f32;
+    // Dynamically scale font sizes
+    let title_font_size = (width * 0.09).clamp(48.0, 220.0); // 9% of width, min 48, max 220
+    let title_line_height = (title_font_size * 1.2).clamp(60.0, 260.0);
+    let subtitle_font_size = (width * 0.018).clamp(14.0, 48.0); // 1.8% of width, min 14, max 48
+    let subtitle_line_height = (subtitle_font_size * 1.3).clamp(18.0, 64.0);
     // Gather info for both overlays first to avoid borrow checker issues
     let title_overlay_info = state
         .text_renderer
         .text_buffers
         .get("title_mirador_overlay")
         .map(|buf| {
-            let style = buf.style.clone();
+            let mut style = buf.style.clone();
+            style.font_size = title_font_size;
+            style.line_height = title_line_height;
             let text = buf.text_content.clone();
             (style, text)
         });
@@ -235,12 +242,17 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
         .text_buffers
         .get("title_subtitle_overlay")
         .map(|buf| {
-            let style = buf.style.clone();
+            let mut style = buf.style.clone();
+            style.font_size = subtitle_font_size;
+            style.line_height = subtitle_line_height;
             let text = buf.text_content.clone();
             (style, text)
         });
-    // Now update positions mutably
+    // Now update positions and styles mutably
     if let Some((style, text)) = title_overlay_info {
+        let _ = state
+            .text_renderer
+            .update_style("title_mirador_overlay", style.clone());
         let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
         let margin_right = width * 0.045; // 4.5% of width
         let margin_top = height * 0.10; // 10% of height
@@ -255,6 +267,9 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
             .update_position("title_mirador_overlay", pos);
     }
     if let Some((style, text)) = subtitle_overlay_info {
+        let _ = state
+            .text_renderer
+            .update_style("title_subtitle_overlay", style.clone());
         let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
         let margin_right = width * 0.06; // 6% of width
         let margin_bottom = height * 0.10; // 10% of height

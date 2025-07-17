@@ -156,38 +156,170 @@ fn pattern(p: vec2<f32>) -> f32 {
     return fbm(p + fbm(p + fbm(p + vec2<f32>(chaos1, chaos2))));
 }
 
+// Capsule SDF function for a horizontal capsule (rectangle with semicircular ends)
+fn capsule_sdf(p: vec2<f32>, width: f32, height: f32) -> f32 {
+    let radius = height * 0.5;
+    let half_width = width * 0.5;
+    
+    // Clamp the point to the line segment (the "spine" of the capsule)
+    let spine_half_length = max(0.0, half_width - radius);
+    let clamped_x = clamp(p.x, -spine_half_length, spine_half_length);
+    
+    // Distance from point to the closest point on the spine
+    let closest_point = vec2<f32>(clamped_x, 0.0);
+    
+    // Return distance to the circle centered at that point
+    return length(p - closest_point) - radius;
+}
+
 @fragment
 fn fs_main(@builtin(position) frag_position: vec4<f32>) -> @location(0) vec4<f32> {
     let fragCoord = frag_position.xy;
     let res = uniforms.resolution;
     
-    // Timer bar dimensions
+    // --- Bar dimensions: 1/3 width, 4% height ---
     let bar_width = res.x / 3.0;
-    let bar_height = res.y * 0.03;
+    let bar_height = res.y * 0.04;
     let margin_top = res.y * 0.04;
     let bar_left = (res.x - bar_width) / 2.0;
-    let bar_right = bar_left + bar_width;
     let bar_top = margin_top;
-    let bar_bottom = margin_top + bar_height;
     
-    // Only draw inside the bar
-    if (fragCoord.x < bar_left || fragCoord.x > bar_right || fragCoord.y < bar_top || fragCoord.y > bar_bottom) {
+    // --- Convert to local coordinates centered at bar center ---
+    let bar_center = vec2<f32>(bar_left + bar_width * 0.5, bar_top + bar_height * 0.5);
+    let local_pos = fragCoord - bar_center;
+    
+    // --- Capsule SDF for mask ---
+    let capsule_dist = capsule_sdf(local_pos, bar_width, bar_height);
+    let edge_softness = 0.5; // Make edge very sharp to remove border
+    let mask = 1.0 - smoothstep(0.0, edge_softness, capsule_dist);
+    
+    // --- Shadow calculation ---
+    // Create a shadow that extends well beyond the visible area
+    let shadow_offset = vec2<f32>(0.0, 3.0); // Slight downward offset
+    let shadow_pos = local_pos - shadow_offset;
+    let shadow_dist = capsule_sdf(shadow_pos, bar_width, bar_height);
+    
+    // Shadow parameters for smooth falloff
+    let shadow_max_distance = bar_height * 4.0; // Shadow extends 4x bar height
+    let shadow_intensity = 0.85; // Maximum shadow darkness
+    
+    // Create smooth shadow falloff using exponential decay
+    let shadow_falloff = exp(-max(0.0, shadow_dist) / (bar_height * 0.8));
+    let shadow_alpha = shadow_intensity * shadow_falloff;
+    
+    // Additional gaussian-like falloff for ultra-smooth edges
+    let distance_factor = clamp(shadow_dist / shadow_max_distance, 0.0, 1.0);
+    let gaussian_falloff = exp(-distance_factor * distance_factor * 8.0);
+    let final_shadow_alpha = shadow_alpha * gaussian_falloff;
+    
+    // Shadow color (dark with slight blue tint)
+    let shadow_color = vec3<f32>(0.0, 0.01, 0.04); // deeper, less blue
+    
+    // --- Check if we need to render anything ---
+    if (mask < 0.01 && final_shadow_alpha < 0.01) {
         return vec4<f32>(0.0, 0.0, 0.0, 0.0);
     }
     
-    // Progress mask
-    let rel_x = (fragCoord.x - bar_left) / bar_width;
-    let progress_mask = step(rel_x, uniforms.progress);
+    // --- Progress fill calculation (only if we're in the bar area) ---
+    var bar_color = vec4<f32>(0.12, 0.12, 0.14, 1.0); // Default background
+
+    if (mask > 0.01) {
+        // Map to [0,1] in bar local space for UV calculations
+        let rel_x = (fragCoord.x - bar_left) / bar_width;
+        let rel_y = (fragCoord.y - bar_top) / bar_height;
+        let uv = vec2<f32>(rel_x, rel_y);
+
+        // --- Flat right edge progress fill ---
+        // Only draw fill if progress > 0
+        var final_progress_mask = 0.0;
+        if (uniforms.progress > 0.0) {
+            // Compute the left-capped rectangle SDF
+            let fill_width = bar_width * uniforms.progress;
+            let fill_left = bar_left;
+            let fill_right = bar_left + fill_width;
+            let fill_center = vec2<f32>(fill_left + fill_width * 0.5, bar_center.y);
+            let fill_local_pos = vec2<f32>(fragCoord.x - fill_center.x, fragCoord.y - bar_center.y);
+            let radius = bar_height * 0.5;
+            let half_width = fill_width * 0.5;
+            // SDF for left semicircle
+            let left_cap_center = vec2<f32>(-half_width + radius, 0.0);
+            let left_cap_dist = length(fill_local_pos - left_cap_center) - radius;
+            // SDF for rectangle (flat right edge)
+            let rect_right = half_width;
+            let rect_left = -half_width + radius;
+            let rect_dist = max(abs(fill_local_pos.y) - radius, fill_local_pos.x - rect_right);
+            let in_rect = step(rect_left, fill_local_pos.x) * step(fill_local_pos.x, rect_right);
+            // Combine: inside if in left cap or in rectangle
+            let fill_sdf = min(left_cap_dist, rect_dist);
+            let edge_softness = 0.5;
+            let fill_mask = 1.0 - smoothstep(0.0, edge_softness, fill_sdf);
+            // Only allow fill to the right of the left cap
+            let right_clip = step(fill_local_pos.x, rect_right);
+            final_progress_mask = mask * fill_mask * right_clip;
+        }
+
+        // --- Timer bar color ---
+        let scaled_uv = uv * vec2<f32>(16.0, 1.0);
+        let shade: f32 = pattern(scaled_uv);
+        let animated_color = colormap(shade);
+
+        // --- Glass highlight overlay (for both filled and depleted areas) ---
+        let highlight_curve = pow(clamp(1.0 - abs((rel_x - 0.22) * 2.0), 0.0, 1.0), 3.0);
+        let highlight_band = smoothstep(0.10, 0.0, rel_y - 0.18);
+        let highlight = highlight_curve * highlight_band * 0.65;
+        let highlight2_curve = pow(clamp(1.0 - abs((rel_x - 0.78) * 2.0), 0.0, 1.0), 2.5);
+        let highlight2_band = smoothstep(0.10, 0.0, 0.82 - rel_y);
+        let highlight2 = highlight2_curve * highlight2_band * 0.25;
+        let glass_highlight = vec3<f32>(1.0, 1.0, 1.0) * (highlight + highlight2);
+
+        // --- Glass tint and inner shadow (for both areas) ---
+        let glass_tint = vec3<f32>(0.75, 0.90, 1.0) * 0.18;
+        let shadow = smoothstep(0.0, 0.18 * bar_height, capsule_dist);
+        let inner_shadow = vec3<f32>(0.0, 0.05, 0.10) * shadow * 0.45;
+
+        // --- Compose filled and depleted area colors ---
+        let filled_rgb = animated_color.rgb + glass_highlight + glass_tint - inner_shadow;
+        let depleted_rgb = glass_highlight + glass_tint - inner_shadow;
+        let depleted_alpha = 0.22; // glassy transparency for depleted area
+
+        // Mix between filled and depleted area
+        let rgb = mix(depleted_rgb, filled_rgb, final_progress_mask);
+        let alpha = mix(depleted_alpha, 1.0, final_progress_mask);
+        bar_color = vec4<f32>(rgb, alpha);
+    }
     
-    // UV coordinates - scale like the reference shader
-    let uv = vec2<f32>(rel_x, (fragCoord.y - bar_top) / bar_height);
-    let scaled_uv = uv * vec2<f32>(16.0, 1.0);
+    // --- Endcap shadow for realism ---
+    // Compute how far along the bar's axis this pixel is (0=center, -1/1=ends)
+    let axis_pos = clamp(local_pos.x / ((bar_width - bar_height) * 0.5), -1.0, 1.0);
+    // Shadow strength is stronger near the ends (rounded parts)
+    let end_shadow_strength = pow(abs(axis_pos), 2.2);
+    let end_shadow = vec3<f32>(0.0, 0.0, 0.0) * end_shadow_strength * 0.22;
+    // Blend end shadow into bar color (subtle)
+    bar_color = vec4<f32>(bar_color.rgb - end_shadow, bar_color.a);
     
-    let shade: f32 = pattern(scaled_uv);
-    let animated_color = colormap(shade);
-    let bg_color = vec4<f32>(0.12, 0.12, 0.14, 1.0); // Slightly cooler, darker background
+    // --- Tube border and rim lighting ---
+    let border_width = bar_height * 0.18;
+    let border_mask = 1.0 - smoothstep(border_width * 0.5, border_width, abs(capsule_dist));
+    // Approximate normal (gradient of SDF)
+    let eps = 0.5;
+    let grad_x = capsule_sdf(local_pos + vec2<f32>(eps, 0.0), bar_width, bar_height) - capsule_sdf(local_pos - vec2<f32>(eps, 0.0), bar_width, bar_height);
+    let grad_y = capsule_sdf(local_pos + vec2<f32>(0.0, eps), bar_width, bar_height) - capsule_sdf(local_pos - vec2<f32>(0.0, eps), bar_width, bar_height);
+    let normal = normalize(vec2<f32>(grad_x, grad_y));
+    // Rim lighting: lighter at top, darker at bottom
+    let rim_light = clamp(normal.y, 0.0, 1.0);
+    let rim_shadow = clamp(-normal.y, 0.0, 1.0);
+    let border_light = vec3<f32>(0.22, 0.24, 0.32) + rim_light * 0.10; // subtle light
+    let border_dark = vec3<f32>(0.08, 0.09, 0.13) + rim_shadow * 0.08; // subtle shadow
+    let border_color = mix(border_light, border_dark, rim_shadow);
+    // Blend border into bar color (subtle)
+    bar_color = vec4<f32>(mix(bar_color.rgb, border_color, border_mask * 0.32), bar_color.a);
     
-    // Apply progress mask
-    let final_color = mix(bg_color, animated_color, progress_mask);
-    return vec4<f32>(final_color.rgb, 1.0);
+    // --- Combine shadow and bar ---
+    if (mask > 0.01) {
+        // We're in the bar area - show the bar only (no shadow blending)
+        return bar_color;
+    } else {
+        // We're in the shadow area only
+        return vec4<f32>(shadow_color, final_shadow_alpha);
+    }
 }

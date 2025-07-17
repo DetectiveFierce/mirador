@@ -40,10 +40,29 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    // Test with solid color first
-    //return vec4<f32>(1.0, 0.0, 0.0, 0.8); // Semi-transparent red
+    let tex_coords = input.tex_coords;
+    let color = textureSample(compass_texture, compass_sampler, tex_coords);
 
-    // Once you see the red square, uncomment this:
-    let color = textureSample(compass_texture, compass_sampler, input.tex_coords);
-    return color;
+    // Define the shadow parameters
+    let center = vec2<f32>(0.5, 0.4); // Center of the texture
+    let dist = distance(tex_coords, center);
+
+    // Make the shadow directional: stronger below the center
+    let direction_bias = clamp((tex_coords.y - center.y) * 1.5 + 0.2, 0.0, 1.0);
+
+    // Sharper falloff and darker center
+    let shadow_radius = 0.5;        // Slightly wider shadow
+    let shadow_inner = 0.35;        // Starts fading earlier
+    let shadow_fade = smoothstep(shadow_inner, shadow_radius, dist);
+
+    // Stronger shadow alpha at center, faster fade out
+    let shadow_alpha = (1.0 - shadow_fade) * direction_bias * (1.0 - color.a);
+
+    // Increased darkness at center (was 0.4)
+    let shadow_color = vec4<f32>(0.0, 0.0, 0.0, shadow_alpha * 0.8); 
+
+    return shadow_color + color;
 }
+
+
+
