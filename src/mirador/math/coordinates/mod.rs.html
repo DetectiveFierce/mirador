@@ -18,6 +18,13 @@
 <a href=#18 id=18 data-nosnippet>18</a>    <span class="doccomment">/// Standard height of the player in the world
 <a href=#19 id=19 data-nosnippet>19</a>    </span><span class="kw">pub const </span>PLAYER_HEIGHT: f32 = <span class="number">50.0</span>;
 <a href=#20 id=20 data-nosnippet>20</a>
-<a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// Size of the world floor
-<a href=#22 id=22 data-nosnippet>22</a>    </span><span class="kw">pub const </span>FLOOR_SIZE: f32 = <span class="number">3000.0</span>;
-<a href=#23 id=23 data-nosnippet>23</a>}</code></pre></div></section></main></body></html>
+<a href=#21 id=21 data-nosnippet>21</a>    <span class="doccomment">/// Get the floor size based on test mode
+<a href=#22 id=22 data-nosnippet>22</a>    /// In test mode, the floor is 1/4 the size of normal mode
+<a href=#23 id=23 data-nosnippet>23</a>    </span><span class="kw">pub fn </span>get_floor_size(is_test_mode: bool) -&gt; f32 {
+<a href=#24 id=24 data-nosnippet>24</a>        <span class="kw">if </span>is_test_mode {
+<a href=#25 id=25 data-nosnippet>25</a>            <span class="number">1500.0 </span><span class="comment">// 1/4 of 3000.0
+<a href=#26 id=26 data-nosnippet>26</a>        </span>} <span class="kw">else </span>{
+<a href=#27 id=27 data-nosnippet>27</a>            <span class="number">3000.0
+<a href=#28 id=28 data-nosnippet>28</a>        </span>}
+<a href=#29 id=29 data-nosnippet>29</a>    }
+<a href=#30 id=30 data-nosnippet>30</a>}</code></pre></div></section></main></body></html>

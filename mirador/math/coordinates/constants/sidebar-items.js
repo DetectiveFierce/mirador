@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["FLOOR_SIZE","PLAYER_HEIGHT"]};
+window.SIDEBAR_ITEMS = {"constant":["PLAYER_HEIGHT"],"fn":["get_floor_size"]};

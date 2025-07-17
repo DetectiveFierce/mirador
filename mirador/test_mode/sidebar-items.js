@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["TEST_MAZE_HEIGHT","TEST_MAZE_WIDTH"],"fn":["create_test_enemy","create_test_maze_grid","create_test_timer_config","get_test_exit_cell","get_world_center_for_exit_patch","maze_cell_to_wall_grid","place_exit_in_maze_grid","setup_test_environment"]};
