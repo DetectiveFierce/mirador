@@ -692,6 +692,7 @@ impl CollisionSystem {
     /// # Arguments
     ///
     /// * `maze_grid` - A 2D grid where `true` represents walls and `false` represents open spaces
+    /// * `is_test_mode` - Whether test mode is enabled (affects collision geometry)
     ///
     /// # Process
     ///
@@ -702,12 +703,12 @@ impl CollisionSystem {
     ///
     /// ```
     /// let mut collision_system = CollisionSystem::new(0.4, 1.8);
-    /// collision_system.build_from_maze(&maze.grid);
+    /// collision_system.build_from_maze(&maze.grid, false);
     /// ```
-    pub fn build_from_maze(&mut self, maze_grid: &[Vec<bool>]) {
+    pub fn build_from_maze(&mut self, maze_grid: &[Vec<bool>], is_test_mode: bool) {
         // Store maze dimensions
         self.maze_dimensions = (maze_grid[0].len(), maze_grid.len());
-        let wall_faces = self.extract_wall_faces_from_maze(maze_grid);
+        let wall_faces = self.extract_wall_faces_from_maze(maze_grid, is_test_mode);
         self.bvh.build(wall_faces);
     }
 
@@ -720,6 +721,7 @@ impl CollisionSystem {
     /// # Arguments
     ///
     /// * `maze_grid` - A 2D grid where `true` represents walls and `false` represents open spaces
+    /// * `is_test_mode` - Whether test mode is enabled (affects collision geometry)
     ///
     /// # Returns
     ///
@@ -737,92 +739,189 @@ impl CollisionSystem {
     ///
     /// The method only creates wall faces where there's a transition between
     /// wall and non-wall cells, avoiding redundant interior faces.
-    fn extract_wall_faces_from_maze(&self, maze_grid: &[Vec<bool>]) -> Vec<WallFace> {
+    fn extract_wall_faces_from_maze(
+        &self,
+        maze_grid: &[Vec<bool>],
+        is_test_mode: bool,
+    ) -> Vec<WallFace> {
         let mut faces = Vec::new();
         let maze_width = maze_grid[0].len();
         let maze_height = maze_grid.len();
         let maze_dimensions = (maze_width, maze_height);
 
         // Use coordinate API to calculate sizes and origins
-        let cell_size = crate::math::coordinates::calculate_cell_size(maze_dimensions);
+        let cell_size =
+            crate::math::coordinates::calculate_cell_size(maze_dimensions, is_test_mode);
         let wall_height = cell_size;
 
         // Calculate the world origin offset (bottom-left corner of the maze)
         let origin_x = -(maze_width as f32 * cell_size) / 2.0;
         let origin_z = -(maze_height as f32 * cell_size) / 2.0;
 
-        for (z, row) in maze_grid.iter().enumerate() {
-            for (x, &is_wall) in row.iter().enumerate() {
-                if is_wall {
+        if is_test_mode {
+            // Test mode: only create collision faces for perimeter walls
+            // Top wall (row 0)
+            for x in 0..maze_width {
+                if maze_grid[0][x] {
                     let wx = origin_x + x as f32 * cell_size;
+                    let wz = origin_z + 0.0 * cell_size;
+                    faces.push(self.create_z_facing_wall_face(
+                        wx,
+                        wz,
+                        cell_size,
+                        wall_height,
+                        false,
+                    ));
+                    faces.push(self.create_z_facing_wall_face(
+                        wx,
+                        wz,
+                        cell_size,
+                        wall_height,
+                        true,
+                    ));
+                }
+            }
+
+            // Bottom wall (row maze_height-1)
+            for x in 0..maze_width {
+                if maze_grid[maze_height - 1][x] {
+                    let wx = origin_x + x as f32 * cell_size;
+                    let wz = origin_z + (maze_height - 1) as f32 * cell_size;
+                    faces.push(self.create_z_facing_wall_face(
+                        wx,
+                        wz + cell_size,
+                        cell_size,
+                        wall_height,
+                        false,
+                    ));
+                    faces.push(self.create_z_facing_wall_face(
+                        wx,
+                        wz + cell_size,
+                        cell_size,
+                        wall_height,
+                        true,
+                    ));
+                }
+            }
+
+            // Left wall (column 0)
+            for z in 0..maze_height {
+                if maze_grid[z][0] {
+                    let wx = origin_x + 0.0 * cell_size;
                     let wz = origin_z + z as f32 * cell_size;
+                    faces.push(self.create_x_facing_wall_face(
+                        wx,
+                        wz,
+                        cell_size,
+                        wall_height,
+                        false,
+                    ));
+                    faces.push(self.create_x_facing_wall_face(
+                        wx,
+                        wz,
+                        cell_size,
+                        wall_height,
+                        true,
+                    ));
+                }
+            }
 
-                    // Create wall faces for each direction
-                    if z == 0 || !maze_grid[z - 1][x] {
-                        faces.push(self.create_z_facing_wall_face(
-                            wx,
-                            wz,
-                            cell_size,
-                            wall_height,
-                            false,
-                        ));
-                        faces.push(self.create_z_facing_wall_face(
-                            wx,
-                            wz,
-                            cell_size,
-                            wall_height,
-                            true,
-                        ));
-                    }
+            // Right wall (column maze_width-1)
+            for z in 0..maze_height {
+                if maze_grid[z][maze_width - 1] {
+                    let wx = origin_x + (maze_width - 1) as f32 * cell_size;
+                    let wz = origin_z + z as f32 * cell_size;
+                    faces.push(self.create_x_facing_wall_face(
+                        wx + cell_size,
+                        wz,
+                        cell_size,
+                        wall_height,
+                        false,
+                    ));
+                    faces.push(self.create_x_facing_wall_face(
+                        wx + cell_size,
+                        wz,
+                        cell_size,
+                        wall_height,
+                        true,
+                    ));
+                }
+            }
+        } else {
+            // Normal mode: create collision faces for all walls
+            for (z, row) in maze_grid.iter().enumerate() {
+                for (x, &is_wall) in row.iter().enumerate() {
+                    if is_wall {
+                        let wx = origin_x + x as f32 * cell_size;
+                        let wz = origin_z + z as f32 * cell_size;
 
-                    // X-facing walls (both front and back)
-                    if x == 0 || !maze_grid[z][x - 1] {
-                        faces.push(self.create_x_facing_wall_face(
-                            wx,
-                            wz,
-                            cell_size,
-                            wall_height,
-                            false,
-                        ));
-                        faces.push(self.create_x_facing_wall_face(
-                            wx,
-                            wz,
-                            cell_size,
-                            wall_height,
-                            true,
-                        ));
-                    }
-                    if z == maze_height - 1 {
-                        faces.push(self.create_z_facing_wall_face(
-                            wx,
-                            wz + cell_size,
-                            cell_size,
-                            wall_height,
-                            false,
-                        ));
-                        faces.push(self.create_z_facing_wall_face(
-                            wx,
-                            wz + cell_size,
-                            cell_size,
-                            wall_height,
-                            true,
-                        ));
-                    }
-                    if x == maze_width - 1 {
-                        faces.push(self.create_x_facing_wall_face(
-                            wx + cell_size,
-                            wz,
-                            cell_size,
-                            wall_height,
-                            false,
-                        ));
-                        faces.push(self.create_x_facing_wall_face(
-                            wx + cell_size,
-                            wz,
-                            cell_size,
-                            wall_height,
-                            true,
-                        ));
+                        // Create wall faces for each direction
+                        if z == 0 || !maze_grid[z - 1][x] {
+                            faces.push(self.create_z_facing_wall_face(
+                                wx,
+                                wz,
+                                cell_size,
+                                wall_height,
+                                false,
+                            ));
+                            faces.push(self.create_z_facing_wall_face(
+                                wx,
+                                wz,
+                                cell_size,
+                                wall_height,
+                                true,
+                            ));
+                        }
+
+                        // X-facing walls (both front and back)
+                        if x == 0 || !maze_grid[z][x - 1] {
+                            faces.push(self.create_x_facing_wall_face(
+                                wx,
+                                wz,
+                                cell_size,
+                                wall_height,
+                                false,
+                            ));
+                            faces.push(self.create_x_facing_wall_face(
+                                wx,
+                                wz,
+                                cell_size,
+                                wall_height,
+                                true,
+                            ));
+                        }
+                        if z == maze_height - 1 {
+                            faces.push(self.create_z_facing_wall_face(
+                                wx,
+                                wz + cell_size,
+                                cell_size,
+                                wall_height,
+                                false,
+                            ));
+                            faces.push(self.create_z_facing_wall_face(
+                                wx,
+                                wz + cell_size,
+                                cell_size,
+                                wall_height,
+                                true,
+                            ));
+                        }
+                        if x == maze_width - 1 {
+                            faces.push(self.create_x_facing_wall_face(
+                                wx + cell_size,
+                                wz,
+                                cell_size,
+                                wall_height,
+                                false,
+                            ));
+                            faces.push(self.create_x_facing_wall_face(
+                                wx + cell_size,
+                                wz,
+                                cell_size,
+                                wall_height,
+                                true,
+                            ));
+                        }
                     }
                 }
             }

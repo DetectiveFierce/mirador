@@ -233,6 +233,13 @@ impl WgpuRenderer {
         Ok((surface_texture, surface_view))
     }
 
+    /// Clean up GPU resources before dropping the renderer
+    /// This helps prevent the "SurfaceSemaphores still in use" error
+    pub fn cleanup(&mut self) {
+        // Poll the device to ensure all operations are complete
+        self.device.poll(wgpu::Maintain::Wait);
+    }
+
     fn update_depth_texture(&mut self) -> TextureView {
         let (width, height) = (self.surface_config.width, self.surface_config.height);
         self.game_renderer

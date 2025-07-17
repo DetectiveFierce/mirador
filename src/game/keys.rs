@@ -125,6 +125,14 @@ impl KeyState {
                             .expect("Failed to start walking sound");
                     }
                 }
+            } else {
+                // Stop movement sounds when player is not moving
+                if game_state.audio_manager.is_moving() {
+                    game_state
+                        .audio_manager
+                        .stop_movement()
+                        .expect("Failed to stop movement sound");
+                }
             }
 
             // Handle player movement with collision

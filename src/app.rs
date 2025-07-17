@@ -29,6 +29,7 @@ use crate::renderer::loading_renderer::LoadingRenderer;
 use crate::renderer::primitives::Vertex;
 use crate::renderer::text::TextRenderer;
 use crate::renderer::title;
+use crate::test_mode::setup_test_environment;
 use crate::{
     renderer::wgpu_lib::WgpuRenderer,
     ui::{egui_lib::EguiRenderer, ui_panel::UiState},
@@ -474,6 +475,7 @@ impl App {
                     .lock()
                     .unwrap()
                     .walls,
+                state.game_state.is_test_mode,
             );
         }
 
@@ -580,7 +582,7 @@ impl App {
         // If paused, render the pause menu on top
         if state.game_state.current_screen == CurrentScreen::Pause {
             if !state.pause_menu.is_visible() {
-                state.pause_menu.show();
+                state.pause_menu.show(state.game_state.is_test_mode);
             }
 
             // Create a render pass for the pause menu
@@ -655,7 +657,14 @@ impl App {
 
         // Submit commands and present
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
+
+        // Present the surface texture and ensure it's properly handled
         surface_texture.present();
+
+        // Poll the device to process any pending operations
+        // This helps ensure resources are properly cleaned up and prevents
+        // the "SurfaceSemaphores still in use" error during cleanup
+        state.wgpu_renderer.device.poll(wgpu::Maintain::Poll);
 
         // Update enemy pathfinding
         state.game_state.enemy.update(
@@ -689,7 +698,9 @@ impl App {
                 .audio_manager
                 .resume_enemy_audio("enemy")
                 .expect("Failed to resume enemy audio");
-            state.game_state.enemy.pathfinder.locked = false;
+            if !state.game_state.is_test_mode {
+                state.game_state.enemy.pathfinder.locked = false;
+            }
         }
     }
 
@@ -859,6 +870,24 @@ impl App {
     /// Advances the maze generation animation and uploads new geometry when complete.
     pub fn handle_maze_generation(&mut self) {
         if let Some(state) = self.state.as_mut() {
+            // If in test mode, skip maze generation entirely and go directly to game
+            if state.game_state.is_test_mode {
+                println!("Test mode enabled - skipping maze generation and going to game");
+                // Mark generation as complete immediately
+                state
+                    .wgpu_renderer
+                    .loading_screen_renderer
+                    .generator
+                    .generation_complete = true;
+                // Set up test environment immediately
+                setup_test_environment(&mut state.game_state, &mut state.wgpu_renderer);
+                // Set a dummy maze path to prevent re-entry
+                state.game_state.maze_path = Some(std::path::PathBuf::from("test_mode"));
+                // Go directly to game screen
+                state.game_state.current_screen = CurrentScreen::Game;
+                return;
+            }
+
             let renderer = &mut state.wgpu_renderer.loading_screen_renderer;
 
             // Calculate update timing
@@ -921,12 +950,18 @@ impl App {
                     // Generate geometry if maze was saved successfully
                     if let Some(maze_path) = &state.game_state.maze_path {
                         let (maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
-                        let (mut floor_vertices, exit_position) =
-                            Vertex::create_floor_vertices(&maze_grid, exit_cell);
+                        let (mut floor_vertices, exit_position) = Vertex::create_floor_vertices(
+                            &maze_grid,
+                            exit_cell,
+                            state.game_state.is_test_mode,
+                        );
 
                         state.wgpu_renderer.game_renderer.exit_position = Some(exit_position);
 
-                        floor_vertices.append(&mut Vertex::create_wall_vertices(&maze_grid));
+                        floor_vertices.append(&mut Vertex::create_wall_vertices(
+                            &maze_grid,
+                            state.game_state.is_test_mode,
+                        ));
 
                         state.wgpu_renderer.game_renderer.vertex_buffer = state
                             .wgpu_renderer
@@ -937,6 +972,10 @@ impl App {
                                 usage: wgpu::BufferUsages::VERTEX,
                             });
 
+                        // Update vertex count so the renderer knows how many vertices to draw
+                        state.wgpu_renderer.game_renderer.vertex_count =
+                            floor_vertices.len() as u32;
+
                         if let Some(exit_cell_position) = exit_cell {
                             state.game_state.exit_cell = Some(exit_cell_position);
                             state.game_state.enemy = place_enemy_standard(
@@ -944,6 +983,7 @@ impl App {
                                     &exit_cell_position,
                                     maze_lock.get_dimensions(),
                                     30.0,
+                                    state.game_state.is_test_mode,
                                 ),
                                 state.game_state.player.position,
                                 state.game_state.game_ui.level,
@@ -959,10 +999,14 @@ impl App {
                         state
                             .game_state
                             .collision_system
-                            .build_from_maze(&maze_grid);
+                            .build_from_maze(&maze_grid, state.game_state.is_test_mode);
 
                         // Spawn the player at the bottom-left corner of the maze
-                        state.game_state.player.spawn_at_maze_entrance(&maze_grid);
+                        state
+                            .game_state
+                            .player
+                            .spawn_at_maze_entrance(&maze_grid, state.game_state.is_test_mode);
+                        // (No automatic transition to Game here)
                     }
                 }
             }
@@ -1033,31 +1077,178 @@ impl ApplicationHandler for App {
         // Handle pause menu actions
         match pause_action {
             crate::ui::pause_menu::PauseMenuAction::Resume => {
-                state.game_state.current_screen = CurrentScreen::Game;
-                state.game_state.game_ui.resume_timer();
-                state.game_state.enemy.pathfinder.locked = false;
-                state.game_state.capture_mouse = true;
-                // Explicitly hide the pause menu
+                // Return to previous screen or default to Game
+                if let Some(previous_screen) = state.game_state.previous_screen {
+                    state.game_state.current_screen = previous_screen;
+                    state.game_state.previous_screen = None;
+
+                    match previous_screen {
+                        CurrentScreen::Game => {
+                            // Resume game
+                            state.game_state.game_ui.resume_timer();
+                            // Unlock enemy movement
+                            state.game_state.enemy.pathfinder.locked = false;
+                            // Lock cursor
+                            state.game_state.capture_mouse = true;
+                        }
+                        CurrentScreen::Title => {
+                            // Return to title screen - cursor should be unlocked
+                            state.game_state.capture_mouse = false;
+                        }
+                        _ => {
+                            // For other screens, just unlock cursor
+                            state.game_state.capture_mouse = false;
+                        }
+                    }
+                } else {
+                    // Fallback: return to game
+                    state.game_state.current_screen = CurrentScreen::Game;
+                    state.game_state.game_ui.resume_timer();
+                    state.game_state.enemy.pathfinder.locked = false;
+                    state.game_state.capture_mouse = true;
+                }
                 state.pause_menu.hide();
             }
-            crate::ui::pause_menu::PauseMenuAction::QuitToMenu => {
-                event_loop.exit();
-            }
             crate::ui::pause_menu::PauseMenuAction::Settings => {
-                // "Restart Run" button - trigger the same sequence as game over restart
+                // Restart current run - handle this after the match to avoid borrow issues
                 state.game_state.current_screen = CurrentScreen::NewGame;
-                state.game_state.capture_mouse = true;
+                state.game_state.previous_screen = None; // Clear previous screen
+                state.pause_menu.hide();
+
+                // Hide title screen elements when transitioning away from title
+                if let Some(buf) = state
+                    .text_renderer
+                    .text_buffers
+                    .get_mut("title_mirador_overlay")
+                {
+                    buf.visible = false;
+                }
+                if let Some(buf) = state
+                    .text_renderer
+                    .text_buffers
+                    .get_mut("title_subtitle_overlay")
+                {
+                    buf.visible = false;
+                }
+            }
+            crate::ui::pause_menu::PauseMenuAction::ToggleTestMode => {
+                // Toggle between test mode and normal mode
+                if state.game_state.is_test_mode {
+                    // Currently in test mode, switch to normal mode (loading screen)
+                    state.game_state.is_test_mode = false;
+                    state.game_state.current_screen = CurrentScreen::Loading;
+                    state.game_state.previous_screen = None; // Clear previous screen
+                    state.pause_menu.hide();
+
+                    // Recapture mouse when exiting test mode
+                    state.game_state.capture_mouse = true;
+
+                    // Reset to normal game state
+                    state.game_state.maze_path = None;
+                    state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
+                        &state.wgpu_renderer.device,
+                        &state.wgpu_renderer.surface_config,
+                    );
+                    // Clear previous level state
+                    state.game_state.player = Player::new();
+                    state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
+                    state.game_state.enemy.pathfinder.locked = true;
+                    state.game_state.exit_cell = None;
+
+                    // Reset score and level to starting values
+                    state.game_state.set_score(0);
+                    state.game_state.set_level(1);
+
+                    // Stop and reset timer with normal game configuration
+                    state.game_state.game_ui.timer = None; // Clear the test timer
+                    // The timer will be properly initialized when the game starts (in update_game_ui)
+
+                    // Hide title screen elements when transitioning away from title
+                    if let Some(buf) = state
+                        .text_renderer
+                        .text_buffers
+                        .get_mut("title_mirador_overlay")
+                    {
+                        buf.visible = false;
+                    }
+                    if let Some(buf) = state
+                        .text_renderer
+                        .text_buffers
+                        .get_mut("title_subtitle_overlay")
+                    {
+                        buf.visible = false;
+                    }
+                } else {
+                    // Currently in normal mode, switch to test mode
+                    state.game_state.is_test_mode = true;
+                    state.game_state.current_screen = CurrentScreen::Game;
+                    state.game_state.previous_screen = None; // Clear previous screen
+                    state.pause_menu.hide();
+
+                    // Recapture mouse for test mode
+                    state.game_state.capture_mouse = true;
+
+                    // Set up test environment
+                    setup_test_environment(&mut state.game_state, &mut state.wgpu_renderer);
+                    // Set a dummy maze path to prevent re-entry
+                    state.game_state.maze_path = Some(std::path::PathBuf::from("test_mode"));
+                }
+
+                // Hide title screen elements when transitioning away from title
+                if let Some(buf) = state
+                    .text_renderer
+                    .text_buffers
+                    .get_mut("title_mirador_overlay")
+                {
+                    buf.visible = false;
+                }
+                if let Some(buf) = state
+                    .text_renderer
+                    .text_buffers
+                    .get_mut("title_subtitle_overlay")
+                {
+                    buf.visible = false;
+                }
             }
             crate::ui::pause_menu::PauseMenuAction::Restart => {
-                // "Quit to Lobby" button - for now, do nothing (or could exit to menu)
-                // This could be changed to exit the game or go to a lobby screen
+                // Quit to lobby (title screen)
+                state.game_state.current_screen = CurrentScreen::Title;
+                state.game_state.previous_screen = None; // Clear previous screen
+                state.pause_menu.hide();
+                // Reset game state
+                state.game_state = GameState::new();
+                // Show title screen elements
+                if let Some(buf) = state
+                    .text_renderer
+                    .text_buffers
+                    .get_mut("title_mirador_overlay")
+                {
+                    buf.visible = true;
+                }
+                if let Some(buf) = state
+                    .text_renderer
+                    .text_buffers
+                    .get_mut("title_subtitle_overlay")
+                {
+                    buf.visible = true;
+                }
             }
-            _ => {}
+            crate::ui::pause_menu::PauseMenuAction::QuitToMenu => {
+                // Quit the application
+                std::process::exit(0);
+            }
+            crate::ui::pause_menu::PauseMenuAction::None => {}
         }
 
         match event {
             WindowEvent::CloseRequested => {
                 println!("The close button was pressed; stopping");
+
+                // Ensure all GPU operations are complete before shutting down
+                if let Some(state) = &mut self.state {
+                    state.wgpu_renderer.cleanup();
+                }
+
                 event_loop.exit();
             }
 
@@ -1101,6 +1292,8 @@ impl ApplicationHandler for App {
                                     match state.game_state.current_screen {
                                         CurrentScreen::Game => {
                                             // Enter pause menu
+                                            state.game_state.previous_screen =
+                                                Some(CurrentScreen::Game);
                                             state.game_state.current_screen = CurrentScreen::Pause;
                                             // Pause timer
                                             state.game_state.game_ui.pause_timer();
@@ -1108,15 +1301,52 @@ impl ApplicationHandler for App {
                                             state.game_state.enemy.pathfinder.locked = true;
                                             // Unlock cursor
                                             state.game_state.capture_mouse = false;
+                                            // Show pause menu with current test mode state
+                                            state.pause_menu.show(state.game_state.is_test_mode);
                                         }
                                         CurrentScreen::Pause => {
-                                            // Resume game
-                                            state.game_state.current_screen = CurrentScreen::Game;
-                                            state.game_state.game_ui.resume_timer();
-                                            // Unlock enemy movement
-                                            state.game_state.enemy.pathfinder.locked = false;
-                                            // Lock cursor
-                                            state.game_state.capture_mouse = true;
+                                            // Return to previous screen
+                                            if let Some(previous_screen) =
+                                                state.game_state.previous_screen
+                                            {
+                                                state.game_state.current_screen = previous_screen;
+                                                state.game_state.previous_screen = None;
+
+                                                match previous_screen {
+                                                    CurrentScreen::Game => {
+                                                        // Resume game
+                                                        state.game_state.game_ui.resume_timer();
+                                                        // Unlock enemy movement
+                                                        state.game_state.enemy.pathfinder.locked =
+                                                            false;
+                                                        // Lock cursor
+                                                        state.game_state.capture_mouse = true;
+                                                    }
+                                                    CurrentScreen::Title => {
+                                                        // Return to title screen - cursor should be unlocked
+                                                        state.game_state.capture_mouse = false;
+                                                    }
+                                                    _ => {
+                                                        // For other screens, just unlock cursor
+                                                        state.game_state.capture_mouse = false;
+                                                    }
+                                                }
+                                            } else {
+                                                // Fallback: return to title screen
+                                                state.game_state.current_screen =
+                                                    CurrentScreen::Title;
+                                                state.game_state.capture_mouse = false;
+                                            }
+                                        }
+                                        CurrentScreen::Title => {
+                                            // Enter pause menu from title screen
+                                            state.game_state.previous_screen =
+                                                Some(CurrentScreen::Title);
+                                            state.game_state.current_screen = CurrentScreen::Pause;
+                                            // Unlock cursor to allow menu interaction
+                                            state.game_state.capture_mouse = false;
+                                            // Show pause menu with current test mode state
+                                            state.pause_menu.show(state.game_state.is_test_mode);
                                         }
                                         _ => {
                                             // For all other screens, just toggle cursor lock

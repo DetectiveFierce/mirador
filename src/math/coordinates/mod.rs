@@ -18,6 +18,13 @@ pub mod constants {
     /// Standard height of the player in the world
     pub const PLAYER_HEIGHT: f32 = 50.0;
 
-    /// Size of the world floor
-    pub const FLOOR_SIZE: f32 = 3000.0;
+    /// Get the floor size based on test mode
+    /// In test mode, the floor is 1/4 the size of normal mode
+    pub fn get_floor_size(is_test_mode: bool) -> f32 {
+        if is_test_mode {
+            1500.0 // 1/4 of 3000.0
+        } else {
+            3000.0
+        }
+    }
 }

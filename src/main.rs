@@ -3,6 +3,7 @@ pub mod game;
 pub mod math;
 pub mod maze;
 pub mod renderer;
+pub mod test_mode;
 pub mod ui;
 use winit::event_loop::{ControlFlow, EventLoop};
 

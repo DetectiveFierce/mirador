@@ -30,6 +30,10 @@ impl Enemy {
     ) where
         F: Fn([f32; 3], [f32; 3]) -> bool,
     {
+        // Prevent movement if locked
+        if self.pathfinder.locked {
+            return;
+        }
         // Scale aggression based on level
         self.scale_aggression_by_level(level);
 

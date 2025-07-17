@@ -3,7 +3,7 @@
 //! This module provides functions to convert between maze grid coordinates and
 //! world coordinates, making it clear how to map between these systems.
 
-use super::constants::FLOOR_SIZE;
+use super::constants::get_floor_size;
 use crate::maze::generator::Cell;
 
 /// Converts a maze grid cell to world coordinates.
@@ -21,10 +21,15 @@ use crate::maze::generator::Cell;
 /// - X increases to the right (east)
 /// - Y increases upwards
 /// - Z increases forward (north)
-pub fn maze_to_world(cell: &Cell, maze_dimensions: (usize, usize), y_position: f32) -> [f32; 3] {
+pub fn maze_to_world(
+    cell: &Cell,
+    maze_dimensions: (usize, usize),
+    y_position: f32,
+    is_test_mode: bool,
+) -> [f32; 3] {
     let (maze_width, maze_height) = maze_dimensions;
     let max_dimension = maze_width.max(maze_height) as f32;
-    let cell_size = FLOOR_SIZE / max_dimension;
+    let cell_size = get_floor_size(is_test_mode) / max_dimension;
 
     // Calculate the world origin offset (bottom-left corner of the maze)
     let origin_x = -(maze_width as f32 * cell_size) / 2.0;
@@ -48,10 +53,14 @@ pub fn maze_to_world(cell: &Cell, maze_dimensions: (usize, usize), y_position: f
 ///
 /// # Note
 /// This function ignores the y-coordinate since the maze is 2D.
-pub fn world_to_maze(position: [f32; 3], maze_dimensions: (usize, usize)) -> Cell {
+pub fn world_to_maze(
+    position: [f32; 3],
+    maze_dimensions: (usize, usize),
+    is_test_mode: bool,
+) -> Cell {
     let (maze_width, maze_height) = maze_dimensions;
     let max_dimension = maze_width.max(maze_height) as f32;
-    let cell_size = FLOOR_SIZE / max_dimension;
+    let cell_size = get_floor_size(is_test_mode) / max_dimension;
 
     let origin_x = -(maze_width as f32 * cell_size) / 2.0;
     let origin_z = -(maze_height as f32 * cell_size) / 2.0;
@@ -77,10 +86,10 @@ pub fn world_to_maze(position: [f32; 3], maze_dimensions: (usize, usize)) -> Cel
 ///
 /// # Returns
 /// The size of a cell in world units
-pub fn calculate_cell_size(maze_dimensions: (usize, usize)) -> f32 {
+pub fn calculate_cell_size(maze_dimensions: (usize, usize), is_test_mode: bool) -> f32 {
     let (maze_width, maze_height) = maze_dimensions;
     let max_dimension = maze_width.max(maze_height) as f32;
-    FLOOR_SIZE / max_dimension
+    get_floor_size(is_test_mode) / max_dimension
 }
 
 /// Calculates the world coordinates of the bottom-left cell in the maze.
@@ -91,11 +100,15 @@ pub fn calculate_cell_size(maze_dimensions: (usize, usize)) -> f32 {
 ///
 /// # Returns
 /// The world coordinates for the bottom-left cell
-pub fn get_bottom_left_cell_position(maze_dimensions: (usize, usize), y_position: f32) -> [f32; 3] {
+pub fn get_bottom_left_cell_position(
+    maze_dimensions: (usize, usize),
+    y_position: f32,
+    is_test_mode: bool,
+) -> [f32; 3] {
     // Bottom-left cell is at (height-1, 0) in our grid system
     let (_, maze_height) = maze_dimensions;
     let bottom_left = Cell::new(maze_height - 1, 0);
-    maze_to_world(&bottom_left, maze_dimensions, y_position)
+    maze_to_world(&bottom_left, maze_dimensions, y_position, is_test_mode)
 }
 
 /// Converts a position in the maze wall grid to a position in the maze cell grid.

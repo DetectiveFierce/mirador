@@ -8,7 +8,6 @@ use crate::game::GameState;
 use crate::game::enemy::Enemy;
 use crate::math::deg_to_rad;
 use crate::math::mat::Mat4;
-use crate::maze::parse_maze_file;
 use crate::renderer::game_renderer::compass::CompassRenderer;
 use crate::renderer::game_renderer::debug::DebugRenderer;
 use crate::renderer::game_renderer::enemy::EnemyRenderer;
@@ -117,21 +116,11 @@ impl GameRenderer {
             })
             .build();
 
-        // Load wall grid from file
-        let (maze_grid, exit_cell) = parse_maze_file("src/maze/saved-mazes/test.mz");
-
-        let (mut floor_vertices, _exit_position) =
-            Vertex::create_floor_vertices(&maze_grid, exit_cell);
-
-        // Generate wall geometry
-        let mut wall_vertices = Vertex::create_wall_vertices(&maze_grid);
-
-        // Append wall vertices to floor
-        floor_vertices.append(&mut wall_vertices);
-
+        // Initialize vertex buffer - will be set up properly when maze is loaded
+        let empty_vertices: Vec<Vertex> = Vec::new();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Combined Vertex Buffer"),
-            contents: bytemuck::cast_slice(&floor_vertices),
+            label: Some("Initial Vertex Buffer"),
+            contents: bytemuck::cast_slice(&empty_vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
@@ -149,7 +138,7 @@ impl GameRenderer {
         Self {
             pipeline,
             vertex_buffer,
-            vertex_count: floor_vertices.len() as u32,
+            vertex_count: 0, // Will be set when maze is loaded
             uniform_buffer,
             uniform_bind_group,
             depth_texture: None,
@@ -237,11 +226,13 @@ impl GameRenderer {
             // Upload uniform values for the maze/floor
             queue.write_buffer(&self.uniform_buffer, 0, uniforms.as_bytes());
 
-            // Render the maze/floor
-            pass.set_pipeline(&self.pipeline);
-            pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            pass.set_bind_group(0, &self.uniform_bind_group, &[]);
-            pass.draw(0..self.vertex_count, 0..1);
+            // Render the maze/floor only if we have vertices to render
+            if self.vertex_count > 0 {
+                pass.set_pipeline(&self.pipeline);
+                pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+                pass.draw(0..self.vertex_count, 0..1);
+            }
 
             // Debug rendering for maze/floor
             if self.debug_renderer.debug_render_bounding_boxes

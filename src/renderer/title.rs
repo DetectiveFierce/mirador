@@ -323,4 +323,8 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     window.request_redraw();
     state.wgpu_renderer.queue.submit(Some(encoder.finish()));
     surface_texture.present();
+
+    // Poll the device to process any pending operations
+    // This helps ensure resources are properly cleaned up
+    state.wgpu_renderer.device.poll(wgpu::Maintain::Poll);
 }

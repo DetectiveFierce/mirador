@@ -124,26 +124,33 @@ impl Player {
         self.position[2] -= right_z * self.speed * delta_time;
     }
 
-    pub fn update_cell(&mut self, maze_grid: &[Vec<bool>]) {
+    pub fn update_cell(&mut self, maze_grid: &[Vec<bool>], is_test_mode: bool) {
         let maze_width = maze_grid[0].len();
         let maze_height = maze_grid.len();
         let maze_dimensions = (maze_width, maze_height);
 
-        self.current_cell = coordinates::world_to_maze(self.position, maze_dimensions);
+        self.current_cell =
+            coordinates::world_to_maze(self.position, maze_dimensions, is_test_mode);
     }
 
     /// Spawns the player at the bottom-left cell of the maze.
     ///
     /// # Arguments
     /// * `maze_grid` - The maze grid representing walls and passages
-    pub fn spawn_at_maze_entrance(&mut self, maze_grid: &[Vec<bool>]) {
+    /// * `is_test_mode` - Whether test mode is enabled (affects floor size)
+    pub fn spawn_at_maze_entrance(&mut self, maze_grid: &[Vec<bool>], is_test_mode: bool) {
         let maze_width = maze_grid[0].len();
         let maze_height = maze_grid.len();
         let maze_dimensions = (maze_width, maze_height);
 
         // Set the player at the bottom-left cell of the maze
         let entrance_cell = coordinates::get_bottom_left_cell(maze_dimensions);
-        self.position = coordinates::maze_to_world(&entrance_cell, maze_dimensions, PLAYER_HEIGHT);
+        self.position = coordinates::maze_to_world(
+            &entrance_cell,
+            maze_dimensions,
+            PLAYER_HEIGHT,
+            is_test_mode,
+        );
         self.current_cell = entrance_cell;
 
         // Set the initial orientation to face north (into the maze)

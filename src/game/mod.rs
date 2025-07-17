@@ -52,8 +52,12 @@ pub struct GameState {
     pub exit_cell: Option<Cell>,
     pub game_ui: GameUIManager,
     pub current_screen: CurrentScreen,
+    /// The screen that was active before entering pause menu
+    pub previous_screen: Option<CurrentScreen>,
     pub enemy: Enemy,
     pub audio_manager: GameAudioManager,
+    /// Whether the player is currently in test mode
+    pub is_test_mode: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -105,8 +109,10 @@ impl GameState {
             exit_cell: None,
             game_ui: GameUIManager::new(),
             current_screen: CurrentScreen::Title,
+            previous_screen: None,
             enemy: Enemy::new([-0.5, 30.0, 0.0], 150.0),
             audio_manager,
+            is_test_mode: false,
         }
     }
 

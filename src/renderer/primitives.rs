@@ -3,6 +3,7 @@
 //! This module provides the [`Uniforms`] struct for storing and uploading uniform data
 //! (such as transformation matrices) to the GPU, as well as helper methods for buffer and bind group creation.
 
+use crate::math::coordinates::constants::get_floor_size;
 use crate::maze::generator::Cell;
 use bytemuck::{Pod, Zeroable};
 use egui_wgpu::wgpu;
@@ -141,8 +142,9 @@ impl Vertex {
     pub fn create_floor_vertices(
         maze_grid: &[Vec<bool>],
         exit_cell: Option<Cell>,
+        is_test_mode: bool,
     ) -> (Vec<Vertex>, (f32, f32)) {
-        let floor_size = 3000.0; // Size of the square floor
+        let floor_size = get_floor_size(is_test_mode); // Use test mode to determine floor size
         let half_size = floor_size / 2.0;
 
         // Create base floor vertices
@@ -204,16 +206,18 @@ impl Vertex {
     /// Generates wall geometry for a maze grid.
     ///
     /// For each wall cell (`true`), creates the necessary wall faces (as quads) to form the maze.
+    /// When test mode is enabled, only creates perimeter walls.
     ///
     /// # Arguments
     /// * `maze_grid` - 2D grid of booleans, where `true` indicates a wall.
+    /// * `is_test_mode` - Whether test mode is enabled (affects wall generation)
     ///
     /// # Returns
     /// A vector of [`Vertex`] representing all wall faces.
-    pub fn create_wall_vertices(maze_grid: &[Vec<bool>]) -> Vec<Vertex> {
+    pub fn create_wall_vertices(maze_grid: &[Vec<bool>], is_test_mode: bool) -> Vec<Vertex> {
         let mut vertices = Vec::new();
 
-        let floor_size = 3000.0; // Match the floor size from create_floor_vertices
+        let floor_size = get_floor_size(is_test_mode); // Use test mode to determine floor size
         let maze_width = maze_grid[0].len();
         let maze_height = maze_grid.len();
 
@@ -226,48 +230,166 @@ impl Vertex {
         let origin_x = -(maze_width as f32 * cell_size) / 2.0;
         let origin_z = -(maze_height as f32 * cell_size) / 2.0;
 
-        for (z, row) in maze_grid.iter().enumerate() {
-            for (x, &is_wall) in row.iter().enumerate() {
-                if is_wall {
+        if is_test_mode {
+            // Test mode: only create perimeter walls
+            // Top wall (row 0)
+            for x in 0..maze_width {
+                if maze_grid[0][x] {
                     let wx = origin_x + x as f32 * cell_size;
+                    let wz = origin_z + 0.0 * cell_size;
+                    vertices.extend(create_z_facing_wall(wx, 0.0, wz, cell_size, wall_height));
+                }
+            }
+
+            // Bottom wall (row maze_height-1)
+            for x in 0..maze_width {
+                if maze_grid[maze_height - 1][x] {
+                    let wx = origin_x + x as f32 * cell_size;
+                    let wz = origin_z + (maze_height - 1) as f32 * cell_size;
+                    vertices.extend(create_z_facing_wall(
+                        wx,
+                        0.0,
+                        wz + cell_size,
+                        cell_size,
+                        wall_height,
+                    ));
+                }
+            }
+
+            // Left wall (column 0)
+            for z in 0..maze_height {
+                if maze_grid[z][0] {
+                    let wx = origin_x + 0.0 * cell_size;
                     let wz = origin_z + z as f32 * cell_size;
+                    vertices.extend(create_x_facing_wall(wx, 0.0, wz, cell_size, wall_height));
+                }
+            }
 
-                    // Create both X-facing and Z-facing walls for each wall cell
+            // Right wall (column maze_width-1)
+            for z in 0..maze_height {
+                if maze_grid[z][maze_width - 1] {
+                    let wx = origin_x + (maze_width - 1) as f32 * cell_size;
+                    let wz = origin_z + z as f32 * cell_size;
+                    vertices.extend(create_x_facing_wall(
+                        wx + cell_size,
+                        0.0,
+                        wz,
+                        cell_size,
+                        wall_height,
+                    ));
+                }
+            }
+        } else {
+            // Normal mode: create all walls from the maze grid
+            for (z, row) in maze_grid.iter().enumerate() {
+                for (x, &is_wall) in row.iter().enumerate() {
+                    if is_wall {
+                        let wx = origin_x + x as f32 * cell_size;
+                        let wz = origin_z + z as f32 * cell_size;
 
-                    // Check if we need an X-facing wall (along Z axis)
-                    if z == 0 || !maze_grid[z - 1][x] {
-                        vertices.extend(create_z_facing_wall(wx, 0.0, wz, cell_size, wall_height));
-                    }
+                        // Create both X-facing and Z-facing walls for each wall cell
 
-                    // Check if we need a Z-facing wall (along X axis)
-                    if x == 0 || !maze_grid[z][x - 1] {
-                        vertices.extend(create_x_facing_wall(wx, 0.0, wz, cell_size, wall_height));
-                    }
+                        // Check if we need an X-facing wall (along Z axis)
+                        if z == 0 || !maze_grid[z - 1][x] {
+                            vertices.extend(create_z_facing_wall(
+                                wx,
+                                0.0,
+                                wz,
+                                cell_size,
+                                wall_height,
+                            ));
+                        }
 
-                    // Always create the right and bottom walls if we're at the edge
-                    if z == maze_height - 1 {
-                        vertices.extend(create_z_facing_wall(
-                            wx,
-                            0.0,
-                            wz + cell_size,
-                            cell_size,
-                            wall_height,
-                        ));
-                    }
-                    if x == maze_width - 1 {
-                        vertices.extend(create_x_facing_wall(
-                            wx + cell_size,
-                            0.0,
-                            wz,
-                            cell_size,
-                            wall_height,
-                        ));
+                        // Check if we need a Z-facing wall (along X axis)
+                        if x == 0 || !maze_grid[z][x - 1] {
+                            vertices.extend(create_x_facing_wall(
+                                wx,
+                                0.0,
+                                wz,
+                                cell_size,
+                                wall_height,
+                            ));
+                        }
+
+                        // Always create the right and bottom walls if we're at the edge
+                        if z == maze_height - 1 {
+                            vertices.extend(create_z_facing_wall(
+                                wx,
+                                0.0,
+                                wz + cell_size,
+                                cell_size,
+                                wall_height,
+                            ));
+                        }
+                        if x == maze_width - 1 {
+                            vertices.extend(create_x_facing_wall(
+                                wx + cell_size,
+                                0.0,
+                                wz,
+                                cell_size,
+                                wall_height,
+                            ));
+                        }
                     }
                 }
             }
         }
 
         vertices
+    }
+
+    /// Creates a green exit patch at an arbitrary world position (centered at x, z)
+    pub fn create_exit_patch_at_world_position(
+        center: (f32, f32),
+        is_test_mode: bool,
+    ) -> Vec<Vertex> {
+        let floor_size = get_floor_size(is_test_mode); // Use test mode to determine floor size
+        // Use a patch size similar to a cell size
+        let patch_size = floor_size / 13.0; // 13 is the wall grid size for 6x6 maze
+        let (center_x, center_z) = center;
+        let y = 1.0;
+        let half = patch_size / 2.0;
+        let green_color = [0, 255, 0, 255];
+        let corners = [
+            [center_x - half, y, center_z - half], // Bottom-left
+            [center_x + half, y, center_z - half], // Bottom-right
+            [center_x + half, y, center_z + half], // Top-right
+            [center_x - half, y, center_z + half], // Top-left
+        ];
+        vec![
+            // First triangle: 0, 1, 2
+            Vertex {
+                position: corners[0],
+                color: green_color,
+                material: 4,
+            },
+            Vertex {
+                position: corners[1],
+                color: green_color,
+                material: 4,
+            },
+            Vertex {
+                position: corners[2],
+                color: green_color,
+                material: 4,
+            },
+            // Second triangle: 0, 2, 3
+            Vertex {
+                position: corners[0],
+                color: green_color,
+                material: 4,
+            },
+            Vertex {
+                position: corners[2],
+                color: green_color,
+                material: 4,
+            },
+            Vertex {
+                position: corners[3],
+                color: green_color,
+                material: 4,
+            },
+        ]
     }
 }
 
@@ -365,7 +487,7 @@ fn create_exit_cell_floor_patch(
     maze_grid: &[Vec<bool>],
     exit_cell: Cell,
 ) -> (Vec<Vertex>, (f32, f32)) {
-    let floor_size = 3000.0;
+    let floor_size = get_floor_size(false); // Normal mode for exit cell patch
     let maze_width = maze_grid[0].len();
     let maze_height = maze_grid.len();
 

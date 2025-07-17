@@ -22,6 +22,7 @@ pub enum PauseMenuAction {
     Settings,
     Restart,
     QuitToMenu,
+    ToggleTestMode,
     None,
 }
 
@@ -70,9 +71,9 @@ impl PauseMenu {
 
     fn create_menu_buttons(button_manager: &mut ButtonManager, window_size: PhysicalSize<u32>) {
         let button_width = 420.0;
-        let button_height = window_size.height as f32 * 0.13; // 13% of window height (taller buttons)
-        let button_spacing = 8.0;
-        let total_height = button_height * 4.0 + button_spacing * 3.0;
+        let button_height = window_size.height as f32 * 0.09; // 9% of window height (was 13%)
+        let button_spacing = 2.0; // was 8.0, now much closer
+        let total_height = button_height * 5.0 + button_spacing * 4.0; // 5 buttons now
         let center_x = window_size.width as f32 / 2.0;
         let start_y = (window_size.height as f32 - total_height) / 2.0;
         let text_style = Self::scaled_text_style(window_size.height as f32);
@@ -103,6 +104,17 @@ impl PauseMenu {
                     .with_anchor(ButtonAnchor::Center),
             );
 
+        // Toggle Test Mode button with goldenrod style
+        let mut test_mode_style = create_goldenrod_button_style();
+        test_mode_style.text_style = text_style.clone();
+        let test_mode_button = Button::new("toggle_test_mode", "Toggle Test Mode")
+            .with_style(test_mode_style)
+            .with_text_align(TextAlign::Center)
+            .with_position(
+                ButtonPosition::new(center_x, y(2), button_width, button_height)
+                    .with_anchor(ButtonAnchor::Center),
+            );
+
         // Restart button is now 'Quit to Lobby' with less saturated red style
         let mut restart_style = create_lobby_button_style();
         restart_style.text_style = text_style.clone();
@@ -110,7 +122,7 @@ impl PauseMenu {
             .with_style(restart_style)
             .with_text_align(TextAlign::Center)
             .with_position(
-                ButtonPosition::new(center_x, y(2), button_width, button_height)
+                ButtonPosition::new(center_x, y(3), button_width, button_height)
                     .with_anchor(ButtonAnchor::Center),
             );
 
@@ -121,7 +133,7 @@ impl PauseMenu {
             .with_style(quit_style)
             .with_text_align(TextAlign::Center)
             .with_position(
-                ButtonPosition::new(center_x, y(3), button_width, button_height)
+                ButtonPosition::new(center_x, y(4), button_width, button_height)
                     .with_anchor(ButtonAnchor::Center),
             );
 
@@ -150,6 +162,7 @@ impl PauseMenu {
         // Add buttons to manager
         button_manager.add_button(resume_button);
         button_manager.add_button(settings_button);
+        button_manager.add_button(test_mode_button);
         button_manager.add_button(restart_button);
         button_manager.add_button(quit_menu_button);
         button_manager.add_button(debug_button);
@@ -158,7 +171,7 @@ impl PauseMenu {
         button_manager.update_button_positions();
     }
 
-    pub fn show(&mut self) {
+    pub fn show(&mut self, is_test_mode: bool) {
         self.visible = true;
         self.last_action = PauseMenuAction::None;
 
@@ -168,6 +181,8 @@ impl PauseMenu {
         }
         // Ensure button text is made visible and styled immediately
         self.button_manager.update_button_states();
+        // Update the test mode button text
+        self.update_test_mode_button_text(is_test_mode);
     }
 
     pub fn hide(&mut self) {
@@ -180,11 +195,11 @@ impl PauseMenu {
         }
     }
 
-    pub fn toggle(&mut self) {
+    pub fn toggle(&mut self, is_test_mode: bool) {
         if self.visible {
             self.hide();
         } else {
-            self.show();
+            self.show(is_test_mode);
         }
     }
 
@@ -212,6 +227,10 @@ impl PauseMenu {
             self.last_action = PauseMenuAction::Restart;
         }
 
+        if self.button_manager.is_button_clicked("toggle_test_mode") {
+            self.last_action = PauseMenuAction::ToggleTestMode;
+        }
+
         if self.button_manager.is_button_clicked("quit_menu") {
             self.last_action = PauseMenuAction::QuitToMenu;
         }
@@ -234,17 +253,15 @@ impl PauseMenu {
             height: resolution.height,
         };
         // Recreate buttons with new positions if menu is visible
-        if self.visible {
-            self.recreate_buttons_for_new_size();
-        }
+        self.recreate_buttons_for_new_size();
     }
 
     fn recreate_buttons_for_new_size(&mut self) {
         let window_size = self.button_manager.window_size;
         let button_width = 420.0;
-        let button_height = window_size.height as f32 * 0.20; // 20% of window height
+        let button_height = window_size.height as f32 * 0.13; // 20% of window height
         let button_spacing = 8.0;
-        let total_height = button_height * 4.0 + button_spacing * 3.0;
+        let total_height = button_height * 5.0 + button_spacing * 4.0; // 5 buttons now
         let center_x = window_size.width as f32 / 2.0;
         let start_y = (window_size.height as f32 - total_height) / 2.0;
         let text_style = Self::scaled_text_style(window_size.height as f32);
@@ -272,12 +289,23 @@ impl PauseMenu {
             settings_button.position.anchor = ButtonAnchor::Center;
         }
 
+        if let Some(test_mode_button) = self.button_manager.get_button_mut("toggle_test_mode") {
+            test_mode_button.text = "Toggle Test Mode".to_string();
+            test_mode_button.style = create_goldenrod_button_style();
+            test_mode_button.style.text_style = text_style.clone();
+            test_mode_button.position.x = center_x;
+            test_mode_button.position.y = y(2);
+            test_mode_button.position.width = button_width;
+            test_mode_button.position.height = button_height;
+            test_mode_button.position.anchor = ButtonAnchor::Center;
+        }
+
         if let Some(restart_button) = self.button_manager.get_button_mut("restart") {
             restart_button.text = "Quit to Lobby".to_string();
             restart_button.style = create_lobby_button_style();
             restart_button.style.text_style = text_style.clone();
             restart_button.position.x = center_x;
-            restart_button.position.y = y(2);
+            restart_button.position.y = y(3);
             restart_button.position.width = button_width;
             restart_button.position.height = button_height;
             restart_button.position.anchor = ButtonAnchor::Center;
@@ -287,7 +315,7 @@ impl PauseMenu {
             quit_menu_button.style = create_danger_button_style();
             quit_menu_button.style.text_style = text_style.clone();
             quit_menu_button.position.x = center_x;
-            quit_menu_button.position.y = y(3);
+            quit_menu_button.position.y = y(4);
             quit_menu_button.position.width = button_width;
             quit_menu_button.position.height = button_height;
             quit_menu_button.position.anchor = ButtonAnchor::Center;
@@ -340,5 +368,15 @@ impl PauseMenu {
 
     pub fn is_debug_panel_visible(&self) -> bool {
         self.show_debug_panel
+    }
+
+    pub fn update_test_mode_button_text(&mut self, is_test_mode: bool) {
+        if let Some(button) = self.button_manager.get_button_mut("toggle_test_mode") {
+            if is_test_mode {
+                button.text = "Exit Test Mode".to_string();
+            } else {
+                button.text = "Enter Test Mode".to_string();
+            }
+        }
     }
 }
