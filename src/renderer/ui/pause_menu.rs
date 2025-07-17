@@ -47,27 +47,29 @@ impl PauseMenu {
     }
 
     fn scaled_text_style(window_height: f32) -> crate::renderer::text::TextStyle {
-        // 3.2% of window height for font size, 4% for line height (tweak as needed)
-        let font_size = (window_height * 0.032).max(16.0); // minimum 16px
-        let line_height = (window_height * 0.04).max(24.0);
+        // Virtual DPI scaling based on reference height
+        let reference_height = 1080.0;
+        let scale = (window_height / reference_height).clamp(0.7, 2.0);
+        let font_size = (32.0 * scale).clamp(16.0, 48.0); // 32px at 1080p, min 16, max 48
+        let line_height = (40.0 * scale).clamp(24.0, 60.0); // 40px at 1080p, min 24, max 60
         crate::renderer::text::TextStyle {
             font_family: "HankenGrotesk".to_string(),
             font_size,
             line_height,
-            color: crate::renderer::ui::buttons::create_primary_button_style()
-                .text_style
-                .color,
+            color: crate::renderer::ui::buttons::create_primary_button_style().text_style.color,
             weight: glyphon::Weight::MEDIUM,
             style: glyphon::Style::Normal,
         }
     }
 
     fn create_menu_buttons(button_manager: &mut ButtonManager, window_size: PhysicalSize<u32>) {
-        // Make button width proportional to window width, clamped to a reasonable range
-        let button_width = (window_size.width as f32 * 0.38).clamp(180.0, 480.0); // 38% of width, min 180, max 480
-        let button_height = (window_size.height as f32 * 0.09).clamp(32.0, 120.0); // 9% of height, min 32, max 120
-        let button_spacing = (window_size.height as f32 * 0.015).clamp(2.0, 16.0); // 1.5% of height, min 2, max 16
-        let total_height = button_height * 5.0 + button_spacing * 4.0; // 5 buttons now
+        let reference_height = 1080.0;
+        let scale = (window_size.height as f32 / reference_height).clamp(0.7, 2.0);
+        // Button sizing with DPI scaling
+        let button_width = (window_size.width as f32 * 0.38 * scale).clamp(180.0, 600.0);
+        let button_height = (window_size.height as f32 * 0.09 * scale).clamp(32.0, 140.0);
+        let button_spacing = (window_size.height as f32 * 0.015 * scale).clamp(2.0, 24.0);
+        let total_height = button_height * 5.0 + button_spacing * 4.0;
         let center_x = window_size.width as f32 / 2.0;
         let start_y = (window_size.height as f32 - total_height) / 2.0;
         let text_style = Self::scaled_text_style(window_size.height as f32);
@@ -135,7 +137,7 @@ impl PauseMenu {
         let mut debug_style = create_warning_button_style();
         debug_style.text_style.font_size = text_style.font_size * 0.5;
         debug_style.text_style.line_height = text_style.line_height * 0.5;
-        debug_style.padding = (2.0, 6.0); // minimal horizontal, some vertical padding
+        debug_style.padding = (2.0 * scale, 6.0 * scale); // minimal horizontal, some vertical padding
         debug_style.spacing = crate::renderer::ui::buttons::ButtonSpacing::Wrap;
         // Measure the text width for three lines
         let (_min_x, text_width, text_height) = button_manager
@@ -252,16 +254,16 @@ impl PauseMenu {
 
     fn recreate_buttons_for_new_size(&mut self) {
         let window_size = self.button_manager.window_size;
-        // Make button width proportional to window width, clamped to a reasonable range
-        let button_width = (window_size.width as f32 * 0.38).clamp(180.0, 480.0); // 38% of width, min 180, max 480
-        let button_height = (window_size.height as f32 * 0.09).clamp(32.0, 120.0); // 9% of height, min 32, max 120
-        let button_spacing = (window_size.height as f32 * 0.015).clamp(2.0, 16.0); // 1.5% of height, min 2, max 16
-        let total_height = button_height * 5.0 + button_spacing * 4.0; // 5 buttons now
+        let reference_height = 1080.0;
+        let scale = (window_size.height as f32 / reference_height).clamp(0.7, 2.0);
+        let button_width = (window_size.width as f32 * 0.38 * scale).clamp(180.0, 600.0);
+        let button_height = (window_size.height as f32 * 0.09 * scale).clamp(32.0, 140.0);
+        let button_spacing = (window_size.height as f32 * 0.015 * scale).clamp(2.0, 24.0);
+        let total_height = button_height * 5.0 + button_spacing * 4.0;
         let center_x = window_size.width as f32 / 2.0;
         let start_y = (window_size.height as f32 - total_height) / 2.0;
         let text_style = Self::scaled_text_style(window_size.height as f32);
-        let y =
-            |i: usize| start_y + button_height / 2.0 + i as f32 * (button_height + button_spacing);
+        let y = |i: usize| start_y + button_height / 2.0 + i as f32 * (button_height + button_spacing);
 
         // Update button positions and text style
         if let Some(resume_button) = self.button_manager.get_button_mut("resume") {

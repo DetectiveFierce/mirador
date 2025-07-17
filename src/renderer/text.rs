@@ -339,63 +339,56 @@ impl TextRenderer {
     }
 
     pub fn create_game_over_display(&mut self, width: u32, height: u32) {
+        // Virtual DPI scaling based on reference height
+        let reference_height = 1080.0;
+        let scale = (height as f32 / reference_height).clamp(0.7, 2.0);
         // Main "Game Over!" text - large and centered
         let game_over_style = TextStyle {
             font_family: "HankenGrotesk".to_string(),
-            font_size: 72.0,
-            line_height: 90.0,
+            font_size: (72.0 * scale).clamp(32.0, 180.0),
+            line_height: (90.0 * scale).clamp(36.0, 220.0),
             color: Color::rgb(255, 255, 255), // White color
             weight: Weight::BOLD,
             style: Style::Normal,
         };
-
         // Calculate center position for "Game Over!" text
-        // Approximate text width for centering (adjust as needed)
-        let text_width = 450.0; // Approximate width for "Game Over!" at 72px
-        let text_height = 90.0;
-
+        let text_width = 450.0 * scale; // Approximate width for "Game Over!" at scaled size
+        let text_height = 90.0 * scale;
         let game_over_position = TextPosition {
             x: (width as f32 / 2.0) - (text_width),
-            y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0, // Offset up a bit
+            y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0 * scale, // Offset up a bit
             max_width: Some(text_width),
             max_height: Some(text_height),
         };
-
         self.create_text_buffer(
             "game_over_title",
             "Game Over!",
             Some(game_over_style),
             Some(game_over_position),
         );
-
         // Restart instruction text - smaller and below the main text
         let restart_style = TextStyle {
             font_family: "HankenGrotesk".to_string(),
-            font_size: 24.0,
-            line_height: 30.0,
+            font_size: (24.0 * scale).clamp(12.0, 60.0),
+            line_height: (30.0 * scale).clamp(16.0, 80.0),
             color: Color::rgb(255, 255, 255), // White color
             weight: Weight::NORMAL,
             style: Style::Normal,
         };
-
-        // Calculate center position for restart text
-        let restart_text_width = 350.0; // Approximate width for restart message
-        let restart_text_height = 30.0;
-
+        let restart_text_width = 350.0 * scale; // Approximate width for restart message
+        let restart_text_height = 30.0 * scale;
         let restart_position = TextPosition {
             x: (width as f32 / 2.0) - (restart_text_width),
-            y: (height as f32 / 2.0) + 40.0, // Below the main text
+            y: (height as f32 / 2.0) + 40.0 * scale, // Below the main text
             max_width: Some(restart_text_width),
             max_height: Some(restart_text_height),
         };
-
         self.create_text_buffer(
             "game_over_restart",
             "Click anywhere to play again.",
             Some(restart_style),
             Some(restart_position),
         );
-
         // Initially hide the game over display
         self.hide_game_over_display();
     }
@@ -431,6 +424,8 @@ impl TextRenderer {
     /// Update game over display for different screen sizes (call on window resize)
     /// Update game over display for different screen sizes (call on window resize)
     pub fn update_game_over_position(&mut self, width: u32, height: u32) -> Result<(), String> {
+        let reference_height = 1080.0;
+        let scale = (height as f32 / reference_height).clamp(0.7, 2.0);
         // Get the styles from existing buffers to measure text
         let game_over_style = self
             .text_buffers
@@ -438,49 +433,145 @@ impl TextRenderer {
             .map(|buffer| buffer.style.clone())
             .unwrap_or_else(|| TextStyle {
                 font_family: "HankenGrotesk".to_string(),
-                font_size: 72.0,
-                line_height: 90.0,
+                font_size: (72.0 * scale).clamp(32.0, 180.0),
+                line_height: (90.0 * scale).clamp(36.0, 220.0),
                 color: Color::rgb(255, 255, 255),
                 weight: Weight::BOLD,
                 style: Style::Normal,
             });
-
         let restart_style = self
             .text_buffers
             .get("game_over_restart")
             .map(|buffer| buffer.style.clone())
             .unwrap_or_else(|| TextStyle {
                 font_family: "HankenGrotesk".to_string(),
-                font_size: 24.0,
-                line_height: 30.0,
+                font_size: (24.0 * scale).clamp(12.0, 60.0),
+                line_height: (30.0 * scale).clamp(16.0, 80.0),
                 color: Color::rgb(255, 255, 255),
                 weight: Weight::NORMAL,
                 style: Style::Normal,
             });
-
         // Measure the actual text dimensions
         let (_, text_width, text_height) = self.measure_text("Game Over!", &game_over_style);
         let (_, restart_text_width, restart_text_height) =
             self.measure_text("Click anywhere to play again.", &restart_style);
-
         // Update main title position
         let game_over_position = TextPosition {
             x: (width as f32 / 2.0) - (text_width / 2.0),
-            y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0,
-            max_width: Some(text_width + 20.0), // Add some padding
-            max_height: Some(text_height + 10.0), // Add some padding
+            y: (height as f32 / 2.0) - (text_height / 2.0) - 50.0 * scale,
+            max_width: Some(text_width + 20.0 * scale), // Add some padding
+            max_height: Some(text_height + 10.0 * scale), // Add some padding
         };
         self.update_position("game_over_title", game_over_position)?;
-
         // Update restart text position
         let restart_position = TextPosition {
             x: (width as f32 / 2.0) - (restart_text_width / 2.0),
-            y: (height as f32 / 2.0) + 40.0,
-            max_width: Some(restart_text_width + 20.0), // Add some padding
-            max_height: Some(restart_text_height + 10.0), // Add some padding
+            y: (height as f32 / 2.0) + 40.0 * scale,
+            max_width: Some(restart_text_width + 20.0 * scale), // Add some padding
+            max_height: Some(restart_text_height + 10.0 * scale), // Add some padding
         };
         self.update_position("game_over_restart", restart_position)?;
-
         Ok(())
+    }
+
+    /// Handle game over text auto-sizing and positioning (similar to title screen)
+    /// This function dynamically updates font sizes, line heights, and positions based on window dimensions
+    pub fn handle_game_over_text(&mut self, width: u32, height: u32) {
+        let width = width as f32;
+        let height = height as f32;
+        
+        // Apply DPI scaling based on height (consistent with other UI elements)
+        let reference_height = 1080.0;
+        let scale = (height / reference_height).clamp(0.7, 2.0);
+        
+        // Dynamically scale font sizes with DPI scaling
+        let title_font_size = (width * 0.12 * scale).clamp(48.0, 240.0); // 12% of width, min 48, max 240
+        let title_line_height = (title_font_size * 1.25).clamp(60.0, 300.0);
+        let subtitle_font_size = (width * 0.025 * scale).clamp(16.0, 120.0); // 2.5% of width, min 16, max 120
+        let subtitle_line_height = (subtitle_font_size * 1.3).clamp(20.0, 156.0);
+        
+        // Update game over title
+        if let Some(title_buffer) = self.text_buffers.get_mut("game_over_title") {
+            let mut style = title_buffer.style.clone();
+            style.font_size = title_font_size;
+            style.line_height = title_line_height;
+            let text = title_buffer.text_content.clone();
+            
+            let _ = self.update_style("game_over_title", style.clone());
+            let (_min_x, text_width, text_height) = self.measure_text(&text, &style);
+            
+            let pos = TextPosition {
+                x: (width / 2.0) - (text_width / 2.0),
+                y: (height / 2.0) - (text_height / 2.0) - 60.0 * scale,
+                max_width: Some(text_width + 40.0 * scale), // Add padding to prevent clipping
+                max_height: Some(text_height + 20.0 * scale),
+            };
+            let _ = self.update_position("game_over_title", pos);
+        }
+        
+        // Update restart text
+        if let Some(restart_buffer) = self.text_buffers.get_mut("game_over_restart") {
+            let mut style = restart_buffer.style.clone();
+            style.font_size = subtitle_font_size;
+            style.line_height = subtitle_line_height;
+            let text = restart_buffer.text_content.clone();
+            
+            let _ = self.update_style("game_over_restart", style.clone());
+            let (_min_x, text_width, text_height) = self.measure_text(&text, &style);
+            
+            let pos = TextPosition {
+                x: (width / 2.0) - (text_width / 2.0),
+                y: (height / 2.0) + 60.0 * scale,
+                max_width: Some(text_width + 60.0 * scale), // Add more padding for subtitle to prevent clipping
+                max_height: Some(text_height + 30.0 * scale),
+            };
+            let _ = self.update_position("game_over_restart", pos);
+        }
+    }
+
+    /// Handle score and level text auto-sizing and positioning (smaller than subtitles)
+    /// This function dynamically updates font sizes, line heights, and positions based on window dimensions
+    pub fn handle_score_and_level_text(&mut self, width: u32, height: u32) {
+        let width = width as f32;
+        let height = height as f32;
+        let reference_height = 1080.0;
+        let scale = (height / reference_height).clamp(0.7, 2.0);
+        // Make this text smaller than subtitles, but more legible on high-DPI
+        let font_size = (width * 0.022 * scale).clamp(16.0, 48.0); // 2.2% of width, min 16, max 48
+        let line_height = (font_size * 1.25).clamp(20.0, 60.0);
+        let padding_x = 32.0 * scale;
+        let padding_y = 24.0 * scale;
+        // Score text
+        if let Some(score_buffer) = self.text_buffers.get_mut("score") {
+            let mut style = score_buffer.style.clone();
+            style.font_size = font_size;
+            style.line_height = line_height;
+            let text = score_buffer.text_content.clone();
+            let _ = self.update_style("score", style.clone());
+            let (_min_x, text_width, text_height) = self.measure_text(&text, &style);
+            let pos = TextPosition {
+                x: padding_x,
+                y: padding_y,
+                max_width: Some(text_width + 20.0 * scale),
+                max_height: Some(text_height + 10.0 * scale),
+            };
+            let _ = self.update_position("score", pos);
+        }
+        // Level text (place below score)
+        if let Some(level_buffer) = self.text_buffers.get_mut("level") {
+            let mut style = level_buffer.style.clone();
+            style.font_size = font_size;
+            style.line_height = line_height;
+            let text = level_buffer.text_content.clone();
+            let _ = self.update_style("level", style.clone());
+            let (_min_x, text_width, text_height) = self.measure_text(&text, &style);
+            let pos = TextPosition {
+                x: padding_x,
+                y: padding_y + line_height + 8.0 * scale, // 8px vertical gap
+                max_width: Some(text_width + 20.0 * scale),
+                max_height: Some(text_height + 10.0 * scale),
+            };
+            let _ = self.update_position("level", pos);
+        }
     }
 }

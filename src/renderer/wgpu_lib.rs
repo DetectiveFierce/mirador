@@ -306,6 +306,12 @@ impl WgpuRenderer {
         // Render game over overlay
         self.render_game_over_overlay(encoder, surface_view, window);
 
+        // Apply auto-sizing logic to game over text (similar to title screen)
+        text_renderer.handle_game_over_text(
+            self.surface_config.width,
+            self.surface_config.height,
+        );
+
         // Animate the game over restart text color (fade from black to white and back)
         let restart_color = {
             if let Some(buf) = text_renderer.text_buffers.get_mut("game_over_restart") {
@@ -427,6 +433,12 @@ impl WgpuRenderer {
 
         // Render compass
         self.render_compass(encoder, surface_view, game_state, window);
+
+        // Auto-size and position score and level text
+        text_renderer.handle_score_and_level_text(
+            self.surface_config.width,
+            self.surface_config.height,
+        );
 
         // Render text
         self.render_text(encoder, surface_view, text_renderer);

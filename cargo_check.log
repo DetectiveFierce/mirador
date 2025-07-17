@@ -1,0 +1,159 @@
+    Checking mirador v0.1.0 (/home/aidan/Landing Zone/Rust Projects/mirador)
+error[E0432]: unresolved imports `crate::renderer::ui::buttons::create_danger_button_style`, `crate::renderer::ui::buttons::create_goldenrod_button_style`, `crate::renderer::ui::buttons::create_lobby_button_style`, `crate::renderer::ui::buttons::create_primary_button_style`, `crate::renderer::ui::buttons::create_warning_button_style`
+ --> src/renderer/ui/pause_menu.rs:2:69
+  |
+2 |     Button, ButtonAnchor, ButtonManager, ButtonPosition, TextAlign, create_danger_button_style,
+  |                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ no `create_danger_button_style` in `renderer::ui::buttons`
+3 |     create_goldenrod_button_style, create_lobby_button_style, create_primary_button_style,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `create_primary_button_style` in `renderer::ui::buttons`
+  |     |                              |
+  |     |                              no `create_lobby_button_style` in `renderer::ui::buttons`
+  |     no `create_goldenrod_button_style` in `renderer::ui::buttons`
+4 |     create_warning_button_style,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `create_warning_button_style` in `renderer::ui::buttons`
+  |
+help: a similar name exists in the module
+  |
+2 |     Button, ButtonAnchor, ButtonManager, ButtonPosition, TextAlign, create_ghost_button_style,
+  |                                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~
+help: a similar name exists in the module
+  |
+3 |     create_outline_button_style, create_lobby_button_style, create_primary_button_style,
+  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+help: a similar name exists in the module
+  |
+3 |     create_goldenrod_button_style, create_ghost_button_style, create_primary_button_style,
+  |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~
+help: a similar name exists in the module
+  |
+3 |     create_goldenrod_button_style, create_lobby_button_style, create_outline_button_style,
+  |                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+help: a similar name exists in the module
+  |
+4 |     create_outline_button_style,
+  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+error[E0425]: cannot find function `create_primary_button_style_with_scale` in this scope
+  --> src/renderer/ui/pause_menu.rs:71:32
+   |
+71 |         let mut resume_style = create_primary_button_style_with_scale(scale_factor);
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use crate::renderer::ui::buttons::create_primary_button_style_with_scale;
+   |
+
+error[E0425]: cannot find function `create_goldenrod_button_style_with_scale` in this scope
+  --> src/renderer/ui/pause_menu.rs:80:34
+   |
+80 |         let mut settings_style = create_goldenrod_button_style_with_scale(scale_factor);
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use crate::renderer::ui::buttons::create_goldenrod_button_style_with_scale;
+   |
+
+error[E0425]: cannot find function `create_goldenrod_button_style_with_scale` in this scope
+  --> src/renderer/ui/pause_menu.rs:89:35
+   |
+89 |         let mut test_mode_style = create_goldenrod_button_style_with_scale(scale_factor);
+   |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use crate::renderer::ui::buttons::create_goldenrod_button_style_with_scale;
+   |
+
+error[E0425]: cannot find function `create_lobby_button_style_with_scale` in this scope
+  --> src/renderer/ui/pause_menu.rs:98:33
+   |
+98 |         let mut restart_style = create_lobby_button_style_with_scale(scale_factor);
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use crate::renderer::ui::buttons::create_lobby_button_style_with_scale;
+   |
+
+error[E0425]: cannot find function `create_danger_button_style_with_scale` in this scope
+   --> src/renderer/ui/pause_menu.rs:107:30
+    |
+107 |         let mut quit_style = create_danger_button_style_with_scale(scale_factor);
+    |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::renderer::ui::buttons::create_danger_button_style_with_scale;
+    |
+
+error[E0425]: cannot find function `create_warning_button_style_with_scale` in this scope
+   --> src/renderer/ui/pause_menu.rs:116:31
+    |
+116 |         let mut debug_style = create_warning_button_style_with_scale(scale_factor);
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::renderer::ui::buttons::create_warning_button_style_with_scale;
+    |
+
+error[E0425]: cannot find function `create_goldenrod_button_style_with_scale` in this scope
+   --> src/renderer/ui/pause_menu.rs:255:37
+    |
+255 |             settings_button.style = create_goldenrod_button_style_with_scale(scale_factor);
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::renderer::ui::buttons::create_goldenrod_button_style_with_scale;
+    |
+
+error[E0425]: cannot find function `create_goldenrod_button_style_with_scale` in this scope
+   --> src/renderer/ui/pause_menu.rs:266:38
+    |
+266 |             test_mode_button.style = create_goldenrod_button_style_with_scale(scale_factor);
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::renderer::ui::buttons::create_goldenrod_button_style_with_scale;
+    |
+
+error[E0425]: cannot find function `create_lobby_button_style_with_scale` in this scope
+   --> src/renderer/ui/pause_menu.rs:277:36
+    |
+277 |             restart_button.style = create_lobby_button_style_with_scale(scale_factor);
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::renderer::ui::buttons::create_lobby_button_style_with_scale;
+    |
+
+error[E0425]: cannot find function `create_danger_button_style_with_scale` in this scope
+   --> src/renderer/ui/pause_menu.rs:287:38
+    |
+287 |             quit_menu_button.style = create_danger_button_style_with_scale(scale_factor);
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::renderer::ui::buttons::create_danger_button_style_with_scale;
+    |
+
+error[E0425]: cannot find function `create_warning_button_style_with_scale` in this scope
+   --> src/renderer/ui/pause_menu.rs:305:18
+    |
+305 |                 (create_warning_button_style_with_scale(scale_factor).text_style, (2.0 * scale_factor, 6.0 * scale_factor))
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::renderer::ui::buttons::create_warning_button_style_with_scale;
+    |
+
+Some errors have detailed explanations: E0425, E0432.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `mirador` (bin "mirador") due to 12 previous errors

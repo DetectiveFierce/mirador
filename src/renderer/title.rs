@@ -220,11 +220,17 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     // --- Dynamic placement for title and subtitle overlays ---
     let width = state.wgpu_renderer.surface_config.width as f32;
     let height = state.wgpu_renderer.surface_config.height as f32;
-    // Dynamically scale font sizes
-    let title_font_size = (width * 0.09).clamp(48.0, 220.0); // 9% of width, min 48, max 220
+    
+    // Apply DPI scaling based on height (consistent with other UI elements)
+    let reference_height = 1080.0;
+    let scale = (height / reference_height).clamp(0.7, 2.0);
+    
+    // Dynamically scale font sizes with DPI scaling
+    let title_font_size = (width * 0.09 * scale).clamp(48.0, 220.0); // 9% of width, min 48, max 220
     let title_line_height = (title_font_size * 1.2).clamp(60.0, 260.0);
-    let subtitle_font_size = (width * 0.018).clamp(14.0, 48.0); // 1.8% of width, min 14, max 48
-    let subtitle_line_height = (subtitle_font_size * 1.3).clamp(18.0, 64.0);
+    let subtitle_font_size = (width * 0.018 * scale).clamp(14.0, 96.0); // 1.8% of width, min 14, max 96 (increased max)
+    let subtitle_line_height = (subtitle_font_size * 1.3).clamp(18.0, 128.0); // increased max
+    
     // Gather info for both overlays first to avoid borrow checker issues
     let title_overlay_info = state
         .text_renderer
@@ -259,8 +265,8 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
         let pos = crate::renderer::text::TextPosition {
             x: width - text_width - margin_right,
             y: margin_top,
-            max_width: Some(text_width),
-            max_height: Some(text_height),
+            max_width: Some(text_width + 20.0 * scale), // Add padding to prevent clipping
+            max_height: Some(text_height + 10.0 * scale),
         };
         let _ = state
             .text_renderer
@@ -276,8 +282,8 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
         let pos = crate::renderer::text::TextPosition {
             x: width - text_width - margin_right,
             y: height - text_height - margin_bottom,
-            max_width: Some(text_width),
-            max_height: Some(text_height),
+            max_width: Some(text_width + 40.0 * scale), // Add more padding for subtitle to prevent clipping
+            max_height: Some(text_height + 20.0 * scale),
         };
         let _ = state
             .text_renderer
