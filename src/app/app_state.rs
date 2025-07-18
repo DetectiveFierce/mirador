@@ -28,7 +28,7 @@ pub struct AppState {
     pub start_time: Instant,
     pub elapsed_time: Duration,
     pub pause_menu: crate::renderer::ui::pause_menu::PauseMenu,
-    pub game_over_start_time: Option<Instant>,
+    pub upgrade_menu: crate::renderer::ui::upgrade_menu::UpgradeMenu,
 }
 
 impl AppState {
@@ -72,6 +72,13 @@ impl AppState {
         text_renderer.create_game_over_display(width, height);
 
         let pause_menu = crate::renderer::ui::pause_menu::PauseMenu::new(
+            &wgpu_renderer.device,
+            &wgpu_renderer.queue,
+            wgpu_renderer.surface_config.format,
+            window,
+        );
+
+        let upgrade_menu = crate::renderer::ui::upgrade_menu::UpgradeMenu::new(
             &wgpu_renderer.device,
             &wgpu_renderer.queue,
             wgpu_renderer.surface_config.format,
@@ -136,7 +143,7 @@ impl AppState {
             start_time: Instant::now(),
             elapsed_time: Duration::default(),
             pause_menu,
-            game_over_start_time: None,
+            upgrade_menu,
         }
     }
 
@@ -296,7 +303,6 @@ impl AppState {
             println!("Timer expired! Game over.");
             self.game_state.stop_game_timer();
             self.game_state.current_screen = CurrentScreen::GameOver;
-            self.game_over_start_time = Some(Instant::now());
         }
 
         if self.game_state.enemy.pathfinder.reached_player {

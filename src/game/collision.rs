@@ -19,7 +19,7 @@
 //! 1. Walls are extracted from the maze and converted to [`WallFace`] objects
 //! 2. A [`BVH`] tree is constructed to spatially organize these faces
 //! 3. When the player moves, potential collisions are efficiently queried using the BVH
-//! 4. Collisions are resolved with physical realism using vector projection (wall sliding)
+//! 4. Collisions are resolved with physically realistic using vector projection (wall sliding)
 //!
 //! # Performance Considerations
 //!

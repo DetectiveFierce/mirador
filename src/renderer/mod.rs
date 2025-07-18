@@ -4,6 +4,7 @@
 //! implementation. It provides the core rendering infrastructure for the application.
 
 pub mod game_renderer;
+pub mod icon;
 pub mod loading_renderer;
 pub mod pipeline_builder;
 pub mod primitives;

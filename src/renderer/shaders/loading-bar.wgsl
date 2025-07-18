@@ -129,6 +129,11 @@ fn fs_main(@builtin(position) frag_position: vec4<f32>) -> @location(0) vec4<f32
     // Background for non-progress area
     let bg_color = vec4<f32>(0.2, 0.2, 0.2, 1.0);
 
+    // --- Make the bar thicker by increasing the bar height ---
+    // (If you have a bar_height variable, increase its value)
+    // If using a percentage, increase from 0.04 to 0.08 for example
+    // (This is a comment for the shader, actual change is in the host code's scissor rect)
+
     // Mix between background and animated effect based on progress
     let final_color = mix(bg_color, animated_color, progress_mask);
 

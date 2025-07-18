@@ -307,10 +307,7 @@ impl WgpuRenderer {
         self.render_game_over_overlay(encoder, surface_view, window);
 
         // Apply auto-sizing logic to game over text (similar to title screen)
-        text_renderer.handle_game_over_text(
-            self.surface_config.width,
-            self.surface_config.height,
-        );
+        text_renderer.handle_game_over_text(self.surface_config.width, self.surface_config.height);
 
         // Animate the game over restart text color (fade from black to white and back)
         let restart_color = {
@@ -395,8 +392,58 @@ impl WgpuRenderer {
             occlusion_query_set: None,
             timestamp_writes: None,
         });
+        // DO NOT set a scissor rect for the timer bar overlay!
         self.game_renderer
             .timer_bar_renderer
+            .render(&mut overlay_pass);
+    }
+
+    fn render_stamina_bar_overlay(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        surface_view: &TextureView,
+        game_state: &GameState,
+        window: &winit::window::Window,
+    ) {
+        if game_state.current_screen != crate::game::CurrentScreen::Game {
+            return;
+        }
+        let progress = game_state.player.stamina_ratio();
+        let time = self
+            .game_renderer
+            .stamina_bar_renderer
+            .start_time
+            .elapsed()
+            .as_secs_f32();
+        let window_size = window.inner_size();
+        let resolution = [window_size.width as f32, window_size.height as f32];
+        let bar_height = (window_size.height as f32 * 0.0125).ceil() as u32; // 1.25% of window height, matches loading bar style
+        let bar_width = window_size.width;
+        let bar_x = 0u32;
+        let bar_y = 0u32; // Very top of the screen
+        self.game_renderer.stamina_bar_renderer.update_uniforms(
+            &self.queue,
+            progress,
+            resolution,
+            time,
+        );
+        let mut overlay_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Stamina Bar Overlay Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: surface_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+        overlay_pass.set_scissor_rect(bar_x, bar_y, bar_width, bar_height);
+        self.game_renderer
+            .stamina_bar_renderer
             .render(&mut overlay_pass);
     }
 
@@ -430,15 +477,15 @@ impl WgpuRenderer {
 
         // Render timer bar overlay (after main pass, no depth)
         self.render_timer_bar_overlay(encoder, surface_view, game_state, window);
+        // Render stamina bar overlay below timer bar
+        self.render_stamina_bar_overlay(encoder, surface_view, game_state, window);
 
         // Render compass
         self.render_compass(encoder, surface_view, game_state, window);
 
         // Auto-size and position score and level text
-        text_renderer.handle_score_and_level_text(
-            self.surface_config.width,
-            self.surface_config.height,
-        );
+        text_renderer
+            .handle_score_and_level_text(self.surface_config.width, self.surface_config.height);
 
         // Render text
         self.render_text(encoder, surface_view, text_renderer);

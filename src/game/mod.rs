@@ -10,6 +10,7 @@ pub mod enemy;
 pub mod keys;
 pub mod maze;
 pub mod player;
+pub mod upgrades;
 use self::audio::GameAudioManager;
 use self::collision::CollisionSystem;
 use self::player::Player;
@@ -76,6 +77,7 @@ pub enum CurrentScreen {
     Pause,
     GameOver,
     NewGame,
+    UpgradeMenu,
 }
 
 impl Default for GameState {

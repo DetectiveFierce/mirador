@@ -37,6 +37,8 @@ pub enum GameKey {
     Escape,
     /// Toggle Bounding Boxes (B).
     ToggleBoundingBoxes,
+    /// Toggle Upgrade Menu (U).
+    ToggleUpgradeMenu,
 }
 
 /// Tracks the set of currently pressed game keys.
@@ -84,19 +86,21 @@ impl KeyState {
     /// - Handles mouse and escape key actions.
     pub fn update(&mut self, game_state: &mut GameState) {
         // Handle sprint speed changes
-        let is_sprinting = self.is_pressed(GameKey::Sprint);
-        if is_sprinting {
-            game_state.player.speed = game_state.player.base_speed * 2.0;
-        } else {
-            game_state.player.speed = game_state.player.base_speed;
-        }
-
-        // Check movement keys
+        let is_sprinting = self.is_pressed(GameKey::Sprint) && game_state.player.stamina > 0.0;
         let forward = self.is_pressed(GameKey::MoveForward);
         let backward = self.is_pressed(GameKey::MoveBackward);
         let left = self.is_pressed(GameKey::MoveLeft);
         let right = self.is_pressed(GameKey::MoveRight);
         let is_moving = forward || backward || left || right;
+        // Update stamina
+        game_state
+            .player
+            .update_stamina(is_sprinting, is_moving, game_state.delta_time);
+        if is_sprinting {
+            game_state.player.speed = game_state.player.base_speed * 2.0;
+        } else {
+            game_state.player.speed = game_state.player.base_speed;
+        }
 
         if game_state.current_screen != CurrentScreen::Game {
             game_state
@@ -215,7 +219,7 @@ pub fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
             "c" => GameKey::ToggleSliders,
             "q" => GameKey::Quit,
             "b" => GameKey::ToggleBoundingBoxes,
-
+            "u" => GameKey::ToggleUpgradeMenu,
         }),
 
         _ => None,

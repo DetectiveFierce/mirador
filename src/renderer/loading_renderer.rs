@@ -102,7 +102,18 @@ impl LoadingRenderer {
         self.maze_renderer.render(render_pass);
 
         // Render loading bar overlay with animated effect
-        self.loading_bar_renderer.render(render_pass, window);
+        let window_size = window.inner_size();
+        let bar_width = window_size.width;
+        let bar_height = (window_size.height as f32 * 0.0125).ceil() as u32; // Match stamina bar thickness
+        let bar_x = 0u32;
+        let bar_y = 0u32;
+        self.loading_bar_renderer.render_with_scissor(
+            render_pass,
+            bar_x,
+            bar_y,
+            bar_width,
+            bar_height,
+        );
 
         // Render exit cell effect if maze has an exit
         if let Ok(maze_guard) = self.maze.lock() {
@@ -111,6 +122,8 @@ impl LoadingRenderer {
                     render_pass,
                     window,
                     (exit_cell.col, exit_cell.row),
+                    maze_guard.width,
+                    maze_guard.height,
                 );
             }
         }
@@ -289,6 +302,20 @@ impl LoadingBarRenderer {
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.draw(0..3, 0..1); // Full-screen triangle, but clipped to loading bar
     }
+
+    pub fn render_with_scissor(
+        &self,
+        render_pass: &mut wgpu::RenderPass,
+        bar_x: u32,
+        bar_y: u32,
+        bar_width: u32,
+        bar_height: u32,
+    ) {
+        render_pass.set_scissor_rect(bar_x, bar_y, bar_width, bar_height);
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.draw(0..3, 0..1);
+    }
 }
 
 pub struct ExitShaderRenderer {
@@ -351,41 +378,37 @@ impl ExitShaderRenderer {
         render_pass: &mut wgpu::RenderPass,
         window: &winit::window::Window,
         exit_cell: (usize, usize),
+        maze_width: usize,
+        maze_height: usize,
     ) {
-        // Calculate scissor rectangle for the exit cell
-        let grid_size = 25.0;
-        let shrink_factor = 0.845;
-        let border = 3.0;
+        // Use the same pixel math as Maze::get_render_data
+        let cell_px = 4.0;
+        let wall_px = 1.0;
+        let render_width = maze_width as f32 * cell_px + (maze_width as f32 + 1.0) * wall_px;
+        let render_height = maze_height as f32 * cell_px + (maze_height as f32 + 1.0) * wall_px;
 
         let window_size = window.inner_size();
-        let total_width = window_size.width as f32;
-        let total_height = window_size.height as f32;
+        let win_w = window_size.width as f32;
+        let win_h = window_size.height as f32;
 
-        let usable_width = total_width - 2.0 * border;
-        let usable_height = total_height - 2.0 * border;
+        // Compute the exit cell's pixel rectangle in the texture
+        let col = exit_cell.0 as f32;
+        let row = exit_cell.1 as f32;
+        let x = col * (cell_px + wall_px) + wall_px;
+        let y = row * (cell_px + wall_px) + wall_px;
+        let w = cell_px;
+        let h = cell_px;
 
-        let cell_width = usable_width / grid_size;
-        let cell_height = usable_height / grid_size;
+        // Scale to window coordinates (since the texture is stretched to fill the window)
+        let scissor_x = ((x / render_width) * win_w).round().max(0.0) as u32;
+        let scissor_y = ((y / render_height) * win_h).round().max(0.0) as u32;
+        let scissor_width = ((w / render_width) * win_w).round().max(1.0) as u32;
+        let scissor_height = ((h / render_height) * win_h).round().max(1.0) as u32;
 
-        let full_x = border + exit_cell.0 as f32 * cell_width;
-        let full_y = border + exit_cell.1 as f32 * cell_height;
-
-        let shrunk_width = cell_width * shrink_factor;
-        let shrunk_height = cell_height * shrink_factor;
-
-        let offset_x = (cell_width - shrunk_width) / 2.0;
-        let offset_y = (cell_height - shrunk_height) / 2.0;
-
-        let scissor_x = (full_x + offset_x).round() as u32;
-        let scissor_y = (full_y + offset_y).round() as u32;
-        let scissor_width = shrunk_width.round() as u32;
-        let scissor_height = shrunk_height.round() as u32;
-
-        // Set scissor rect and render
         render_pass.set_scissor_rect(scissor_x, scissor_y, scissor_width, scissor_height);
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
-        render_pass.draw(0..3, 0..1); // Full-screen triangle
+        render_pass.draw(0..3, 0..1);
     }
 }
 

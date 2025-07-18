@@ -43,7 +43,41 @@ impl App {
             state.handle_loading_screen(window);
         } else if state.game_state.current_screen == CurrentScreen::Title {
             crate::renderer::title::handle_title(state, window);
+            state.upgrade_menu.upgrade_manager.player_upgrades.clear();
+            state.game_state.player = crate::game::player::Player::new();
+            state.game_state.enemy = crate::game::enemy::Enemy::new([0.0, 30.0, 0.0], 150.0);
             return;
+        } else if state.game_state.current_screen == CurrentScreen::UpgradeMenu {
+            // Handle upgrade menu - just update it, rendering is handled separately
+            state.upgrade_menu.update();
+            // Pass player and game_state to handle_input if needed (if input is handled here)
+
+            // Check if upgrade menu is no longer visible (upgrade was selected)
+            if !state.upgrade_menu.is_visible() {
+                // Continue to next level
+                state.game_state.current_screen = CurrentScreen::Loading;
+                // Recapture mouse when leaving upgrade menu
+                state.game_state.capture_mouse = true;
+                if let Some(window) = self.window.as_ref() {
+                    state.triage_mouse(window);
+                }
+                {
+                    // Limit the mutable borrow of self/state to this block
+                    self.new_level(false);
+                }
+                // Now that the mutable borrow is released, we can safely borrow state again
+                let state = self
+                    .state
+                    .as_mut()
+                    .expect("State must be initialized before use");
+                state
+                    .upgrade_menu
+                    .apply_upgrade_effects(&mut state.game_state);
+                return;
+            } else {
+                state.game_state.capture_mouse = false;
+            }
+            // Don't return early - let the normal rendering pipeline continue
         } else {
             state.game_state.player.update_cell(
                 &state
@@ -253,6 +287,75 @@ impl App {
                 .clear_rectangles();
         }
 
+        // If in upgrade menu, render the upgrade menu on top
+        if state.game_state.current_screen == CurrentScreen::UpgradeMenu {
+            // Prepare the upgrade menu
+            if let Err(e) = state.upgrade_menu.prepare(
+                &state.wgpu_renderer.device,
+                &state.wgpu_renderer.queue,
+                &state.wgpu_renderer.surface_config,
+            ) {
+                println!("Failed to prepare upgrade menu: {}", e);
+            }
+
+            // Create a render pass for the upgrade menu
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &surface_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                label: Some("upgrade menu render pass"),
+                occlusion_query_set: None,
+            });
+
+            // --- Add semi-transparent overlay for upgrade menu ---
+            let overlay_color = [0.08, 0.09, 0.11, 0.88]; // darker, neutral semi-transparent grey
+            let (w, h) = (
+                state.wgpu_renderer.surface_config.width as f32,
+                state.wgpu_renderer.surface_config.height as f32,
+            );
+            state
+                .upgrade_menu
+                .button_manager
+                .rectangle_renderer
+                .add_rectangle(crate::renderer::rectangle::Rectangle::new(
+                    0.0,
+                    0.0,
+                    w,
+                    h,
+                    overlay_color,
+                ));
+            state
+                .upgrade_menu
+                .button_manager
+                .rectangle_renderer
+                .render(&state.wgpu_renderer.device, &mut render_pass);
+
+            // Render the upgrade menu (rectangles + text)
+            if let Err(e) = state
+                .upgrade_menu
+                .render(&state.wgpu_renderer.device, &mut render_pass)
+            {
+                println!("Failed to render upgrade menu: {}", e);
+            }
+        } else {
+            if state.upgrade_menu.is_visible() {
+                state.upgrade_menu.hide();
+            }
+            // Explicitly clear rectangles if menu is not visible
+            state
+                .upgrade_menu
+                .button_manager
+                .rectangle_renderer
+                .clear_rectangles();
+        }
+
         window.request_redraw();
 
         // Submit commands and present
@@ -285,13 +388,26 @@ impl App {
             self.handle_maze_generation();
         } else if state.game_state.current_screen == CurrentScreen::NewGame {
             state.text_renderer.hide_game_over_display();
+            state.upgrade_menu.upgrade_manager.player_upgrades.clear();
+            state.game_state.player = crate::game::player::Player::new();
+            state.game_state.enemy = crate::game::enemy::Enemy::new([0.0, 30.0, 0.0], 150.0);
             self.new_level(true);
         } else if state.game_state.current_screen == CurrentScreen::Game
             && Some(state.game_state.player.current_cell) == state.game_state.exit_cell
         {
             state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
             state.game_state.enemy.pathfinder.locked = true;
-            self.new_level(false);
+
+            // Check if we should show upgrade menu (every 3 levels)
+            let current_level = state.game_state.game_ui.level;
+            if current_level > 0 && current_level % 3 == 0 {
+                // Show upgrade menu
+                state.game_state.current_screen = CurrentScreen::UpgradeMenu;
+                state.upgrade_menu.show();
+            } else {
+                // Continue to next level
+                self.new_level(false);
+            }
         } else if state.game_state.current_screen == CurrentScreen::Game {
             state
                 .game_state
@@ -411,6 +527,42 @@ impl App {
                     .complete()
                     .expect("Failed to play complete sound!");
 
+                // --- DEBUG PRINT: Applied Upgrades and Stats (print once, with complete sound) ---
+                println!("\n=== [DEBUG] Applied Upgrades and Influenced Stats ===");
+                use crate::game::upgrades::AvailableUpgrade;
+                let mgr = &state.upgrade_menu.upgrade_manager;
+                let player = &state.game_state.player;
+                for upgrade in [
+                    AvailableUpgrade::SpeedUp,
+                    AvailableUpgrade::Dash,
+                    AvailableUpgrade::TallBoots,
+                    AvailableUpgrade::SlowTime,
+                    AvailableUpgrade::SilentStep,
+                    AvailableUpgrade::HeadStart,
+                    AvailableUpgrade::Unknown,
+                ] {
+                    let count = mgr.get_upgrade_count(&upgrade);
+                    if count > 0 {
+                        let name = upgrade.to_upgrade().name;
+                        let stat = match upgrade {
+                            AvailableUpgrade::SpeedUp => {
+                                format!("base_speed: {:.2}", player.base_speed)
+                            }
+                            AvailableUpgrade::Dash => {
+                                format!("max_stamina: {:.2}", player.max_stamina)
+                            }
+                            AvailableUpgrade::TallBoots => {
+                                format!("height: {:.2}", player.position[1])
+                            }
+                            AvailableUpgrade::SlowTime => format!("timer: {}s", player.max_stamina), // Timer is in game_state, but not directly accessible here; placeholder
+                            AvailableUpgrade::SilentStep => "enemy pathfinding penalty".to_string(),
+                            AvailableUpgrade::HeadStart => "enemy lock time".to_string(),
+                            AvailableUpgrade::Unknown => "???".to_string(),
+                        };
+                        println!("- {} (x{}): {}", name, count, stat);
+                    }
+                }
+                println!("===============================================\n");
                 // Handle completion
                 if renderer.generator.is_complete() {
                     println!("Maze generation complete! Saving to file...");
@@ -503,7 +655,23 @@ impl App {
         );
 
         // Clear previous level state
-        state.game_state.player = Player::new();
+        if game_over {
+            state.game_state.player = Player::new();
+        } else {
+            // Only reset position (x/z), orientation, and cell, not stats or height
+            let player = &mut state.game_state.player;
+            let current_height = player.position[1];
+            player.position[0] = 0.0;
+            player.position[2] = 0.0;
+            player.position[1] = current_height; // preserve height
+            player.pitch = 3.0;
+            player.yaw = 316.0;
+            player.fov = 100.0;
+            player.current_cell = crate::game::maze::generator::Cell::default();
+            // Optionally, reset stamina to max for new level:
+            player.stamina = player.max_stamina;
+            // (Do not reset base_speed, max_stamina, regen rates, etc.)
+        }
         state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
         state.game_state.enemy.pathfinder.locked = true;
         state.game_state.exit_cell = None; // Clear exit cell to prevent accidental win condition

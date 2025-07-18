@@ -68,11 +68,14 @@ impl App {
                 }
             };
             state.resize_surface(width, height);
-            // Ensure pause menu resizes with the window
+            // Ensure pause menu and upgrade menu resize with the window
             use glyphon::Resolution;
             let resolution = Resolution { width, height };
             state
                 .pause_menu
+                .resize(&state.wgpu_renderer.queue, resolution);
+            state
+                .upgrade_menu
                 .resize(&state.wgpu_renderer.queue, resolution);
         }
     }
@@ -126,6 +129,15 @@ impl ApplicationHandler for App {
         } else {
             crate::renderer::ui::pause_menu::PauseMenuAction::None
         };
+
+        // If in upgrade menu, pass all input events to the upgrade menu first
+        if state.game_state.current_screen == crate::game::CurrentScreen::UpgradeMenu
+            && state.upgrade_menu.is_visible()
+        {
+            state
+                .upgrade_menu
+                .handle_input(&event, &mut state.game_state);
+        }
 
         // Handle pause menu actions
         match pause_action {
@@ -340,6 +352,28 @@ impl ApplicationHandler for App {
                                         .game_renderer
                                         .debug_renderer
                                         .debug_render_bounding_boxes;
+                                }
+                                crate::game::keys::GameKey::ToggleUpgradeMenu => {
+                                    // Toggle upgrade menu visibility
+                                    if state.upgrade_menu.is_visible() {
+                                        state.upgrade_menu.hide();
+                                        // Return to game if we were in upgrade menu
+                                        if state.game_state.current_screen
+                                            == crate::game::CurrentScreen::UpgradeMenu
+                                        {
+                                            state.game_state.current_screen =
+                                                crate::game::CurrentScreen::Game;
+                                            state.game_state.capture_mouse = true;
+                                        }
+                                    } else {
+                                        // Show upgrade menu
+                                        state.upgrade_menu.show();
+                                        state.game_state.previous_screen =
+                                            Some(state.game_state.current_screen);
+                                        state.game_state.current_screen =
+                                            crate::game::CurrentScreen::UpgradeMenu;
+                                        state.game_state.capture_mouse = false;
+                                    }
                                 }
                                 crate::game::keys::GameKey::Escape => {
                                     match state.game_state.current_screen {

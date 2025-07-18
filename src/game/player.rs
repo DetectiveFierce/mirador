@@ -28,6 +28,12 @@ pub struct Player {
     pub mouse_sensitivity: f32,
     /// Current Cell
     pub current_cell: Cell,
+    // Stamina system
+    pub stamina: f32,                // Current stamina
+    pub max_stamina: f32,            // Maximum stamina
+    pub stamina_regen_cooldown: f32, // Seconds to wait before regen starts
+    pub stamina_regen_rate: f32,     // Stamina per second
+    pub last_sprint_time: f32,       // Time since last sprint (seconds)
 }
 
 impl Player {
@@ -42,6 +48,11 @@ impl Player {
             speed: 100.0,
             mouse_sensitivity: 1.0,
             current_cell: Cell::default(),
+            stamina: 1.0,
+            max_stamina: 2.0,
+            stamina_regen_cooldown: 0.7,
+            stamina_regen_rate: 1.5,
+            last_sprint_time: 0.0,
         }
     }
 
@@ -148,12 +159,34 @@ impl Player {
         self.position = coordinates::maze_to_world(
             &entrance_cell,
             maze_dimensions,
-            PLAYER_HEIGHT,
+            self.position[1],
             is_test_mode,
         );
         self.current_cell = entrance_cell;
 
         // Set the initial orientation to face north (into the maze)
         self.yaw = coordinates::direction_to_yaw(coordinates::Direction::North);
+    }
+
+    /// Call this every frame to update stamina based on sprinting state and delta_time
+    pub fn update_stamina(&mut self, is_sprinting: bool, is_moving: bool, delta_time: f32) {
+        if is_sprinting && is_moving && self.stamina > 0.0 {
+            self.stamina -= 0.7 * delta_time; // Deplete stamina
+            if self.stamina < 0.0 {
+                self.stamina = 0.0;
+            }
+            self.last_sprint_time = 0.0;
+        } else {
+            self.last_sprint_time += delta_time;
+            if self.last_sprint_time > self.stamina_regen_cooldown {
+                self.stamina += self.stamina_regen_rate * delta_time;
+                if self.stamina > self.max_stamina {
+                    self.stamina = self.max_stamina;
+                }
+            }
+        }
+    }
+    pub fn stamina_ratio(&self) -> f32 {
+        (self.stamina / self.max_stamina).clamp(0.0, 1.0)
     }
 }

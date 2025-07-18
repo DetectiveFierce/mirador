@@ -1,4 +1,4 @@
-use crate::renderer::ui::buttons::{
+use crate::renderer::ui::button::{
     Button, ButtonAnchor, ButtonManager, ButtonPosition, TextAlign, create_danger_button_style,
     create_goldenrod_button_style, create_lobby_button_style, create_primary_button_style,
     create_warning_button_style,
@@ -56,7 +56,9 @@ impl PauseMenu {
             font_family: "HankenGrotesk".to_string(),
             font_size,
             line_height,
-            color: crate::renderer::ui::buttons::create_primary_button_style().text_style.color,
+            color: crate::renderer::ui::button::create_primary_button_style()
+                .text_style
+                .color,
             weight: glyphon::Weight::MEDIUM,
             style: glyphon::Style::Normal,
         }
@@ -138,7 +140,7 @@ impl PauseMenu {
         debug_style.text_style.font_size = text_style.font_size * 0.5;
         debug_style.text_style.line_height = text_style.line_height * 0.5;
         debug_style.padding = (2.0 * scale, 6.0 * scale); // minimal horizontal, some vertical padding
-        debug_style.spacing = crate::renderer::ui::buttons::ButtonSpacing::Wrap;
+        debug_style.spacing = crate::renderer::ui::button::ButtonSpacing::Wrap;
         // Measure the text width for three lines
         let (_min_x, text_width, text_height) = button_manager
             .text_renderer
@@ -263,7 +265,8 @@ impl PauseMenu {
         let center_x = window_size.width as f32 / 2.0;
         let start_y = (window_size.height as f32 - total_height) / 2.0;
         let text_style = Self::scaled_text_style(window_size.height as f32);
-        let y = |i: usize| start_y + button_height / 2.0 + i as f32 * (button_height + button_spacing);
+        let y =
+            |i: usize| start_y + button_height / 2.0 + i as f32 * (button_height + button_spacing);
 
         // Update button positions and text style
         if let Some(resume_button) = self.button_manager.get_button_mut("resume") {
@@ -321,7 +324,7 @@ impl PauseMenu {
         // Update debug button position for new window size
         let (style, padding) =
             if let Some(debug_button) = self.button_manager.get_button_mut("debug") {
-                debug_button.style.spacing = crate::renderer::ui::buttons::ButtonSpacing::Wrap;
+                debug_button.style.spacing = crate::renderer::ui::button::ButtonSpacing::Wrap;
                 (
                     debug_button.style.text_style.clone(),
                     debug_button.style.padding,
