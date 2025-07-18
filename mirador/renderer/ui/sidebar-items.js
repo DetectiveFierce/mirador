@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["buttons","pause_menu"]};
+window.SIDEBAR_ITEMS = {"mod":["button","pause_menu","upgrade_menu"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["game_renderer","loading_renderer","pipeline_builder","primitives","rectangle","text","title","ui","wgpu_lib"]};
+window.SIDEBAR_ITEMS = {"mod":["game_renderer","icon","loading_renderer","pipeline_builder","primitives","rectangle","text","title","ui","wgpu_lib"]};

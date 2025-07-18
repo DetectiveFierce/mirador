@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CurrentScreen","PauseMenuState"],"fn":["initialize_game_ui","update_game_ui","update_text_content"],"mod":["audio","collision","enemy","keys","maze","player"],"struct":["GameState","GameTimer","GameUIManager","TimerConfig"]};
+window.SIDEBAR_ITEMS = {"enum":["CurrentScreen","PauseMenuState"],"fn":["initialize_game_ui","update_game_ui","update_text_content"],"mod":["audio","collision","enemy","keys","maze","player","upgrades"],"struct":["GameState","GameTimer","GameUIManager","TimerConfig"]};

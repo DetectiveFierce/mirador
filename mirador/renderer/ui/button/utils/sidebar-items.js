@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["dpi_scale"],"trait":["ColorExt"]};

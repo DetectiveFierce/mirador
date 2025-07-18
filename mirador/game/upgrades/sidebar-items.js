@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AvailableUpgrade","UpgradeRarity"],"struct":["Upgrade","UpgradeManager"]};

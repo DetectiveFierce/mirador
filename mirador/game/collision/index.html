@@ -16,7 +16,7 @@ between a player and maze walls, with sophisticated collision response including
 <li>Walls are extracted from the maze and converted to <a href="struct.WallFace.html" title="struct mirador::game::collision::WallFace"><code>WallFace</code></a> objects</li>
 <li>A <a href="struct.BVH.html" title="struct mirador::game::collision::BVH"><code>BVH</code></a> tree is constructed to spatially organize these faces</li>
 <li>When the player moves, potential collisions are efficiently queried using the BVH</li>
-<li>Collisions are resolved with physical realism using vector projection (wall sliding)</li>
+<li>Collisions are resolved with physically realistic using vector projection (wall sliding)</li>
 </ol>
 <h2 id="performance-considerations"><a class="doc-anchor" href="#performance-considerations">§</a>Performance Considerations</h2>
 <p>The BVH structure provides O(log n) collision detection in the average case, compared to

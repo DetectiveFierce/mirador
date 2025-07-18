@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ButtonAnchor","ButtonSpacing","ButtonState","TextAlign"],"struct":["ButtonPosition","ButtonStyle"]};
