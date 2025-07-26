@@ -1,88 +1,204 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/renderer/ui/button/styles.rs`."><title>styles.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-1a91846b.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.88.0 (6b00bc388 2025-06-23)" data-channel="1.88.0" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../../../static.files/storage-4e99c027.js"></script><script defer src="../../../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">mirador/renderer/ui/button/</div>styles.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-2"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span><span class="kw">crate</span>::renderer::text::TextStyle;
-<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span><span class="kw">crate</span>::renderer::ui::button::utils::dpi_scale;
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">crate</span>::renderer::ui::button::{ButtonSpacing, ButtonStyle, TextAlign};
-<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>glyphon::{Color, Style, Weight};
-<a href=#5 id=5 data-nosnippet>5</a>
-<a href=#6 id=6 data-nosnippet>6</a><span class="comment">// Professional color palette based on modern design systems
-<a href=#7 id=7 data-nosnippet>7</a>// Using a cohesive slate-based color scheme with semantic variants
-<a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">pub fn </span>create_primary_button_style() -&gt; ButtonStyle {
-<a href=#10 id=10 data-nosnippet>10</a>    <span class="kw">let </span>scale = dpi_scale(<span class="number">1080.0</span>); <span class="comment">// Assuming a default window height for default values
-<a href=#11 id=11 data-nosnippet>11</a>    </span>ButtonStyle {
-<a href=#12 id=12 data-nosnippet>12</a>        background_color: Color::rgb(<span class="number">30</span>, <span class="number">110</span>, <span class="number">30</span>), <span class="comment">// Slightly less saturated, dark mint green
-<a href=#13 id=13 data-nosnippet>13</a>        </span>hover_color: Color::rgb(<span class="number">25</span>, <span class="number">85</span>, <span class="number">25</span>),       <span class="comment">// Even darker, maintaining hue
-<a href=#14 id=14 data-nosnippet>14</a>        </span>pressed_color: Color::rgb(<span class="number">20</span>, <span class="number">65</span>, <span class="number">20</span>),     <span class="comment">// Darkest mint for pressed state
-<a href=#15 id=15 data-nosnippet>15</a>        </span>disabled_color: Color::rgb(<span class="number">110</span>, <span class="number">140</span>, <span class="number">110</span>), <span class="comment">// Muted, lighter mint for disabled state
-<a href=#16 id=16 data-nosnippet>16</a>        </span>border_color: Color::rgb(<span class="number">25</span>, <span class="number">85</span>, <span class="number">25</span>),      <span class="comment">// Matches hover color
-<a href=#17 id=17 data-nosnippet>17</a>        </span>border_width: <span class="number">1.0</span>,
-<a href=#18 id=18 data-nosnippet>18</a>        corner_radius: <span class="number">8.0</span>,
-<a href=#19 id=19 data-nosnippet>19</a>        padding: (<span class="number">16.0</span>, <span class="number">10.0</span>),
-<a href=#20 id=20 data-nosnippet>20</a>        text_style: TextStyle {
-<a href=#21 id=21 data-nosnippet>21</a>            font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
-<a href=#22 id=22 data-nosnippet>22</a>            font_size: <span class="number">18.0 </span>* scale,
-<a href=#23 id=23 data-nosnippet>23</a>            line_height: <span class="number">20.0 </span>* scale,
-<a href=#24 id=24 data-nosnippet>24</a>            color: Color::rgb(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="comment">// white
-<a href=#25 id=25 data-nosnippet>25</a>            </span>weight: Weight::MEDIUM,
-<a href=#26 id=26 data-nosnippet>26</a>            style: Style::Normal,
-<a href=#27 id=27 data-nosnippet>27</a>        },
-<a href=#28 id=28 data-nosnippet>28</a>        text_align: TextAlign::Center,
-<a href=#29 id=29 data-nosnippet>29</a>        spacing: ButtonSpacing::Hbar(<span class="number">0.3</span>),
-<a href=#30 id=30 data-nosnippet>30</a>    }
-<a href=#31 id=31 data-nosnippet>31</a>}
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/renderer/ui/button/styles.rs`."><title>styles.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-1a91846b.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.88.0 (6b00bc388 2025-06-23)" data-channel="1.88.0" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../../../static.files/storage-4e99c027.js"></script><script defer src="../../../../../static.files/src-script-63605ae7.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">mirador/renderer/ui/button/</div>styles.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! # Button Styles Module
+<a href=#2 id=2 data-nosnippet>2</a>//!
+<a href=#3 id=3 data-nosnippet>3</a>//! This module provides predefined button styles for a user interface application.
+<a href=#4 id=4 data-nosnippet>4</a>//! It implements a cohesive design system with semantic color variants and consistent
+<a href=#5 id=5 data-nosnippet>5</a>//! styling parameters across different button types.
+<a href=#6 id=6 data-nosnippet>6</a>//!
+<a href=#7 id=7 data-nosnippet>7</a>//! ## Design Philosophy
+<a href=#8 id=8 data-nosnippet>8</a>//!
+<a href=#9 id=9 data-nosnippet>9</a>//! The button styles follow modern design principles:
+<a href=#10 id=10 data-nosnippet>10</a>//! - **Semantic Colors**: Each button type (primary, warning, danger) uses colors
+<a href=#11 id=11 data-nosnippet>11</a>//!   that communicate their intended purpose to users
+<a href=#12 id=12 data-nosnippet>12</a>//! - **Accessibility**: High contrast ratios between text and background colors
+<a href=#13 id=13 data-nosnippet>13</a>//! - **Consistency**: Uniform padding, border radius, and typography across all styles
+<a href=#14 id=14 data-nosnippet>14</a>//! - **Interactive States**: Distinct visual feedback for hover, pressed, and disabled states
+<a href=#15 id=15 data-nosnippet>15</a>//! - **DPI Awareness**: Automatic scaling based on display density
+<a href=#16 id=16 data-nosnippet>16</a>//!
+<a href=#17 id=17 data-nosnippet>17</a>//! ## Color Palette
+<a href=#18 id=18 data-nosnippet>18</a>//!
+<a href=#19 id=19 data-nosnippet>19</a>//! The module uses a professional slate-based color scheme with semantic variants:
+<a href=#20 id=20 data-nosnippet>20</a>//! - **Primary (Green)**: For primary actions and positive confirmations
+<a href=#21 id=21 data-nosnippet>21</a>//! - **Warning (Orange)**: For actions that require caution
+<a href=#22 id=22 data-nosnippet>22</a>//! - **Danger (Red)**: For destructive or irreversible actions
+<a href=#23 id=23 data-nosnippet>23</a>//!
+<a href=#24 id=24 data-nosnippet>24</a>//! ## Usage Example
+<a href=#25 id=25 data-nosnippet>25</a>//!
+<a href=#26 id=26 data-nosnippet>26</a>//! ```rust
+<a href=#27 id=27 data-nosnippet>27</a>//! use crate::button_styles::{create_primary_button_style, create_warning_button_style};
+<a href=#28 id=28 data-nosnippet>28</a>//!
+<a href=#29 id=29 data-nosnippet>29</a>//! let primary_style = create_primary_button_style();
+<a href=#30 id=30 data-nosnippet>30</a>//! let warning_style = create_warning_button_style();
+<a href=#31 id=31 data-nosnippet>31</a>//! ```
 <a href=#32 id=32 data-nosnippet>32</a>
-<a href=#33 id=33 data-nosnippet>33</a><span class="kw">pub fn </span>create_warning_button_style() -&gt; ButtonStyle {
-<a href=#34 id=34 data-nosnippet>34</a>    <span class="kw">let </span>scale = dpi_scale(<span class="number">1080.0</span>); <span class="comment">// Assuming a default window height for default values
-<a href=#35 id=35 data-nosnippet>35</a>    </span>ButtonStyle {
-<a href=#36 id=36 data-nosnippet>36</a>        background_color: Color::rgb(<span class="number">170</span>, <span class="number">100</span>, <span class="number">10</span>), <span class="comment">// Slightly less saturated, dark orange
-<a href=#37 id=37 data-nosnippet>37</a>        </span>hover_color: Color::rgb(<span class="number">140</span>, <span class="number">80</span>, <span class="number">5</span>),        <span class="comment">// Deeper, slightly more intense
-<a href=#38 id=38 data-nosnippet>38</a>        </span>pressed_color: Color::rgb(<span class="number">110</span>, <span class="number">60</span>, <span class="number">0</span>),      <span class="comment">// Darkest, richest for pressed
-<a href=#39 id=39 data-nosnippet>39</a>        </span>disabled_color: Color::rgb(<span class="number">160</span>, <span class="number">140</span>, <span class="number">115</span>), <span class="comment">// Muted, desaturated warm yellow-gray for disabled
-<a href=#40 id=40 data-nosnippet>40</a>        </span>border_color: Color::rgb(<span class="number">140</span>, <span class="number">80</span>, <span class="number">5</span>),      <span class="comment">// Matches hover color
-<a href=#41 id=41 data-nosnippet>41</a>        </span>border_width: <span class="number">1.0</span>,
-<a href=#42 id=42 data-nosnippet>42</a>        corner_radius: <span class="number">8.0</span>,
-<a href=#43 id=43 data-nosnippet>43</a>        padding: (<span class="number">16.0</span>, <span class="number">10.0</span>),
-<a href=#44 id=44 data-nosnippet>44</a>        text_style: TextStyle {
-<a href=#45 id=45 data-nosnippet>45</a>            font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
-<a href=#46 id=46 data-nosnippet>46</a>            font_size: <span class="number">18.0 </span>* scale,
-<a href=#47 id=47 data-nosnippet>47</a>            line_height: <span class="number">20.0 </span>* scale,
-<a href=#48 id=48 data-nosnippet>48</a>            color: Color::rgb(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="comment">// white
-<a href=#49 id=49 data-nosnippet>49</a>            </span>weight: Weight::MEDIUM,
-<a href=#50 id=50 data-nosnippet>50</a>            style: Style::Normal,
-<a href=#51 id=51 data-nosnippet>51</a>        },
-<a href=#52 id=52 data-nosnippet>52</a>        text_align: TextAlign::Center,
-<a href=#53 id=53 data-nosnippet>53</a>        spacing: ButtonSpacing::Hbar(<span class="number">0.3</span>),
-<a href=#54 id=54 data-nosnippet>54</a>    }
-<a href=#55 id=55 data-nosnippet>55</a>}
-<a href=#56 id=56 data-nosnippet>56</a>
-<a href=#57 id=57 data-nosnippet>57</a><span class="kw">pub fn </span>create_danger_button_style() -&gt; ButtonStyle {
-<a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">let </span>scale = dpi_scale(<span class="number">1080.0</span>); <span class="comment">// Assuming a default window height for default values
-<a href=#59 id=59 data-nosnippet>59</a>    </span>ButtonStyle {
-<a href=#60 id=60 data-nosnippet>60</a>        background_color: Color::rgb(<span class="number">110</span>, <span class="number">20</span>, <span class="number">10</span>), <span class="comment">// Slightly less saturated, dark red
-<a href=#61 id=61 data-nosnippet>61</a>        </span>hover_color: Color::rgb(<span class="number">90</span>, <span class="number">15</span>, <span class="number">5</span>),        <span class="comment">// Even darker, more intense red
-<a href=#62 id=62 data-nosnippet>62</a>        </span>pressed_color: Color::rgb(<span class="number">70</span>, <span class="number">10</span>, <span class="number">0</span>),      <span class="comment">// Darkest, most saturated red
-<a href=#63 id=63 data-nosnippet>63</a>        </span>disabled_color: Color::rgb(<span class="number">80</span>, <span class="number">96</span>, <span class="number">119</span>),   <span class="comment">// Slightly darker slate-500, muted
-<a href=#64 id=64 data-nosnippet>64</a>        </span>border_color: Color::rgb(<span class="number">90</span>, <span class="number">15</span>, <span class="number">5</span>),       <span class="comment">// Match hover color
-<a href=#65 id=65 data-nosnippet>65</a>        </span>border_width: <span class="number">1.0</span>,
-<a href=#66 id=66 data-nosnippet>66</a>        corner_radius: <span class="number">8.0</span>,
-<a href=#67 id=67 data-nosnippet>67</a>        padding: (<span class="number">16.0</span>, <span class="number">10.0</span>),
-<a href=#68 id=68 data-nosnippet>68</a>        text_style: TextStyle {
-<a href=#69 id=69 data-nosnippet>69</a>            font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
-<a href=#70 id=70 data-nosnippet>70</a>            font_size: <span class="number">18.0 </span>* scale,
-<a href=#71 id=71 data-nosnippet>71</a>            line_height: <span class="number">20.0 </span>* scale,
-<a href=#72 id=72 data-nosnippet>72</a>            color: Color::rgb(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="comment">// white
-<a href=#73 id=73 data-nosnippet>73</a>            </span>weight: Weight::MEDIUM,
-<a href=#74 id=74 data-nosnippet>74</a>            style: Style::Normal,
-<a href=#75 id=75 data-nosnippet>75</a>        },
-<a href=#76 id=76 data-nosnippet>76</a>        text_align: TextAlign::Center,
-<a href=#77 id=77 data-nosnippet>77</a>        spacing: ButtonSpacing::Hbar(<span class="number">0.3</span>),
-<a href=#78 id=78 data-nosnippet>78</a>    }
-<a href=#79 id=79 data-nosnippet>79</a>}
-<a href=#80 id=80 data-nosnippet>80</a>
-<a href=#81 id=81 data-nosnippet>81</a><span class="comment">// Legacy function names for backward compatibility
-<a href=#82 id=82 data-nosnippet>82</a></span><span class="kw">pub fn </span>create_goldenrod_button_style() -&gt; ButtonStyle {
-<a href=#83 id=83 data-nosnippet>83</a>    create_warning_button_style()
-<a href=#84 id=84 data-nosnippet>84</a>}
-<a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a><span class="kw">pub fn </span>create_lobby_button_style() -&gt; ButtonStyle {
-<a href=#87 id=87 data-nosnippet>87</a>    create_danger_button_style()
-<a href=#88 id=88 data-nosnippet>88</a>}</code></pre></div></section></main></body></html>
+<a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">use </span><span class="kw">crate</span>::renderer::text::TextStyle;
+<a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span><span class="kw">crate</span>::renderer::ui::button::utils::dpi_scale;
+<a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span><span class="kw">crate</span>::renderer::ui::button::{ButtonSpacing, ButtonStyle, TextAlign};
+<a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>glyphon::{Color, Style, Weight};
+<a href=#37 id=37 data-nosnippet>37</a>
+<a href=#38 id=38 data-nosnippet>38</a><span class="comment">// Professional color palette based on modern design systems
+<a href=#39 id=39 data-nosnippet>39</a>// Using a cohesive slate-based color scheme with semantic variants
+<a href=#40 id=40 data-nosnippet>40</a>
+<a href=#41 id=41 data-nosnippet>41</a></span><span class="doccomment">/// Creates a primary button style with a mint green color scheme.
+<a href=#42 id=42 data-nosnippet>42</a>///
+<a href=#43 id=43 data-nosnippet>43</a>/// Primary buttons are used for the main action on a screen or form.
+<a href=#44 id=44 data-nosnippet>44</a>/// They should be used sparingly - typically only one primary button per view.
+<a href=#45 id=45 data-nosnippet>45</a>///
+<a href=#46 id=46 data-nosnippet>46</a>/// ## Visual Characteristics
+<a href=#47 id=47 data-nosnippet>47</a>/// - **Base Color**: Dark mint green (`rgb(30, 110, 30)`)
+<a href=#48 id=48 data-nosnippet>48</a>/// - **Hover State**: Darker mint green for visual feedback
+<a href=#49 id=49 data-nosnippet>49</a>/// - **Pressed State**: Darkest mint green to indicate active press
+<a href=#50 id=50 data-nosnippet>50</a>/// - **Disabled State**: Muted light green to indicate unavailability
+<a href=#51 id=51 data-nosnippet>51</a>/// - **Typography**: Medium weight, white text for high contrast
+<a href=#52 id=52 data-nosnippet>52</a>///
+<a href=#53 id=53 data-nosnippet>53</a>/// ## Design Rationale
+<a href=#54 id=54 data-nosnippet>54</a>/// The green color palette communicates positive action and success.
+<a href=#55 id=55 data-nosnippet>55</a>/// The slightly desaturated tones provide a professional appearance while
+<a href=#56 id=56 data-nosnippet>56</a>/// maintaining accessibility standards.
+<a href=#57 id=57 data-nosnippet>57</a>///
+<a href=#58 id=58 data-nosnippet>58</a>/// ## Returns
+<a href=#59 id=59 data-nosnippet>59</a>/// A `ButtonStyle` struct configured for primary actions with DPI-aware scaling.
+<a href=#60 id=60 data-nosnippet>60</a>///
+<a href=#61 id=61 data-nosnippet>61</a>/// ## Example
+<a href=#62 id=62 data-nosnippet>62</a>/// ```rust
+<a href=#63 id=63 data-nosnippet>63</a>/// let submit_button_style = create_primary_button_style();
+<a href=#64 id=64 data-nosnippet>64</a>/// ```
+<a href=#65 id=65 data-nosnippet>65</a></span><span class="kw">pub fn </span>create_primary_button_style() -&gt; ButtonStyle {
+<a href=#66 id=66 data-nosnippet>66</a>    <span class="kw">let </span>scale = dpi_scale(<span class="number">1080.0</span>); <span class="comment">// Assuming a default window height for default values
+<a href=#67 id=67 data-nosnippet>67</a>    </span>ButtonStyle {
+<a href=#68 id=68 data-nosnippet>68</a>        background_color: Color::rgb(<span class="number">30</span>, <span class="number">110</span>, <span class="number">30</span>), <span class="comment">// Slightly less saturated, dark mint green
+<a href=#69 id=69 data-nosnippet>69</a>        </span>hover_color: Color::rgb(<span class="number">25</span>, <span class="number">85</span>, <span class="number">25</span>),       <span class="comment">// Even darker, maintaining hue
+<a href=#70 id=70 data-nosnippet>70</a>        </span>pressed_color: Color::rgb(<span class="number">20</span>, <span class="number">65</span>, <span class="number">20</span>),     <span class="comment">// Darkest mint for pressed state
+<a href=#71 id=71 data-nosnippet>71</a>        </span>disabled_color: Color::rgb(<span class="number">110</span>, <span class="number">140</span>, <span class="number">110</span>), <span class="comment">// Muted, lighter mint for disabled state
+<a href=#72 id=72 data-nosnippet>72</a>        </span>border_color: Color::rgb(<span class="number">25</span>, <span class="number">85</span>, <span class="number">25</span>),      <span class="comment">// Matches hover color
+<a href=#73 id=73 data-nosnippet>73</a>        </span>border_width: <span class="number">1.0</span>,
+<a href=#74 id=74 data-nosnippet>74</a>        corner_radius: <span class="number">8.0</span>,
+<a href=#75 id=75 data-nosnippet>75</a>        padding: (<span class="number">16.0</span>, <span class="number">10.0</span>),
+<a href=#76 id=76 data-nosnippet>76</a>        text_style: TextStyle {
+<a href=#77 id=77 data-nosnippet>77</a>            font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
+<a href=#78 id=78 data-nosnippet>78</a>            font_size: <span class="number">18.0 </span>* scale,
+<a href=#79 id=79 data-nosnippet>79</a>            line_height: <span class="number">20.0 </span>* scale,
+<a href=#80 id=80 data-nosnippet>80</a>            color: Color::rgb(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="comment">// white
+<a href=#81 id=81 data-nosnippet>81</a>            </span>weight: Weight::MEDIUM,
+<a href=#82 id=82 data-nosnippet>82</a>            style: Style::Normal,
+<a href=#83 id=83 data-nosnippet>83</a>        },
+<a href=#84 id=84 data-nosnippet>84</a>        text_align: TextAlign::Center,
+<a href=#85 id=85 data-nosnippet>85</a>        spacing: ButtonSpacing::Hbar(<span class="number">0.3</span>),
+<a href=#86 id=86 data-nosnippet>86</a>    }
+<a href=#87 id=87 data-nosnippet>87</a>}
+<a href=#88 id=88 data-nosnippet>88</a>
+<a href=#89 id=89 data-nosnippet>89</a><span class="doccomment">/// Creates a warning button style with an orange color scheme.
+<a href=#90 id=90 data-nosnippet>90</a>///
+<a href=#91 id=91 data-nosnippet>91</a>/// Warning buttons are used for actions that require user attention or caution.
+<a href=#92 id=92 data-nosnippet>92</a>/// They indicate that the action might have significant consequences or requires
+<a href=#93 id=93 data-nosnippet>93</a>/// careful consideration before proceeding.
+<a href=#94 id=94 data-nosnippet>94</a>///
+<a href=#95 id=95 data-nosnippet>95</a>/// ## Visual Characteristics
+<a href=#96 id=96 data-nosnippet>96</a>/// - **Base Color**: Dark orange (`rgb(170, 100, 10)`)
+<a href=#97 id=97 data-nosnippet>97</a>/// - **Hover State**: Deeper orange with slight intensity increase
+<a href=#98 id=98 data-nosnippet>98</a>/// - **Pressed State**: Darkest, richest orange for pressed feedback
+<a href=#99 id=99 data-nosnippet>99</a>/// - **Disabled State**: Muted warm yellow-gray for disabled state
+<a href=#100 id=100 data-nosnippet>100</a>/// - **Typography**: Medium weight, white text for readability
+<a href=#101 id=101 data-nosnippet>101</a>///
+<a href=#102 id=102 data-nosnippet>102</a>/// ## Design Rationale
+<a href=#103 id=103 data-nosnippet>103</a>/// Orange is universally recognized as a cautionary color, making it ideal
+<a href=#104 id=104 data-nosnippet>104</a>/// for warning actions. The warm tones maintain approachability while
+<a href=#105 id=105 data-nosnippet>105</a>/// clearly communicating the need for attention.
+<a href=#106 id=106 data-nosnippet>106</a>///
+<a href=#107 id=107 data-nosnippet>107</a>/// ## Use Cases
+<a href=#108 id=108 data-nosnippet>108</a>/// - Form validation warnings
+<a href=#109 id=109 data-nosnippet>109</a>/// - Actions with potential data loss
+<a href=#110 id=110 data-nosnippet>110</a>/// - Confirmation dialogs for significant changes
+<a href=#111 id=111 data-nosnippet>111</a>/// - Temporary or reversible destructive actions
+<a href=#112 id=112 data-nosnippet>112</a>///
+<a href=#113 id=113 data-nosnippet>113</a>/// ## Returns
+<a href=#114 id=114 data-nosnippet>114</a>/// A `ButtonStyle` struct configured for warning actions with DPI-aware scaling.
+<a href=#115 id=115 data-nosnippet>115</a>///
+<a href=#116 id=116 data-nosnippet>116</a>/// ## Example
+<a href=#117 id=117 data-nosnippet>117</a>/// ```rust
+<a href=#118 id=118 data-nosnippet>118</a>/// let reset_form_button_style = create_warning_button_style();
+<a href=#119 id=119 data-nosnippet>119</a>/// ```
+<a href=#120 id=120 data-nosnippet>120</a></span><span class="kw">pub fn </span>create_warning_button_style() -&gt; ButtonStyle {
+<a href=#121 id=121 data-nosnippet>121</a>    <span class="kw">let </span>scale = dpi_scale(<span class="number">1080.0</span>); <span class="comment">// Assuming a default window height for default values
+<a href=#122 id=122 data-nosnippet>122</a>    </span>ButtonStyle {
+<a href=#123 id=123 data-nosnippet>123</a>        background_color: Color::rgb(<span class="number">170</span>, <span class="number">100</span>, <span class="number">10</span>), <span class="comment">// Slightly less saturated, dark orange
+<a href=#124 id=124 data-nosnippet>124</a>        </span>hover_color: Color::rgb(<span class="number">140</span>, <span class="number">80</span>, <span class="number">5</span>),        <span class="comment">// Deeper, slightly more intense
+<a href=#125 id=125 data-nosnippet>125</a>        </span>pressed_color: Color::rgb(<span class="number">110</span>, <span class="number">60</span>, <span class="number">0</span>),      <span class="comment">// Darkest, richest for pressed
+<a href=#126 id=126 data-nosnippet>126</a>        </span>disabled_color: Color::rgb(<span class="number">160</span>, <span class="number">140</span>, <span class="number">115</span>), <span class="comment">// Muted, desaturated warm yellow-gray for disabled
+<a href=#127 id=127 data-nosnippet>127</a>        </span>border_color: Color::rgb(<span class="number">140</span>, <span class="number">80</span>, <span class="number">5</span>),      <span class="comment">// Matches hover color
+<a href=#128 id=128 data-nosnippet>128</a>        </span>border_width: <span class="number">1.0</span>,
+<a href=#129 id=129 data-nosnippet>129</a>        corner_radius: <span class="number">8.0</span>,
+<a href=#130 id=130 data-nosnippet>130</a>        padding: (<span class="number">16.0</span>, <span class="number">10.0</span>),
+<a href=#131 id=131 data-nosnippet>131</a>        text_style: TextStyle {
+<a href=#132 id=132 data-nosnippet>132</a>            font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
+<a href=#133 id=133 data-nosnippet>133</a>            font_size: <span class="number">18.0 </span>* scale,
+<a href=#134 id=134 data-nosnippet>134</a>            line_height: <span class="number">20.0 </span>* scale,
+<a href=#135 id=135 data-nosnippet>135</a>            color: Color::rgb(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="comment">// white
+<a href=#136 id=136 data-nosnippet>136</a>            </span>weight: Weight::MEDIUM,
+<a href=#137 id=137 data-nosnippet>137</a>            style: Style::Normal,
+<a href=#138 id=138 data-nosnippet>138</a>        },
+<a href=#139 id=139 data-nosnippet>139</a>        text_align: TextAlign::Center,
+<a href=#140 id=140 data-nosnippet>140</a>        spacing: ButtonSpacing::Hbar(<span class="number">0.3</span>),
+<a href=#141 id=141 data-nosnippet>141</a>    }
+<a href=#142 id=142 data-nosnippet>142</a>}
+<a href=#143 id=143 data-nosnippet>143</a>
+<a href=#144 id=144 data-nosnippet>144</a><span class="doccomment">/// Creates a danger button style with a red color scheme.
+<a href=#145 id=145 data-nosnippet>145</a>///
+<a href=#146 id=146 data-nosnippet>146</a>/// Danger buttons are reserved for destructive or irreversible actions.
+<a href=#147 id=147 data-nosnippet>147</a>/// They should be used only when the action will result in data loss,
+<a href=#148 id=148 data-nosnippet>148</a>/// account deletion, or other permanent changes that cannot be undone.
+<a href=#149 id=149 data-nosnippet>149</a>///
+<a href=#150 id=150 data-nosnippet>150</a>/// ## Visual Characteristics
+<a href=#151 id=151 data-nosnippet>151</a>/// - **Base Color**: Dark red (`rgb(110, 20, 10)`)
+<a href=#152 id=152 data-nosnippet>152</a>/// - **Hover State**: Even darker, more intense red for hover feedback
+<a href=#153 id=153 data-nosnippet>153</a>/// - **Pressed State**: Darkest, most saturated red for pressed state
+<a href=#154 id=154 data-nosnippet>154</a>/// - **Disabled State**: Muted slate color to indicate unavailability
+<a href=#155 id=155 data-nosnippet>155</a>/// - **Typography**: Medium weight, white text for maximum contrast
+<a href=#156 id=156 data-nosnippet>156</a>///
+<a href=#157 id=157 data-nosnippet>157</a>/// ## Design Rationale
+<a href=#158 id=158 data-nosnippet>158</a>/// Red is the universal color for danger and stop actions. The dark,
+<a href=#159 id=159 data-nosnippet>159</a>/// saturated tones convey seriousness while maintaining professional
+<a href=#160 id=160 data-nosnippet>160</a>/// appearance. The high contrast ensures accessibility compliance.
+<a href=#161 id=161 data-nosnippet>161</a>///
+<a href=#162 id=162 data-nosnippet>162</a>/// ## Use Cases
+<a href=#163 id=163 data-nosnippet>163</a>/// - Delete account buttons
+<a href=#164 id=164 data-nosnippet>164</a>/// - Permanent data removal
+<a href=#165 id=165 data-nosnippet>165</a>/// - System shutdown/reset actions
+<a href=#166 id=166 data-nosnippet>166</a>/// - Irreversible configuration changes
+<a href=#167 id=167 data-nosnippet>167</a>///
+<a href=#168 id=168 data-nosnippet>168</a>/// ## UX Considerations
+<a href=#169 id=169 data-nosnippet>169</a>/// Danger buttons should typically be:
+<a href=#170 id=170 data-nosnippet>170</a>/// - Accompanied by confirmation dialogs
+<a href=#171 id=171 data-nosnippet>171</a>/// - Placed away from primary actions
+<a href=#172 id=172 data-nosnippet>172</a>/// - Used sparingly to maintain their impact
+<a href=#173 id=173 data-nosnippet>173</a>/// - Clearly labeled with specific action names
+<a href=#174 id=174 data-nosnippet>174</a>///
+<a href=#175 id=175 data-nosnippet>175</a>/// ## Returns
+<a href=#176 id=176 data-nosnippet>176</a>/// A `ButtonStyle` struct configured for dangerous actions with DPI-aware scaling.
+<a href=#177 id=177 data-nosnippet>177</a>///
+<a href=#178 id=178 data-nosnippet>178</a>/// ## Example
+<a href=#179 id=179 data-nosnippet>179</a>/// ```rust
+<a href=#180 id=180 data-nosnippet>180</a>/// let delete_account_button_style = create_danger_button_style();
+<a href=#181 id=181 data-nosnippet>181</a>/// ```
+<a href=#182 id=182 data-nosnippet>182</a></span><span class="kw">pub fn </span>create_danger_button_style() -&gt; ButtonStyle {
+<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">let </span>scale = dpi_scale(<span class="number">1080.0</span>); <span class="comment">// Assuming a default window height for default values
+<a href=#184 id=184 data-nosnippet>184</a>    </span>ButtonStyle {
+<a href=#185 id=185 data-nosnippet>185</a>        background_color: Color::rgb(<span class="number">110</span>, <span class="number">20</span>, <span class="number">10</span>), <span class="comment">// Slightly less saturated, dark red
+<a href=#186 id=186 data-nosnippet>186</a>        </span>hover_color: Color::rgb(<span class="number">90</span>, <span class="number">15</span>, <span class="number">5</span>),        <span class="comment">// Even darker, more intense red
+<a href=#187 id=187 data-nosnippet>187</a>        </span>pressed_color: Color::rgb(<span class="number">70</span>, <span class="number">10</span>, <span class="number">0</span>),      <span class="comment">// Darkest, most saturated red
+<a href=#188 id=188 data-nosnippet>188</a>        </span>disabled_color: Color::rgb(<span class="number">80</span>, <span class="number">96</span>, <span class="number">119</span>),   <span class="comment">// Slightly darker slate-500, muted
+<a href=#189 id=189 data-nosnippet>189</a>        </span>border_color: Color::rgb(<span class="number">90</span>, <span class="number">15</span>, <span class="number">5</span>),       <span class="comment">// Match hover color
+<a href=#190 id=190 data-nosnippet>190</a>        </span>border_width: <span class="number">1.0</span>,
+<a href=#191 id=191 data-nosnippet>191</a>        corner_radius: <span class="number">8.0</span>,
+<a href=#192 id=192 data-nosnippet>192</a>        padding: (<span class="number">16.0</span>, <span class="number">10.0</span>),
+<a href=#193 id=193 data-nosnippet>193</a>        text_style: TextStyle {
+<a href=#194 id=194 data-nosnippet>194</a>            font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
+<a href=#195 id=195 data-nosnippet>195</a>            font_size: <span class="number">18.0 </span>* scale,
+<a href=#196 id=196 data-nosnippet>196</a>            line_height: <span class="number">20.0 </span>* scale,
+<a href=#197 id=197 data-nosnippet>197</a>            color: Color::rgb(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="comment">// white
+<a href=#198 id=198 data-nosnippet>198</a>            </span>weight: Weight::MEDIUM,
+<a href=#199 id=199 data-nosnippet>199</a>            style: Style::Normal,
+<a href=#200 id=200 data-nosnippet>200</a>        },
+<a href=#201 id=201 data-nosnippet>201</a>        text_align: TextAlign::Center,
+<a href=#202 id=202 data-nosnippet>202</a>        spacing: ButtonSpacing::Hbar(<span class="number">0.3</span>),
+<a href=#203 id=203 data-nosnippet>203</a>    }
+<a href=#204 id=204 data-nosnippet>204</a>}</code></pre></div></section></main></body></html>

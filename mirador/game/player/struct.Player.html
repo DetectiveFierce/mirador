@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Represents the player character’s state in the world."><title>Player in mirador::game::player - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1a91846b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.88.0 (6b00bc388 2025-06-23)" data-channel="1.88.0" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../mirador/index.html">mirador</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Player</a></h2><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.base_speed" title="base_speed">base_speed</a></li><li><a href="#structfield.current_cell" title="current_cell">current_cell</a></li><li><a href="#structfield.fov" title="fov">fov</a></li><li><a href="#structfield.last_sprint_time" title="last_sprint_time">last_sprint_time</a></li><li><a href="#structfield.max_stamina" title="max_stamina">max_stamina</a></li><li><a href="#structfield.mouse_sensitivity" title="mouse_sensitivity">mouse_sensitivity</a></li><li><a href="#structfield.pitch" title="pitch">pitch</a></li><li><a href="#structfield.position" title="position">position</a></li><li><a href="#structfield.speed" title="speed">speed</a></li><li><a href="#structfield.stamina" title="stamina">stamina</a></li><li><a href="#structfield.stamina_regen_cooldown" title="stamina_regen_cooldown">stamina_regen_cooldown</a></li><li><a href="#structfield.stamina_regen_rate" title="stamina_regen_rate">stamina_regen_rate</a></li><li><a href="#structfield.yaw" title="yaw">yaw</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.get_view_matrix" title="get_view_matrix">get_view_matrix</a></li><li><a href="#method.get_view_proj_matrix" title="get_view_proj_matrix">get_view_proj_matrix</a></li><li><a href="#method.mouse_movement" title="mouse_movement">mouse_movement</a></li><li><a href="#method.move_backward" title="move_backward">move_backward</a></li><li><a href="#method.move_down" title="move_down">move_down</a></li><li><a href="#method.move_forward" title="move_forward">move_forward</a></li><li><a href="#method.move_left" title="move_left">move_left</a></li><li><a href="#method.move_right" title="move_right">move_right</a></li><li><a href="#method.move_up" title="move_up">move_up</a></li><li><a href="#method.move_with_collision" title="move_with_collision">move_with_collision</a></li><li><a href="#method.new" title="new">new</a></li><li><a href="#method.spawn_at_maze_entrance" title="spawn_at_maze_entrance">spawn_at_maze_entrance</a></li><li><a href="#method.stamina_ratio" title="stamina_ratio">stamina_ratio</a></li><li><a href="#method.update_cell" title="update_cell">update_cell</a></li><li><a href="#method.update_stamina" title="update_stamina">update_stamina</a></li></ul><h3><a href="#trait-implementations">Trait Implementations</a></h3><ul class="block trait-implementation"><li><a href="#impl-Clone-for-Player" title="Clone">Clone</a></li><li><a href="#impl-Debug-for-Player" title="Debug">Debug</a></li><li><a href="#impl-Default-for-Player" title="Default">Default</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-Player" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-Player" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-Player" title="Send">Send</a></li><li><a href="#impl-Sync-for-Player" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-Player" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-Player" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-CloneToUninit-for-T" title="CloneToUninit">CloneToUninit</a></li><li><a href="#impl-Downcast-for-T" title="Downcast">Downcast</a></li><li><a href="#impl-Downcast%3CT%3E-for-T" title="Downcast&#60;T&#62;">Downcast&#60;T&#62;</a></li><li><a href="#impl-DowncastSync-for-T" title="DowncastSync">DowncastSync</a></li><li><a href="#impl-Duplex%3CS%3E-for-T" title="Duplex&#60;S&#62;">Duplex&#60;S&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-FromSample%3CS%3E-for-S" title="FromSample&#60;S&#62;">FromSample&#60;S&#62;</a></li><li><a href="#impl-Instrument-for-T" title="Instrument">Instrument</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-IntoEither-for-T" title="IntoEither">IntoEither</a></li><li><a href="#impl-IntoSample%3CT%3E-for-F" title="IntoSample&#60;T&#62;">IntoSample&#60;T&#62;</a></li><li><a href="#impl-Pointable-for-T" title="Pointable">Pointable</a></li><li><a href="#impl-ReadPrimitive%3CR%3E-for-P" title="ReadPrimitive&#60;R&#62;">ReadPrimitive&#60;R&#62;</a></li><li><a href="#impl-ToOwned-for-T" title="ToOwned">ToOwned</a></li><li><a href="#impl-ToSample%3CU%3E-for-T" title="ToSample&#60;U&#62;">ToSample&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li><li><a href="#impl-Upcast%3CT%3E-for-T" title="Upcast&#60;T&#62;">Upcast&#60;T&#62;</a></li><li><a href="#impl-VZip%3CV%3E-for-T" title="VZip&#60;V&#62;">VZip&#60;V&#62;</a></li><li><a href="#impl-WasmNotSend-for-T" title="WasmNotSend">WasmNotSend</a></li><li><a href="#impl-WasmNotSendSync-for-T" title="WasmNotSendSync">WasmNotSendSync</a></li><li><a href="#impl-WasmNotSync-for-T" title="WasmNotSync">WasmNotSync</a></li><li><a href="#impl-WithSubscriber-for-T" title="WithSubscriber">WithSubscriber</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In mirador::<wbr>game::<wbr>player</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">mirador</a>::<wbr><a href="../index.html">game</a>::<wbr><a href="index.html">player</a></div><h1>Struct <span class="struct">Player</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/mirador/game/player.rs.html#14-37">Source</a> </span></div><pre class="rust item-decl"><code>pub struct Player {<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 13 fields</span></summary>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Represents the player character’s state in the world."><title>Player in mirador::game::player - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1a91846b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.88.0 (6b00bc388 2025-06-23)" data-channel="1.88.0" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../mirador/index.html">mirador</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Player</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#fields-1" title="Fields">Fields</a><ul><li><a href="#position-and-orientation" title="Position and Orientation">Position and Orientation</a></li><li><a href="#movement-parameters" title="Movement Parameters">Movement Parameters</a></li><li><a href="#maze-integration" title="Maze Integration">Maze Integration</a></li><li><a href="#stamina-system" title="Stamina System">Stamina System</a></li></ul></li><li><a href="#examples" title="Examples">Examples</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.base_speed" title="base_speed">base_speed</a></li><li><a href="#structfield.current_cell" title="current_cell">current_cell</a></li><li><a href="#structfield.fov" title="fov">fov</a></li><li><a href="#structfield.last_sprint_time" title="last_sprint_time">last_sprint_time</a></li><li><a href="#structfield.max_stamina" title="max_stamina">max_stamina</a></li><li><a href="#structfield.mouse_sensitivity" title="mouse_sensitivity">mouse_sensitivity</a></li><li><a href="#structfield.pitch" title="pitch">pitch</a></li><li><a href="#structfield.position" title="position">position</a></li><li><a href="#structfield.speed" title="speed">speed</a></li><li><a href="#structfield.stamina" title="stamina">stamina</a></li><li><a href="#structfield.stamina_regen_cooldown" title="stamina_regen_cooldown">stamina_regen_cooldown</a></li><li><a href="#structfield.stamina_regen_rate" title="stamina_regen_rate">stamina_regen_rate</a></li><li><a href="#structfield.yaw" title="yaw">yaw</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.get_view_matrix" title="get_view_matrix">get_view_matrix</a></li><li><a href="#method.get_view_proj_matrix" title="get_view_proj_matrix">get_view_proj_matrix</a></li><li><a href="#method.mouse_movement" title="mouse_movement">mouse_movement</a></li><li><a href="#method.move_backward" title="move_backward">move_backward</a></li><li><a href="#method.move_down" title="move_down">move_down</a></li><li><a href="#method.move_forward" title="move_forward">move_forward</a></li><li><a href="#method.move_left" title="move_left">move_left</a></li><li><a href="#method.move_right" title="move_right">move_right</a></li><li><a href="#method.move_up" title="move_up">move_up</a></li><li><a href="#method.move_with_collision" title="move_with_collision">move_with_collision</a></li><li><a href="#method.new" title="new">new</a></li><li><a href="#method.spawn_at_maze_entrance" title="spawn_at_maze_entrance">spawn_at_maze_entrance</a></li><li><a href="#method.stamina_ratio" title="stamina_ratio">stamina_ratio</a></li><li><a href="#method.update_cell" title="update_cell">update_cell</a></li><li><a href="#method.update_stamina" title="update_stamina">update_stamina</a></li></ul><h3><a href="#trait-implementations">Trait Implementations</a></h3><ul class="block trait-implementation"><li><a href="#impl-Clone-for-Player" title="Clone">Clone</a></li><li><a href="#impl-Debug-for-Player" title="Debug">Debug</a></li><li><a href="#impl-Default-for-Player" title="Default">Default</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-Player" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-Player" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-Player" title="Send">Send</a></li><li><a href="#impl-Sync-for-Player" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-Player" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-Player" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-CloneToUninit-for-T" title="CloneToUninit">CloneToUninit</a></li><li><a href="#impl-Downcast-for-T" title="Downcast">Downcast</a></li><li><a href="#impl-Downcast%3CT%3E-for-T" title="Downcast&#60;T&#62;">Downcast&#60;T&#62;</a></li><li><a href="#impl-DowncastSync-for-T" title="DowncastSync">DowncastSync</a></li><li><a href="#impl-Duplex%3CS%3E-for-T" title="Duplex&#60;S&#62;">Duplex&#60;S&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-FromSample%3CS%3E-for-S" title="FromSample&#60;S&#62;">FromSample&#60;S&#62;</a></li><li><a href="#impl-Instrument-for-T" title="Instrument">Instrument</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-IntoEither-for-T" title="IntoEither">IntoEither</a></li><li><a href="#impl-IntoSample%3CT%3E-for-F" title="IntoSample&#60;T&#62;">IntoSample&#60;T&#62;</a></li><li><a href="#impl-Pointable-for-T" title="Pointable">Pointable</a></li><li><a href="#impl-ReadPrimitive%3CR%3E-for-P" title="ReadPrimitive&#60;R&#62;">ReadPrimitive&#60;R&#62;</a></li><li><a href="#impl-ToOwned-for-T" title="ToOwned">ToOwned</a></li><li><a href="#impl-ToSample%3CU%3E-for-T" title="ToSample&#60;U&#62;">ToSample&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li><li><a href="#impl-Upcast%3CT%3E-for-T" title="Upcast&#60;T&#62;">Upcast&#60;T&#62;</a></li><li><a href="#impl-VZip%3CV%3E-for-T" title="VZip&#60;V&#62;">VZip&#60;V&#62;</a></li><li><a href="#impl-WasmNotSend-for-T" title="WasmNotSend">WasmNotSend</a></li><li><a href="#impl-WasmNotSendSync-for-T" title="WasmNotSendSync">WasmNotSendSync</a></li><li><a href="#impl-WasmNotSync-for-T" title="WasmNotSync">WasmNotSync</a></li><li><a href="#impl-WithSubscriber-for-T" title="WithSubscriber">WithSubscriber</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In mirador::<wbr>game::<wbr>player</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">mirador</a>::<wbr><a href="../index.html">game</a>::<wbr><a href="index.html">player</a></div><h1>Struct <span class="struct">Player</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/mirador/game/player.rs.html#90-175">Source</a> </span></div><pre class="rust item-decl"><code>pub struct Player {<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 13 fields</span></summary>
     pub position: [<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.array.html">3</a>],
     pub pitch: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
     pub yaw: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
@@ -13,16 +13,96 @@
     pub stamina_regen_rate: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
     pub last_sprint_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
 </details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Represents the player character’s state in the world.</p>
-<p>Includes position, orientation (pitch/yaw), field of view, movement speed, and mouse sensitivity.</p>
-</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.position" class="structfield section-header"><a href="#structfield.position" class="anchor field">§</a><code>position: [<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.array.html">3</a>]</code></span><div class="docblock"><p>Player’s world position <code>[x, y, z]</code>.</p>
-</div><span id="structfield.pitch" class="structfield section-header"><a href="#structfield.pitch" class="anchor field">§</a><code>pitch: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Pitch (up/down look), in degrees.</p>
-</div><span id="structfield.yaw" class="structfield section-header"><a href="#structfield.yaw" class="anchor field">§</a><code>yaw: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Yaw (left/right look), in degrees.</p>
-</div><span id="structfield.fov" class="structfield section-header"><a href="#structfield.fov" class="anchor field">§</a><code>fov: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Field of view (degrees).</p>
-</div><span id="structfield.base_speed" class="structfield section-header"><a href="#structfield.base_speed" class="anchor field">§</a><code>base_speed: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Base movement speed (units per second).</p>
-</div><span id="structfield.speed" class="structfield section-header"><a href="#structfield.speed" class="anchor field">§</a><code>speed: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Current movement speed (units per second).</p>
-</div><span id="structfield.mouse_sensitivity" class="structfield section-header"><a href="#structfield.mouse_sensitivity" class="anchor field">§</a><code>mouse_sensitivity: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Mouse sensitivity multiplier.</p>
-</div><span id="structfield.current_cell" class="structfield section-header"><a href="#structfield.current_cell" class="anchor field">§</a><code>current_cell: <a class="struct" href="../maze/generator/struct.Cell.html" title="struct mirador::game::maze::generator::Cell">Cell</a></code></span><div class="docblock"><p>Current Cell</p>
-</div><span id="structfield.stamina" class="structfield section-header"><a href="#structfield.stamina" class="anchor field">§</a><code>stamina: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><span id="structfield.max_stamina" class="structfield section-header"><a href="#structfield.max_stamina" class="anchor field">§</a><code>max_stamina: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><span id="structfield.stamina_regen_cooldown" class="structfield section-header"><a href="#structfield.stamina_regen_cooldown" class="anchor field">§</a><code>stamina_regen_cooldown: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><span id="structfield.stamina_regen_rate" class="structfield section-header"><a href="#structfield.stamina_regen_rate" class="anchor field">§</a><code>stamina_regen_rate: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><span id="structfield.last_sprint_time" class="structfield section-header"><a href="#structfield.last_sprint_time" class="anchor field">§</a><code>last_sprint_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/collision.rs.html#1726-1795">Source</a><a href="#impl-Player" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.move_with_collision" class="method"><a class="src rightside" href="../../../src/mirador/game/collision.rs.html#1752-1794">Source</a><h4 class="code-header">pub fn <a href="#method.move_with_collision" class="fn">move_with_collision</a>(
+<p>The <code>Player</code> struct encapsulates all player-related state including position,
+orientation, movement parameters, and stamina system. It provides methods for
+movement, camera control, and integration with the maze system.</p>
+<h2 id="fields-1"><a class="doc-anchor" href="#fields-1">§</a>Fields</h2><h3 id="position-and-orientation"><a class="doc-anchor" href="#position-and-orientation">§</a>Position and Orientation</h3>
+<ul>
+<li><code>position</code>: 3D world coordinates <code>[x, y, z]</code> where y represents height</li>
+<li><code>pitch</code>: Vertical look angle in degrees (-89° to +89°)</li>
+<li><code>yaw</code>: Horizontal look angle in degrees (0° to 360°)</li>
+<li><code>fov</code>: Field of view in degrees for perspective projection</li>
+</ul>
+<h3 id="movement-parameters"><a class="doc-anchor" href="#movement-parameters">§</a>Movement Parameters</h3>
+<ul>
+<li><code>base_speed</code>: Base movement speed in units per second</li>
+<li><code>speed</code>: Current movement speed (can be modified by upgrades/effects)</li>
+<li><code>mouse_sensitivity</code>: Multiplier for mouse movement sensitivity</li>
+</ul>
+<h3 id="maze-integration"><a class="doc-anchor" href="#maze-integration">§</a>Maze Integration</h3>
+<ul>
+<li><code>current_cell</code>: The maze cell the player is currently occupying</li>
+</ul>
+<h3 id="stamina-system"><a class="doc-anchor" href="#stamina-system">§</a>Stamina System</h3>
+<ul>
+<li><code>stamina</code>: Current stamina value (0.0 to max_stamina)</li>
+<li><code>max_stamina</code>: Maximum stamina capacity</li>
+<li><code>stamina_regen_cooldown</code>: Seconds to wait before stamina regeneration starts</li>
+<li><code>stamina_regen_rate</code>: Stamina points regenerated per second</li>
+<li><code>last_sprint_time</code>: Time accumulator for regeneration cooldown</li>
+</ul>
+<h2 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span>player = Player::new();
+<span class="macro">assert_eq!</span>(player.position[<span class="number">1</span>], <span class="kw">crate</span>::math::coordinates::constants::PLAYER_HEIGHT);
+<span class="macro">assert_eq!</span>(player.stamina, <span class="number">1.0</span>);
+<span class="macro">assert_eq!</span>(player.max_stamina, <span class="number">2.0</span>);</code></pre></div>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.position" class="structfield section-header"><a href="#structfield.position" class="anchor field">§</a><code>position: [<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.array.html">3</a>]</code></span><div class="docblock"><p>Player’s world position in 3D space <code>[x, y, z]</code>.</p>
+<ul>
+<li><code>x</code>: Left/right position</li>
+<li><code>y</code>: Height/vertical position (typically at <code>PLAYER_HEIGHT</code>)</li>
+<li><code>z</code>: Forward/backward position</li>
+</ul>
+</div><span id="structfield.pitch" class="structfield section-header"><a href="#structfield.pitch" class="anchor field">§</a><code>pitch: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Pitch angle in degrees for vertical camera control.</p>
+<p>Controls looking up/down:</p>
+<ul>
+<li>Positive values: Looking up</li>
+<li>Negative values: Looking down</li>
+<li>Clamped between -89° and +89° to prevent camera flipping</li>
+</ul>
+</div><span id="structfield.yaw" class="structfield section-header"><a href="#structfield.yaw" class="anchor field">§</a><code>yaw: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Yaw angle in degrees for horizontal camera control.</p>
+<p>Controls looking left/right:</p>
+<ul>
+<li>0°: Looking north</li>
+<li>90°: Looking east</li>
+<li>180°: Looking south</li>
+<li>270°: Looking west</li>
+<li>Wraps around 360°</li>
+</ul>
+</div><span id="structfield.fov" class="structfield section-header"><a href="#structfield.fov" class="anchor field">§</a><code>fov: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Field of view in degrees for perspective projection.</p>
+<p>Controls how wide the camera view is:</p>
+<ul>
+<li>Higher values: Wider, more fisheye effect</li>
+<li>Lower values: Narrower, more zoomed in</li>
+<li>Typical range: 60° to 120°</li>
+</ul>
+</div><span id="structfield.base_speed" class="structfield section-header"><a href="#structfield.base_speed" class="anchor field">§</a><code>base_speed: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Base movement speed in units per second.</p>
+<p>This is the default movement speed before any modifications
+from upgrades, sprinting, or other effects.</p>
+</div><span id="structfield.speed" class="structfield section-header"><a href="#structfield.speed" class="anchor field">§</a><code>speed: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Current movement speed in units per second.</p>
+<p>This is the actual speed used for movement calculations.
+Can be modified by sprinting, upgrades, or other game effects.</p>
+</div><span id="structfield.mouse_sensitivity" class="structfield section-header"><a href="#structfield.mouse_sensitivity" class="anchor field">§</a><code>mouse_sensitivity: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Mouse sensitivity multiplier for camera control.</p>
+<p>Higher values make mouse movement more responsive.
+Lower values make mouse movement more precise.</p>
+</div><span id="structfield.current_cell" class="structfield section-header"><a href="#structfield.current_cell" class="anchor field">§</a><code>current_cell: <a class="struct" href="../maze/generator/struct.Cell.html" title="struct mirador::game::maze::generator::Cell">Cell</a></code></span><div class="docblock"><p>The maze cell the player is currently occupying.</p>
+<p>Used for collision detection, game logic, and maze navigation.</p>
+</div><span id="structfield.stamina" class="structfield section-header"><a href="#structfield.stamina" class="anchor field">§</a><code>stamina: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Current stamina value (0.0 to max_stamina).</p>
+<p>Stamina is consumed when sprinting and regenerates over time.
+When stamina reaches 0.0, sprinting is disabled.</p>
+</div><span id="structfield.max_stamina" class="structfield section-header"><a href="#structfield.max_stamina" class="anchor field">§</a><code>max_stamina: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Maximum stamina capacity.</p>
+<p>The upper limit for the stamina value. Stamina regeneration
+stops when this value is reached.</p>
+</div><span id="structfield.stamina_regen_cooldown" class="structfield section-header"><a href="#structfield.stamina_regen_cooldown" class="anchor field">§</a><code>stamina_regen_cooldown: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Seconds to wait before stamina regeneration starts.</p>
+<p>After sprinting stops, the game waits this many seconds
+before beginning stamina regeneration.</p>
+</div><span id="structfield.stamina_regen_rate" class="structfield section-header"><a href="#structfield.stamina_regen_rate" class="anchor field">§</a><code>stamina_regen_rate: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Stamina points regenerated per second.</p>
+<p>The rate at which stamina recovers when regeneration is active.</p>
+</div><span id="structfield.last_sprint_time" class="structfield section-header"><a href="#structfield.last_sprint_time" class="anchor field">§</a><code>last_sprint_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></code></span><div class="docblock"><p>Time accumulator for stamina regeneration cooldown.</p>
+<p>Tracks how much time has passed since the last sprint.
+When this exceeds <code>stamina_regen_cooldown</code>, regeneration begins.</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/collision.rs.html#1910-1979">Source</a><a href="#impl-Player" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.move_with_collision" class="method"><a class="src rightside" href="../../../src/mirador/game/collision.rs.html#1936-1978">Source</a><h4 class="code-header">pub fn <a href="#method.move_with_collision" class="fn">move_with_collision</a>(
     &amp;mut self,
     audio_manager: &amp;mut <a class="struct" href="../audio/struct.GameAudioManager.html" title="struct mirador::game::audio::GameAudioManager">GameAudioManager</a>,
     collision_system: &amp;<a class="struct" href="../collision/struct.CollisionSystem.html" title="struct mirador::game::collision::CollisionSystem">CollisionSystem</a>,
@@ -52,42 +132,375 @@ doesn’t pass through walls.</p>
 <h5 id="physics-integration"><a class="doc-anchor" href="#physics-integration">§</a>Physics Integration</h5>
 <p>The movement respects the physics of the environment by preventing
 penetration into walls and allowing for realistic sliding along surfaces.</p>
-</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Player-1" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#39-199">Source</a><a href="#impl-Player-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#41-57">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>Creates a new <a href="struct.Player.html" title="struct mirador::game::player::Player"><code>Player</code></a> with default starting position and parameters.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.get_view_matrix" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#62-76">Source</a><h4 class="code-header">pub fn <a href="#method.get_view_matrix" class="fn">get_view_matrix</a>(&amp;self) -&gt; <a class="struct" href="../../math/mat/struct.Mat4.html" title="struct mirador::math::mat::Mat4">Mat4</a></h4></section></summary><div class="docblock"><p>Computes the view matrix for the player’s current position and orientation.</p>
-<p>Combines pitch and yaw rotations, then applies translation.</p>
-</div></details><section id="method.get_view_proj_matrix" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#78-89">Source</a><h4 class="code-header">pub fn <a href="#method.get_view_proj_matrix" class="fn">get_view_proj_matrix</a>(
+</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Player-1" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#177-741">Source</a><a href="#impl-Player-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#202-218">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>Creates a new <a href="struct.Player.html" title="struct mirador::game::player::Player"><code>Player</code></a> with default starting position and parameters.</p>
+<h5 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h5>
+<p>A new <code>Player</code> instance with the following defaults:</p>
+<ul>
+<li>Position: <code>[0.0, PLAYER_HEIGHT, 0.0]</code> (center of world at player height)</li>
+<li>Pitch: <code>3.0°</code> (slightly looking down)</li>
+<li>Yaw: <code>316.0°</code> (facing northwest)</li>
+<li>FOV: <code>100.0°</code> (wide field of view)</li>
+<li>Base Speed: <code>120.0</code> units/second</li>
+<li>Mouse Sensitivity: <code>1.0</code> (normal sensitivity)</li>
+<li>Stamina: <code>1.0</code> / <code>2.0</code> max (50% full)</li>
+<li>Stamina Regen: <code>1.5</code> points/second after <code>0.7</code> second cooldown</li>
+</ul>
+<h5 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span>player = Player::new();
+<span class="macro">assert_eq!</span>(player.position[<span class="number">1</span>], <span class="kw">crate</span>::math::coordinates::constants::PLAYER_HEIGHT);
+<span class="macro">assert_eq!</span>(player.stamina, <span class="number">1.0</span>);
+<span class="macro">assert_eq!</span>(player.max_stamina, <span class="number">2.0</span>);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_view_matrix" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#251-265">Source</a><h4 class="code-header">pub fn <a href="#method.get_view_matrix" class="fn">get_view_matrix</a>(&amp;self) -&gt; <a class="struct" href="../../math/mat/struct.Mat4.html" title="struct mirador::math::mat::Mat4">Mat4</a></h4></section></summary><div class="docblock"><p>Computes the view matrix for the player’s current position and orientation.</p>
+<p>The view matrix transforms world coordinates into camera/view space.
+This matrix is used by the rendering system to position the camera
+in the 3D world.</p>
+<h5 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h5>
+<p>A 4x4 transformation matrix that combines:</p>
+<ol>
+<li>Translation to move the world relative to the camera position</li>
+<li>Rotation to orient the camera based on pitch and yaw angles</li>
+</ol>
+<h5 id="algorithm"><a class="doc-anchor" href="#algorithm">§</a>Algorithm</h5>
+<ol>
+<li>Creates rotation matrices for pitch (X-axis) and yaw (Y-axis)</li>
+<li>Combines rotations: applies yaw first, then pitch</li>
+<li>Creates translation matrix (negative position to move world opposite to camera)</li>
+<li>Multiplies translation by rotation: <code>translation * rotation</code></li>
+</ol>
+<h5 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+<span class="kw">use </span><span class="kw">crate</span>::math::mat::Mat4;
+
+<span class="kw">let </span>player = Player::new();
+<span class="kw">let </span>view_matrix = player.get_view_matrix();
+
+<span class="comment">// The view matrix can be used in shaders for camera transformation
+// view_matrix is a 4x4 matrix that transforms world coordinates to view space</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_view_proj_matrix" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#294-305">Source</a><h4 class="code-header">pub fn <a href="#method.get_view_proj_matrix" class="fn">get_view_proj_matrix</a>(
     &amp;self,
     aspect_ratio: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
     near: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
     far: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
-) -&gt; <a class="struct" href="../../math/mat/struct.Mat4.html" title="struct mirador::math::mat::Mat4">Mat4</a></h4></section><details class="toggle method-toggle" open><summary><section id="method.mouse_movement" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#98-104">Source</a><h4 class="code-header">pub fn <a href="#method.mouse_movement" class="fn">mouse_movement</a>(&amp;mut self, delta_x: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f64.html">f64</a>, delta_y: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Updates the player’s orientation based on mouse movement.</p>
+) -&gt; <a class="struct" href="../../math/mat/struct.Mat4.html" title="struct mirador::math::mat::Mat4">Mat4</a></h4></section></summary><div class="docblock"><p>Computes the combined view-projection matrix for rendering.</p>
+<p>This method combines the view matrix (camera transformation) with
+the projection matrix (perspective transformation) into a single
+matrix for efficient GPU usage.</p>
 <h5 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h5>
 <ul>
-<li><code>delta_x</code> - Mouse movement in the X direction.</li>
-<li><code>delta_y</code> - Mouse movement in the Y direction.</li>
+<li><code>aspect_ratio</code> - Width divided by height of the viewport</li>
+<li><code>near</code> - Distance to the near clipping plane</li>
+<li><code>far</code> - Distance to the far clipping plane</li>
 </ul>
-<p>Clamps pitch to prevent flipping.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.move_forward" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#107-112">Source</a><h4 class="code-header">pub fn <a href="#method.move_forward" class="fn">move_forward</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player forward based on current yaw and speed.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.move_backward" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#115-120">Source</a><h4 class="code-header">pub fn <a href="#method.move_backward" class="fn">move_backward</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player backward based on current yaw and speed.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.move_left" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#123-128">Source</a><h4 class="code-header">pub fn <a href="#method.move_left" class="fn">move_left</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player left based on current yaw and speed.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.move_right" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#131-136">Source</a><h4 class="code-header">pub fn <a href="#method.move_right" class="fn">move_right</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player right based on current yaw and speed.</p>
-</div></details><section id="method.move_up" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#138-140">Source</a><h4 class="code-header">pub fn <a href="#method.move_up" class="fn">move_up</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section><section id="method.move_down" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#141-143">Source</a><h4 class="code-header">pub fn <a href="#method.move_down" class="fn">move_down</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section><section id="method.update_cell" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#145-152">Source</a><h4 class="code-header">pub fn <a href="#method.update_cell" class="fn">update_cell</a>(&amp;mut self, maze_grid: &amp;[<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>&gt;], is_test_mode: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>)</h4></section><details class="toggle method-toggle" open><summary><section id="method.spawn_at_maze_entrance" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#159-176">Source</a><h4 class="code-header">pub fn <a href="#method.spawn_at_maze_entrance" class="fn">spawn_at_maze_entrance</a>(
+<h5 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h5>
+<p>A 4x4 transformation matrix that transforms world coordinates
+directly to clip space: <code>projection * view</code></p>
+<h5 id="examples-3"><a class="doc-anchor" href="#examples-3">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span>player = Player::new();
+<span class="kw">let </span>view_proj_matrix = player.get_view_proj_matrix(<span class="number">16.0</span>/<span class="number">9.0</span>, <span class="number">0.1</span>, <span class="number">1000.0</span>);
+
+<span class="comment">// This matrix can be passed directly to shaders for efficient rendering</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.mouse_movement" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#341-347">Source</a><h4 class="code-header">pub fn <a href="#method.mouse_movement" class="fn">mouse_movement</a>(&amp;mut self, delta_x: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f64.html">f64</a>, delta_y: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f64.html">f64</a>)</h4></section></summary><div class="docblock"><p>Updates the player’s orientation based on mouse movement.</p>
+<p>This method handles mouse input to control the camera orientation.
+The mouse movement is converted to angular changes in pitch and yaw.</p>
+<h5 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h5>
+<ul>
+<li><code>delta_x</code> - Mouse movement in the X direction (positive = right, negative = left)</li>
+<li><code>delta_y</code> - Mouse movement in the Y direction (positive = down, negative = up)</li>
+</ul>
+<h5 id="behavior"><a class="doc-anchor" href="#behavior">§</a>Behavior</h5>
+<ul>
+<li><strong>Yaw</strong>: Decreases with positive delta_x (mouse right = look left)</li>
+<li><strong>Pitch</strong>: Decreases with positive delta_y (mouse down = look down)</li>
+<li><strong>Pitch Clamping</strong>: Automatically clamped to [-89°, +89°] to prevent camera flipping</li>
+<li><strong>Sensitivity</strong>: Movement is scaled by <code>mouse_sensitivity</code> multiplier</li>
+</ul>
+<h5 id="examples-4"><a class="doc-anchor" href="#examples-4">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_yaw = player.yaw;
+<span class="kw">let </span>initial_pitch = player.pitch;
+
+<span class="comment">// Move mouse right (positive delta_x)
+</span>player.mouse_movement(<span class="number">10.0</span>, <span class="number">0.0</span>);
+<span class="macro">assert!</span>(player.yaw &lt; initial_yaw); <span class="comment">// Looking more left
+
+// Move mouse down (positive delta_y)
+</span>player.mouse_movement(<span class="number">0.0</span>, <span class="number">5.0</span>);
+<span class="macro">assert!</span>(player.pitch &lt; initial_pitch); <span class="comment">// Looking more down</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.move_forward" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#382-387">Source</a><h4 class="code-header">pub fn <a href="#method.move_forward" class="fn">move_forward</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player forward based on current yaw and speed.</p>
+<p>Moves the player in the direction they are currently facing.
+The movement is based on the player’s yaw angle and current speed.</p>
+<h5 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h5>
+<ul>
+<li><code>delta_time</code> - Time elapsed since last frame in seconds</li>
+</ul>
+<h5 id="movement-calculation"><a class="doc-anchor" href="#movement-calculation">§</a>Movement Calculation</h5>
+<p>The forward direction is calculated as:</p>
+<ul>
+<li><code>forward_x = sin(yaw_radians)</code></li>
+<li><code>forward_z = cos(yaw_radians)</code></li>
+</ul>
+<p>Position is updated as:</p>
+<ul>
+<li><code>position.x -= forward_x * speed * delta_time</code></li>
+<li><code>position.z -= forward_z * speed * delta_time</code></li>
+</ul>
+<h5 id="examples-5"><a class="doc-anchor" href="#examples-5">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_pos = player.position;
+
+<span class="comment">// Move forward for 1 second at 120 units/second
+</span>player.move_forward(<span class="number">1.0</span>);
+
+<span class="comment">// Position should have changed based on initial yaw
+</span><span class="macro">assert_ne!</span>(player.position, initial_pos);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.move_backward" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#419-424">Source</a><h4 class="code-header">pub fn <a href="#method.move_backward" class="fn">move_backward</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player backward based on current yaw and speed.</p>
+<p>Moves the player in the opposite direction they are currently facing.
+This is the inverse of <code>move_forward()</code>.</p>
+<h5 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h5>
+<ul>
+<li><code>delta_time</code> - Time elapsed since last frame in seconds</li>
+</ul>
+<h5 id="movement-calculation-1"><a class="doc-anchor" href="#movement-calculation-1">§</a>Movement Calculation</h5>
+<p>Uses the same forward direction calculation as <code>move_forward()</code>,
+but adds to position instead of subtracting:</p>
+<ul>
+<li><code>position.x += forward_x * speed * delta_time</code></li>
+<li><code>position.z += forward_z * speed * delta_time</code></li>
+</ul>
+<h5 id="examples-6"><a class="doc-anchor" href="#examples-6">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_pos = player.position;
+
+<span class="comment">// Move backward for 1 second at 120 units/second
+</span>player.move_backward(<span class="number">1.0</span>);
+
+<span class="comment">// Position should have changed in opposite direction from forward
+</span><span class="macro">assert_ne!</span>(player.position, initial_pos);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.move_left" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#459-464">Source</a><h4 class="code-header">pub fn <a href="#method.move_left" class="fn">move_left</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player left (strafe) based on current yaw and speed.</p>
+<p>Moves the player perpendicular to their facing direction, to the left.
+This is calculated using the right vector rotated 90° counterclockwise.</p>
+<h5 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h5>
+<ul>
+<li><code>delta_time</code> - Time elapsed since last frame in seconds</li>
+</ul>
+<h5 id="movement-calculation-2"><a class="doc-anchor" href="#movement-calculation-2">§</a>Movement Calculation</h5>
+<p>The right direction is calculated as:</p>
+<ul>
+<li><code>right_x = cos(yaw_radians)</code></li>
+<li><code>right_z = sin(yaw_radians)</code></li>
+</ul>
+<p>Left movement is the negative of right:</p>
+<ul>
+<li><code>position.x -= right_x * speed * delta_time</code></li>
+<li><code>position.z += right_z * speed * delta_time</code></li>
+</ul>
+<h5 id="examples-7"><a class="doc-anchor" href="#examples-7">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_pos = player.position;
+
+<span class="comment">// Strafe left for 1 second at 120 units/second
+</span>player.move_left(<span class="number">1.0</span>);
+
+<span class="comment">// Position should have changed perpendicular to facing direction
+</span><span class="macro">assert_ne!</span>(player.position, initial_pos);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.move_right" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#496-501">Source</a><h4 class="code-header">pub fn <a href="#method.move_right" class="fn">move_right</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player right (strafe) based on current yaw and speed.</p>
+<p>Moves the player perpendicular to their facing direction, to the right.
+This is the inverse of <code>move_left()</code>.</p>
+<h5 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h5>
+<ul>
+<li><code>delta_time</code> - Time elapsed since last frame in seconds</li>
+</ul>
+<h5 id="movement-calculation-3"><a class="doc-anchor" href="#movement-calculation-3">§</a>Movement Calculation</h5>
+<p>Uses the same right direction calculation as <code>move_left()</code>,
+but with opposite signs:</p>
+<ul>
+<li><code>position.x += right_x * speed * delta_time</code></li>
+<li><code>position.z -= right_z * speed * delta_time</code></li>
+</ul>
+<h5 id="examples-8"><a class="doc-anchor" href="#examples-8">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_pos = player.position;
+
+<span class="comment">// Strafe right for 1 second at 120 units/second
+</span>player.move_right(<span class="number">1.0</span>);
+
+<span class="comment">// Position should have changed perpendicular to facing direction
+</span><span class="macro">assert_ne!</span>(player.position, initial_pos);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.move_up" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#529-531">Source</a><h4 class="code-header">pub fn <a href="#method.move_up" class="fn">move_up</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player upward in the Y direction.</p>
+<p>Increases the player’s height (Y coordinate) at half the normal movement speed.
+This is typically used for flying or vertical movement in test modes.</p>
+<h5 id="arguments-7"><a class="doc-anchor" href="#arguments-7">§</a>Arguments</h5>
+<ul>
+<li><code>delta_time</code> - Time elapsed since last frame in seconds</li>
+</ul>
+<h5 id="movement-calculation-4"><a class="doc-anchor" href="#movement-calculation-4">§</a>Movement Calculation</h5>
+<ul>
+<li><code>position.y += (speed / 2.0) * delta_time</code></li>
+</ul>
+<h5 id="examples-9"><a class="doc-anchor" href="#examples-9">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_height = player.position[<span class="number">1</span>];
+
+<span class="comment">// Move up for 1 second at 60 units/second (half speed)
+</span>player.move_up(<span class="number">1.0</span>);
+
+<span class="macro">assert!</span>(player.position[<span class="number">1</span>] &gt; initial_height);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.move_down" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#559-561">Source</a><h4 class="code-header">pub fn <a href="#method.move_down" class="fn">move_down</a>(&amp;mut self, delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Moves the player downward in the Y direction.</p>
+<p>Decreases the player’s height (Y coordinate) at half the normal movement speed.
+This is typically used for flying or vertical movement in test modes.</p>
+<h5 id="arguments-8"><a class="doc-anchor" href="#arguments-8">§</a>Arguments</h5>
+<ul>
+<li><code>delta_time</code> - Time elapsed since last frame in seconds</li>
+</ul>
+<h5 id="movement-calculation-5"><a class="doc-anchor" href="#movement-calculation-5">§</a>Movement Calculation</h5>
+<ul>
+<li><code>position.y -= (speed / 2.0) * delta_time</code></li>
+</ul>
+<h5 id="examples-10"><a class="doc-anchor" href="#examples-10">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_height = player.position[<span class="number">1</span>];
+
+<span class="comment">// Move down for 1 second at 60 units/second (half speed)
+</span>player.move_down(<span class="number">1.0</span>);
+
+<span class="macro">assert!</span>(player.position[<span class="number">1</span>] &lt; initial_height);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_cell" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#587-594">Source</a><h4 class="code-header">pub fn <a href="#method.update_cell" class="fn">update_cell</a>(&amp;mut self, maze_grid: &amp;[<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>&gt;], is_test_mode: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>)</h4></section></summary><div class="docblock"><p>Updates the player’s current maze cell based on their world position.</p>
+<p>Converts the player’s world coordinates to maze cell coordinates
+and updates the <code>current_cell</code> field. This is used for collision
+detection, game logic, and maze navigation.</p>
+<h5 id="arguments-9"><a class="doc-anchor" href="#arguments-9">§</a>Arguments</h5>
+<ul>
+<li><code>maze_grid</code> - 2D grid representing the maze layout (true = wall, false = passage)</li>
+<li><code>is_test_mode</code> - Whether test mode is enabled (affects floor size calculations)</li>
+</ul>
+<h5 id="examples-11"><a class="doc-anchor" href="#examples-11">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>maze_grid = <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>], <span class="macro">vec!</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>]]; <span class="comment">// 2x2 maze
+
+// Update cell based on current position
+</span>player.update_cell(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">false</span>);
+
+<span class="comment">// current_cell should now reflect the player's position in maze coordinates</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.spawn_at_maze_entrance" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#630-647">Source</a><h4 class="code-header">pub fn <a href="#method.spawn_at_maze_entrance" class="fn">spawn_at_maze_entrance</a>(
     &amp;mut self,
     maze_grid: &amp;[<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>&gt;],
     is_test_mode: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>,
 )</h4></section></summary><div class="docblock"><p>Spawns the player at the bottom-left cell of the maze.</p>
-<h5 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h5>
+<p>Sets the player’s position to the maze entrance (bottom-left cell)
+and orients them to face north (into the maze). This is typically
+called when starting a new game or respawning.</p>
+<h5 id="arguments-10"><a class="doc-anchor" href="#arguments-10">§</a>Arguments</h5>
 <ul>
-<li><code>maze_grid</code> - The maze grid representing walls and passages</li>
-<li><code>is_test_mode</code> - Whether test mode is enabled (affects floor size)</li>
+<li><code>maze_grid</code> - 2D grid representing the maze layout (true = wall, false = passage)</li>
+<li><code>is_test_mode</code> - Whether test mode is enabled (affects floor size calculations)</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.update_stamina" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#179-195">Source</a><h4 class="code-header">pub fn <a href="#method.update_stamina" class="fn">update_stamina</a>(
+<h5 id="behavior-1"><a class="doc-anchor" href="#behavior-1">§</a>Behavior</h5>
+<ol>
+<li>Calculates maze dimensions from the grid</li>
+<li>Gets the bottom-left cell coordinates</li>
+<li>Converts cell coordinates to world coordinates</li>
+<li>Sets player position to the entrance</li>
+<li>Sets yaw to face north (0°)</li>
+<li>Updates current_cell to match the entrance</li>
+</ol>
+<h5 id="examples-12"><a class="doc-anchor" href="#examples-12">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>maze_grid = <span class="macro">vec!</span>[<span class="macro">vec!</span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>], <span class="macro">vec!</span>[<span class="bool-val">false</span>, <span class="bool-val">false</span>]]; <span class="comment">// 2x2 maze
+
+// Spawn at maze entrance
+</span>player.spawn_at_maze_entrance(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">false</span>);
+
+<span class="comment">// Player should now be at the bottom-left cell facing north
+</span><span class="macro">assert_eq!</span>(player.yaw, <span class="number">0.0</span>); <span class="comment">// North</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_stamina" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#690-706">Source</a><h4 class="code-header">pub fn <a href="#method.update_stamina" class="fn">update_stamina</a>(
     &amp;mut self,
     is_sprinting: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>,
     is_moving: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>,
     delta_time: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>,
-)</h4></section></summary><div class="docblock"><p>Call this every frame to update stamina based on sprinting state and delta_time</p>
-</div></details><section id="method.stamina_ratio" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#196-198">Source</a><h4 class="code-header">pub fn <a href="#method.stamina_ratio" class="fn">stamina_ratio</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></h4></section></div></details></div><h2 id="trait-implementations" class="section-header">Trait Implementations<a href="#trait-implementations" class="anchor">§</a></h2><div id="trait-implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-Clone-for-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#13">Source</a><a href="#impl-Clone-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.clone" class="method trait-impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#13">Source</a><a href="#method.clone" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#tymethod.clone" class="fn">clone</a>(&amp;self) -&gt; <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h4></section></summary><div class='docblock'>Returns a copy of the value. <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#tymethod.clone">Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.clone_from" class="method trait-impl"><span class="rightside"><span class="since" title="Stable since Rust version 1.0.0">1.0.0</span> · <a class="src" href="https://doc.rust-lang.org/1.88.0/src/core/clone.rs.html#174">Source</a></span><a href="#method.clone_from" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#method.clone_from" class="fn">clone_from</a>(&amp;mut self, source: &amp;Self)</h4></section></summary><div class='docblock'>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#method.clone_from">Read more</a></div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Debug-for-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#13">Source</a><a href="#impl-Debug-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#13">Source</a><a href="#method.fmt" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/fmt/trait.Debug.html#tymethod.fmt" class="fn">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/1.88.0/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/1.88.0/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/1.88.0/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Default-for-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#13">Source</a><a href="#impl-Default-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.default" class="method trait-impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#13">Source</a><a href="#method.default" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/default/trait.Default.html#tymethod.default" class="fn">default</a>() -&gt; <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h4></section></summary><div class='docblock'>Returns the “default value” for a type. <a href="https://doc.rust-lang.org/1.88.0/core/default/trait.Default.html#tymethod.default">Read more</a></div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-Player" class="impl"><a href="#impl-Freeze-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Freeze.html" title="trait core::marker::Freeze">Freeze</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-RefUnwindSafe-for-Player" class="impl"><a href="#impl-RefUnwindSafe-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/panic/unwind_safe/trait.RefUnwindSafe.html" title="trait core::panic::unwind_safe::RefUnwindSafe">RefUnwindSafe</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-Send-for-Player" class="impl"><a href="#impl-Send-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-Sync-for-Player" class="impl"><a href="#impl-Sync-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-Unpin-for-Player" class="impl"><a href="#impl-Unpin-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-UnwindSafe-for-Player" class="impl"><a href="#impl-UnwindSafe-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/panic/unwind_safe/trait.UnwindSafe.html" title="trait core::panic::unwind_safe::UnwindSafe">UnwindSafe</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/any.rs.html#138">Source</a><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/any/trait.Any.html" title="trait core::any::Any">Any</a> for T<div class="where">where
+)</h4></section></summary><div class="docblock"><p>Updates the player’s stamina based on sprinting state and time.</p>
+<p>This method should be called every frame to manage the stamina system.
+It handles stamina depletion during sprinting and regeneration during rest.</p>
+<h5 id="arguments-11"><a class="doc-anchor" href="#arguments-11">§</a>Arguments</h5>
+<ul>
+<li><code>is_sprinting</code> - Whether the player is currently sprinting</li>
+<li><code>is_moving</code> - Whether the player is currently moving (required for sprinting)</li>
+<li><code>delta_time</code> - Time elapsed since last frame in seconds</li>
+</ul>
+<h5 id="stamina-system-behavior"><a class="doc-anchor" href="#stamina-system-behavior">§</a>Stamina System Behavior</h5><h6 id="stamina-depletion"><a class="doc-anchor" href="#stamina-depletion">§</a>Stamina Depletion</h6>
+<ul>
+<li>Occurs when <code>is_sprinting &amp;&amp; is_moving &amp;&amp; stamina &gt; 0.0</code></li>
+<li>Depletes at rate of <code>0.7</code> points per second</li>
+<li>Clamps to minimum of <code>0.0</code></li>
+<li>Resets regeneration cooldown timer</li>
+</ul>
+<h6 id="stamina-regeneration"><a class="doc-anchor" href="#stamina-regeneration">§</a>Stamina Regeneration</h6>
+<ul>
+<li>Starts after <code>stamina_regen_cooldown</code> seconds of not sprinting</li>
+<li>Regenerates at rate of <code>stamina_regen_rate</code> points per second</li>
+<li>Clamps to maximum of <code>max_stamina</code></li>
+<li>Cooldown timer accumulates when not sprinting</li>
+</ul>
+<h5 id="examples-13"><a class="doc-anchor" href="#examples-13">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+<span class="kw">let </span>initial_stamina = player.stamina;
+
+<span class="comment">// Sprint for 1 second
+</span>player.update_stamina(<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="number">1.0</span>);
+<span class="macro">assert!</span>(player.stamina &lt; initial_stamina);
+
+<span class="comment">// Rest for 1 second (should start regenerating after 0.7s cooldown)
+</span>player.update_stamina(<span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="number">1.0</span>);
+<span class="macro">assert!</span>(player.stamina &gt; initial_stamina - <span class="number">0.7</span>);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.stamina_ratio" class="method"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#738-740">Source</a><h4 class="code-header">pub fn <a href="#method.stamina_ratio" class="fn">stamina_ratio</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a></h4></section></summary><div class="docblock"><p>Returns the current stamina as a ratio from 0.0 to 1.0.</p>
+<p>This is useful for UI elements like stamina bars that need
+to display stamina as a percentage or normalized value.</p>
+<h5 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h5>
+<p>A value between 0.0 and 1.0 representing the stamina ratio:</p>
+<ul>
+<li><code>0.0</code>: No stamina (empty)</li>
+<li><code>1.0</code>: Full stamina</li>
+<li>Values in between: Partial stamina</li>
+</ul>
+<h5 id="examples-14"><a class="doc-anchor" href="#examples-14">§</a>Examples</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::game::player::Player;
+
+<span class="kw">let </span><span class="kw-2">mut </span>player = Player::new();
+
+<span class="comment">// Full stamina
+</span><span class="macro">assert_eq!</span>(player.stamina_ratio(), <span class="number">0.5</span>); <span class="comment">// 1.0 / 2.0 = 0.5
+
+// Deplete stamina
+</span>player.stamina = <span class="number">0.0</span>;
+<span class="macro">assert_eq!</span>(player.stamina_ratio(), <span class="number">0.0</span>);
+
+<span class="comment">// Full stamina
+</span>player.stamina = player.max_stamina;
+<span class="macro">assert_eq!</span>(player.stamina_ratio(), <span class="number">1.0</span>);</code></pre></div>
+</div></details></div></details></div><h2 id="trait-implementations" class="section-header">Trait Implementations<a href="#trait-implementations" class="anchor">§</a></h2><div id="trait-implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-Clone-for-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#89">Source</a><a href="#impl-Clone-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.clone" class="method trait-impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#89">Source</a><a href="#method.clone" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#tymethod.clone" class="fn">clone</a>(&amp;self) -&gt; <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h4></section></summary><div class='docblock'>Returns a copy of the value. <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#tymethod.clone">Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.clone_from" class="method trait-impl"><span class="rightside"><span class="since" title="Stable since Rust version 1.0.0">1.0.0</span> · <a class="src" href="https://doc.rust-lang.org/1.88.0/src/core/clone.rs.html#174">Source</a></span><a href="#method.clone_from" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#method.clone_from" class="fn">clone_from</a>(&amp;mut self, source: &amp;Self)</h4></section></summary><div class='docblock'>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/1.88.0/core/clone/trait.Clone.html#method.clone_from">Read more</a></div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Debug-for-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#89">Source</a><a href="#impl-Debug-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#89">Source</a><a href="#method.fmt" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/fmt/trait.Debug.html#tymethod.fmt" class="fn">fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/1.88.0/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>&lt;'_&gt;) -&gt; <a class="type" href="https://doc.rust-lang.org/1.88.0/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></h4></section></summary><div class='docblock'>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/1.88.0/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Default-for-Player" class="impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#89">Source</a><a href="#impl-Default-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.default" class="method trait-impl"><a class="src rightside" href="../../../src/mirador/game/player.rs.html#89">Source</a><a href="#method.default" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/default/trait.Default.html#tymethod.default" class="fn">default</a>() -&gt; <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h4></section></summary><div class='docblock'>Returns the “default value” for a type. <a href="https://doc.rust-lang.org/1.88.0/core/default/trait.Default.html#tymethod.default">Read more</a></div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-Player" class="impl"><a href="#impl-Freeze-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Freeze.html" title="trait core::marker::Freeze">Freeze</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-RefUnwindSafe-for-Player" class="impl"><a href="#impl-RefUnwindSafe-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/panic/unwind_safe/trait.RefUnwindSafe.html" title="trait core::panic::unwind_safe::RefUnwindSafe">RefUnwindSafe</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-Send-for-Player" class="impl"><a href="#impl-Send-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-Sync-for-Player" class="impl"><a href="#impl-Sync-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-Unpin-for-Player" class="impl"><a href="#impl-Unpin-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section><section id="impl-UnwindSafe-for-Player" class="impl"><a href="#impl-UnwindSafe-for-Player" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/panic/unwind_safe/trait.UnwindSafe.html" title="trait core::panic::unwind_safe::UnwindSafe">UnwindSafe</a> for <a class="struct" href="struct.Player.html" title="struct mirador::game::player::Player">Player</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/any.rs.html#138">Source</a><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/any/trait.Any.html" title="trait core::any::Any">Any</a> for T<div class="where">where
     T: 'static + ?<a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/any.rs.html#139">Source</a><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/any/trait.Any.html#tymethod.type_id" class="fn">type_id</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.88.0/core/any/struct.TypeId.html" title="struct core::any::TypeId">TypeId</a></h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a href="https://doc.rust-lang.org/1.88.0/core/any/trait.Any.html#tymethod.type_id">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/borrow.rs.html#209">Source</a><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.Borrow.html" title="trait core::borrow::Borrow">Borrow</a>&lt;T&gt; for T<div class="where">where
     T: ?<a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/borrow.rs.html#211">Source</a><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.Borrow.html#tymethod.borrow" class="fn">borrow</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.reference.html">&amp;T</a></h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.Borrow.html#tymethod.borrow">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/borrow.rs.html#217">Source</a><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.BorrowMut.html" title="trait core::borrow::BorrowMut">BorrowMut</a>&lt;T&gt; for T<div class="where">where
     T: ?<a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/borrow.rs.html#218">Source</a><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.BorrowMut.html#tymethod.borrow_mut" class="fn">borrow_mut</a>(&amp;mut self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.reference.html">&amp;mut T</a></h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.BorrowMut.html#tymethod.borrow_mut">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-CloneToUninit-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/clone.rs.html#441">Source</a><a href="#impl-CloneToUninit-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/clone/trait.CloneToUninit.html" title="trait core::clone::CloneToUninit">CloneToUninit</a> for T<div class="where">where
