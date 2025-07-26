@@ -105,678 +105,698 @@
 <a href=#105 id=105 data-nosnippet>105</a>            .update_enemy_position(<span class="string">"enemy"</span>, state.game_state.enemy.pathfinder.position)
 <a href=#106 id=106 data-nosnippet>106</a>            .expect(<span class="string">"Failed to update enemy position"</span>);
 <a href=#107 id=107 data-nosnippet>107</a>
-<a href=#108 id=108 data-nosnippet>108</a>        <span class="comment">// Prepare rendering commands
-<a href=#109 id=109 data-nosnippet>109</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>encoder = state
-<a href=#110 id=110 data-nosnippet>110</a>            .wgpu_renderer
-<a href=#111 id=111 data-nosnippet>111</a>            .device
-<a href=#112 id=112 data-nosnippet>112</a>            .create_command_encoder(<span class="kw-2">&amp;</span>wgpu::CommandEncoderDescriptor { label: <span class="prelude-val">None </span>});
-<a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a>        <span class="comment">// Update canvas surface
-<a href=#115 id=115 data-nosnippet>115</a>        </span><span class="kw">let </span>(surface_view, surface_texture) = <span class="kw">match </span>state.wgpu_renderer.update_canvas(
-<a href=#116 id=116 data-nosnippet>116</a>            window,
-<a href=#117 id=117 data-nosnippet>117</a>            <span class="kw-2">&amp;mut </span>encoder,
-<a href=#118 id=118 data-nosnippet>118</a>            <span class="kw-2">&amp;</span>state.game_state,
-<a href=#119 id=119 data-nosnippet>119</a>            <span class="kw-2">&amp;mut </span>state.text_renderer,
-<a href=#120 id=120 data-nosnippet>120</a>            state.start_time,
-<a href=#121 id=121 data-nosnippet>121</a>        ) {
-<a href=#122 id=122 data-nosnippet>122</a>            <span class="prelude-val">Ok</span>(result) =&gt; result,
-<a href=#123 id=123 data-nosnippet>123</a>            <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#124 id=124 data-nosnippet>124</a>                <span class="macro">eprintln!</span>(<span class="string">"Failed to update canvas: {}"</span>, err);
-<a href=#125 id=125 data-nosnippet>125</a>                <span class="attr">#[cfg(debug_assertions)]
-<a href=#126 id=126 data-nosnippet>126</a>                </span><span class="macro">eprintln!</span>(<span class="string">"Backtrace: {:?}"</span>, std::backtrace::Backtrace::capture());
-<a href=#127 id=127 data-nosnippet>127</a>                <span class="kw">return</span>;
-<a href=#128 id=128 data-nosnippet>128</a>            }
-<a href=#129 id=129 data-nosnippet>129</a>        };
-<a href=#130 id=130 data-nosnippet>130</a>
-<a href=#131 id=131 data-nosnippet>131</a>        <span class="comment">// --- Debug Info Panel ---
-<a href=#132 id=132 data-nosnippet>132</a>        </span><span class="kw">if </span>state.pause_menu.is_debug_panel_visible() {
-<a href=#133 id=133 data-nosnippet>133</a>            <span class="kw">let </span>window_size = <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config;
-<a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a>            <span class="comment">// Add timer information to debug text
-<a href=#136 id=136 data-nosnippet>136</a>            </span><span class="kw">let </span>timer_info = <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;</span>state.game_state.game_ui.timer {
-<a href=#137 id=137 data-nosnippet>137</a>                <span class="kw">let </span>remaining = timer.get_remaining_time();
-<a href=#138 id=138 data-nosnippet>138</a>                <span class="kw">let </span>total = timer.config.duration;
-<a href=#139 id=139 data-nosnippet>139</a>                <span class="kw">let </span>remaining_secs = remaining.as_secs_f64();
-<a href=#140 id=140 data-nosnippet>140</a>                <span class="kw">let </span>total_secs = total.as_secs_f64();
-<a href=#141 id=141 data-nosnippet>141</a>                <span class="kw">let </span>progress = <span class="kw">if </span>total_secs &gt; <span class="number">0.0 </span>{
-<a href=#142 id=142 data-nosnippet>142</a>                    remaining_secs / total_secs
-<a href=#143 id=143 data-nosnippet>143</a>                } <span class="kw">else </span>{
-<a href=#144 id=144 data-nosnippet>144</a>                    <span class="number">0.0
-<a href=#145 id=145 data-nosnippet>145</a>                </span>};
-<a href=#146 id=146 data-nosnippet>146</a>                <span class="macro">format!</span>(
-<a href=#147 id=147 data-nosnippet>147</a>                    <span class="string">"Window Size: {} x {}\nTimer: {:.2}s / {:.2}s ({:.1}%)"</span>,
-<a href=#148 id=148 data-nosnippet>148</a>                    window_size.width,
-<a href=#149 id=149 data-nosnippet>149</a>                    window_size.height,
-<a href=#150 id=150 data-nosnippet>150</a>                    remaining_secs,
-<a href=#151 id=151 data-nosnippet>151</a>                    total_secs,
-<a href=#152 id=152 data-nosnippet>152</a>                    progress * <span class="number">100.0
-<a href=#153 id=153 data-nosnippet>153</a>                </span>)
-<a href=#154 id=154 data-nosnippet>154</a>            } <span class="kw">else </span>{
-<a href=#155 id=155 data-nosnippet>155</a>                <span class="macro">format!</span>(
-<a href=#156 id=156 data-nosnippet>156</a>                    <span class="string">"Window Size: {} x {}\nTimer: Not active"</span>,
-<a href=#157 id=157 data-nosnippet>157</a>                    window_size.width, window_size.height
-<a href=#158 id=158 data-nosnippet>158</a>                )
-<a href=#159 id=159 data-nosnippet>159</a>            };
-<a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>            <span class="kw">let </span>style = <span class="kw">crate</span>::renderer::text::TextStyle {
-<a href=#162 id=162 data-nosnippet>162</a>                font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
-<a href=#163 id=163 data-nosnippet>163</a>                font_size: <span class="number">22.0</span>,
-<a href=#164 id=164 data-nosnippet>164</a>                line_height: <span class="number">26.0</span>,
-<a href=#165 id=165 data-nosnippet>165</a>                color: glyphon::Color::rgb(<span class="number">220</span>, <span class="number">40</span>, <span class="number">40</span>),
-<a href=#166 id=166 data-nosnippet>166</a>                weight: glyphon::Weight::BOLD,
-<a href=#167 id=167 data-nosnippet>167</a>                style: glyphon::Style::Normal,
-<a href=#168 id=168 data-nosnippet>168</a>            };
-<a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">let </span>pos = <span class="kw">crate</span>::renderer::text::TextPosition {
-<a href=#170 id=170 data-nosnippet>170</a>                x: window_size.width <span class="kw">as </span>f32 - <span class="number">320.0</span>,
-<a href=#171 id=171 data-nosnippet>171</a>                y: <span class="number">20.0</span>,
-<a href=#172 id=172 data-nosnippet>172</a>                max_width: <span class="prelude-val">Some</span>(<span class="number">300.0</span>),
-<a href=#173 id=173 data-nosnippet>173</a>                max_height: <span class="prelude-val">Some</span>(<span class="number">80.0</span>), <span class="comment">// Increased height for two lines
-<a href=#174 id=174 data-nosnippet>174</a>            </span>};
-<a href=#175 id=175 data-nosnippet>175</a>            state.text_renderer.create_text_buffer(
-<a href=#176 id=176 data-nosnippet>176</a>                <span class="string">"debug_info"</span>,
-<a href=#177 id=177 data-nosnippet>177</a>                <span class="kw-2">&amp;</span>timer_info,
-<a href=#178 id=178 data-nosnippet>178</a>                <span class="prelude-val">Some</span>(style),
-<a href=#179 id=179 data-nosnippet>179</a>                <span class="prelude-val">Some</span>(pos),
-<a href=#180 id=180 data-nosnippet>180</a>            );
-<a href=#181 id=181 data-nosnippet>181</a>        } <span class="kw">else </span>{
-<a href=#182 id=182 data-nosnippet>182</a>            <span class="comment">// Hide debug info by making it transparent if it exists
-<a href=#183 id=183 data-nosnippet>183</a>            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(buf) = state.text_renderer.text_buffers.get_mut(<span class="string">"debug_info"</span>) {
-<a href=#184 id=184 data-nosnippet>184</a>                buf.visible = <span class="bool-val">false</span>;
-<a href=#185 id=185 data-nosnippet>185</a>            }
-<a href=#186 id=186 data-nosnippet>186</a>        }
-<a href=#187 id=187 data-nosnippet>187</a>        <span class="comment">// Prepare and render text BEFORE pause menu overlay
-<a href=#188 id=188 data-nosnippet>188</a>        </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.text_renderer.prepare(
-<a href=#189 id=189 data-nosnippet>189</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
-<a href=#190 id=190 data-nosnippet>190</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.queue,
-<a href=#191 id=191 data-nosnippet>191</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
-<a href=#192 id=192 data-nosnippet>192</a>        ) {
-<a href=#193 id=193 data-nosnippet>193</a>            <span class="macro">println!</span>(<span class="string">"Failed to prepare text renderer: {}"</span>, e);
-<a href=#194 id=194 data-nosnippet>194</a>        }
-<a href=#195 id=195 data-nosnippet>195</a>        {
-<a href=#196 id=196 data-nosnippet>196</a>            <span class="kw">let </span><span class="kw-2">mut </span>render_pass = encoder.begin_render_pass(<span class="kw-2">&amp;</span>wgpu::RenderPassDescriptor {
-<a href=#197 id=197 data-nosnippet>197</a>                color_attachments: <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(wgpu::RenderPassColorAttachment {
-<a href=#198 id=198 data-nosnippet>198</a>                    view: <span class="kw-2">&amp;</span>surface_view,
-<a href=#199 id=199 data-nosnippet>199</a>                    resolve_target: <span class="prelude-val">None</span>,
-<a href=#200 id=200 data-nosnippet>200</a>                    ops: wgpu::Operations {
-<a href=#201 id=201 data-nosnippet>201</a>                        load: wgpu::LoadOp::Load,
-<a href=#202 id=202 data-nosnippet>202</a>                        store: wgpu::StoreOp::Store,
-<a href=#203 id=203 data-nosnippet>203</a>                    },
-<a href=#204 id=204 data-nosnippet>204</a>                })],
-<a href=#205 id=205 data-nosnippet>205</a>                depth_stencil_attachment: <span class="prelude-val">None</span>,
-<a href=#206 id=206 data-nosnippet>206</a>                timestamp_writes: <span class="prelude-val">None</span>,
-<a href=#207 id=207 data-nosnippet>207</a>                label: <span class="prelude-val">Some</span>(<span class="string">"text render pass"</span>),
-<a href=#208 id=208 data-nosnippet>208</a>                occlusion_query_set: <span class="prelude-val">None</span>,
-<a href=#209 id=209 data-nosnippet>209</a>            });
-<a href=#210 id=210 data-nosnippet>210</a>            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.text_renderer.render(<span class="kw-2">&amp;mut </span>render_pass) {
-<a href=#211 id=211 data-nosnippet>211</a>                <span class="macro">println!</span>(<span class="string">"Failed to render text: {}"</span>, e);
-<a href=#212 id=212 data-nosnippet>212</a>            }
-<a href=#213 id=213 data-nosnippet>213</a>        }
-<a href=#214 id=214 data-nosnippet>214</a>        <span class="comment">// --- End Game UI ---
-<a href=#215 id=215 data-nosnippet>215</a>
-<a href=#216 id=216 data-nosnippet>216</a>        // If paused, render the pause menu on top
-<a href=#217 id=217 data-nosnippet>217</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Pause {
-<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">if </span>!state.pause_menu.is_visible() {
-<a href=#219 id=219 data-nosnippet>219</a>                state.pause_menu.show(state.game_state.is_test_mode);
-<a href=#220 id=220 data-nosnippet>220</a>            }
-<a href=#221 id=221 data-nosnippet>221</a>
-<a href=#222 id=222 data-nosnippet>222</a>            <span class="comment">// Create a render pass for the pause menu
-<a href=#223 id=223 data-nosnippet>223</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>render_pass = encoder.begin_render_pass(<span class="kw-2">&amp;</span>wgpu::RenderPassDescriptor {
-<a href=#224 id=224 data-nosnippet>224</a>                color_attachments: <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(wgpu::RenderPassColorAttachment {
-<a href=#225 id=225 data-nosnippet>225</a>                    view: <span class="kw-2">&amp;</span>surface_view,
-<a href=#226 id=226 data-nosnippet>226</a>                    resolve_target: <span class="prelude-val">None</span>,
-<a href=#227 id=227 data-nosnippet>227</a>                    ops: wgpu::Operations {
-<a href=#228 id=228 data-nosnippet>228</a>                        load: wgpu::LoadOp::Load,
-<a href=#229 id=229 data-nosnippet>229</a>                        store: wgpu::StoreOp::Store,
-<a href=#230 id=230 data-nosnippet>230</a>                    },
-<a href=#231 id=231 data-nosnippet>231</a>                })],
-<a href=#232 id=232 data-nosnippet>232</a>                depth_stencil_attachment: <span class="prelude-val">None</span>,
-<a href=#233 id=233 data-nosnippet>233</a>                timestamp_writes: <span class="prelude-val">None</span>,
-<a href=#234 id=234 data-nosnippet>234</a>                label: <span class="prelude-val">Some</span>(<span class="string">"pause menu render pass"</span>),
-<a href=#235 id=235 data-nosnippet>235</a>                occlusion_query_set: <span class="prelude-val">None</span>,
-<a href=#236 id=236 data-nosnippet>236</a>            });
-<a href=#237 id=237 data-nosnippet>237</a>
-<a href=#238 id=238 data-nosnippet>238</a>            <span class="comment">// --- Add semi-transparent grey overlay ---
-<a href=#239 id=239 data-nosnippet>239</a>            </span><span class="kw">let </span>overlay_color = [<span class="number">0.08</span>, <span class="number">0.09</span>, <span class="number">0.11</span>, <span class="number">0.88</span>]; <span class="comment">// darker, neutral semi-transparent grey
-<a href=#240 id=240 data-nosnippet>240</a>            </span><span class="kw">let </span>(w, h) = (
-<a href=#241 id=241 data-nosnippet>241</a>                state.wgpu_renderer.surface_config.width <span class="kw">as </span>f32,
-<a href=#242 id=242 data-nosnippet>242</a>                state.wgpu_renderer.surface_config.height <span class="kw">as </span>f32,
-<a href=#243 id=243 data-nosnippet>243</a>            );
-<a href=#244 id=244 data-nosnippet>244</a>            state
-<a href=#245 id=245 data-nosnippet>245</a>                .pause_menu
-<a href=#246 id=246 data-nosnippet>246</a>                .button_manager
-<a href=#247 id=247 data-nosnippet>247</a>                .rectangle_renderer
-<a href=#248 id=248 data-nosnippet>248</a>                .add_rectangle(<span class="kw">crate</span>::renderer::rectangle::Rectangle::new(
-<a href=#249 id=249 data-nosnippet>249</a>                    <span class="number">0.0</span>,
-<a href=#250 id=250 data-nosnippet>250</a>                    <span class="number">0.0</span>,
-<a href=#251 id=251 data-nosnippet>251</a>                    w,
-<a href=#252 id=252 data-nosnippet>252</a>                    h,
-<a href=#253 id=253 data-nosnippet>253</a>                    overlay_color,
-<a href=#254 id=254 data-nosnippet>254</a>                ));
-<a href=#255 id=255 data-nosnippet>255</a>            state
-<a href=#256 id=256 data-nosnippet>256</a>                .pause_menu
-<a href=#257 id=257 data-nosnippet>257</a>                .button_manager
-<a href=#258 id=258 data-nosnippet>258</a>                .rectangle_renderer
-<a href=#259 id=259 data-nosnippet>259</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass);
-<a href=#260 id=260 data-nosnippet>260</a>            <span class="comment">// --- End overlay ---
-<a href=#261 id=261 data-nosnippet>261</a>
-<a href=#262 id=262 data-nosnippet>262</a>            // Prepare pause menu for rendering (text)
-<a href=#263 id=263 data-nosnippet>263</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.pause_menu.prepare(
-<a href=#264 id=264 data-nosnippet>264</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
-<a href=#265 id=265 data-nosnippet>265</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.queue,
-<a href=#266 id=266 data-nosnippet>266</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
-<a href=#267 id=267 data-nosnippet>267</a>            ) {
-<a href=#268 id=268 data-nosnippet>268</a>                <span class="macro">println!</span>(<span class="string">"Failed to prepare pause menu: {}"</span>, e);
-<a href=#269 id=269 data-nosnippet>269</a>            }
-<a href=#270 id=270 data-nosnippet>270</a>
-<a href=#271 id=271 data-nosnippet>271</a>            <span class="comment">// Render the pause menu (rectangles + text)
-<a href=#272 id=272 data-nosnippet>272</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state
-<a href=#273 id=273 data-nosnippet>273</a>                .pause_menu
-<a href=#274 id=274 data-nosnippet>274</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass)
-<a href=#275 id=275 data-nosnippet>275</a>            {
-<a href=#276 id=276 data-nosnippet>276</a>                <span class="macro">println!</span>(<span class="string">"Failed to render pause menu: {}"</span>, e);
-<a href=#277 id=277 data-nosnippet>277</a>            }
-<a href=#278 id=278 data-nosnippet>278</a>        } <span class="kw">else </span>{
-<a href=#279 id=279 data-nosnippet>279</a>            <span class="kw">if </span>state.pause_menu.is_visible() {
-<a href=#280 id=280 data-nosnippet>280</a>                state.pause_menu.hide();
-<a href=#281 id=281 data-nosnippet>281</a>            }
-<a href=#282 id=282 data-nosnippet>282</a>            <span class="comment">// Explicitly clear rectangles if menu is not visible
-<a href=#283 id=283 data-nosnippet>283</a>            </span>state
-<a href=#284 id=284 data-nosnippet>284</a>                .pause_menu
-<a href=#285 id=285 data-nosnippet>285</a>                .button_manager
-<a href=#286 id=286 data-nosnippet>286</a>                .rectangle_renderer
-<a href=#287 id=287 data-nosnippet>287</a>                .clear_rectangles();
-<a href=#288 id=288 data-nosnippet>288</a>        }
-<a href=#289 id=289 data-nosnippet>289</a>
-<a href=#290 id=290 data-nosnippet>290</a>        <span class="comment">// If in upgrade menu, render the upgrade menu on top
-<a href=#291 id=291 data-nosnippet>291</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::UpgradeMenu {
-<a href=#292 id=292 data-nosnippet>292</a>            <span class="comment">// Prepare the upgrade menu
-<a href=#293 id=293 data-nosnippet>293</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.upgrade_menu.prepare(
-<a href=#294 id=294 data-nosnippet>294</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
-<a href=#295 id=295 data-nosnippet>295</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.queue,
-<a href=#296 id=296 data-nosnippet>296</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
-<a href=#297 id=297 data-nosnippet>297</a>            ) {
-<a href=#298 id=298 data-nosnippet>298</a>                <span class="macro">println!</span>(<span class="string">"Failed to prepare upgrade menu: {}"</span>, e);
-<a href=#299 id=299 data-nosnippet>299</a>            }
-<a href=#300 id=300 data-nosnippet>300</a>
-<a href=#301 id=301 data-nosnippet>301</a>            <span class="comment">// Create a render pass for the upgrade menu
-<a href=#302 id=302 data-nosnippet>302</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>render_pass = encoder.begin_render_pass(<span class="kw-2">&amp;</span>wgpu::RenderPassDescriptor {
-<a href=#303 id=303 data-nosnippet>303</a>                color_attachments: <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(wgpu::RenderPassColorAttachment {
-<a href=#304 id=304 data-nosnippet>304</a>                    view: <span class="kw-2">&amp;</span>surface_view,
-<a href=#305 id=305 data-nosnippet>305</a>                    resolve_target: <span class="prelude-val">None</span>,
-<a href=#306 id=306 data-nosnippet>306</a>                    ops: wgpu::Operations {
-<a href=#307 id=307 data-nosnippet>307</a>                        load: wgpu::LoadOp::Load,
-<a href=#308 id=308 data-nosnippet>308</a>                        store: wgpu::StoreOp::Store,
-<a href=#309 id=309 data-nosnippet>309</a>                    },
-<a href=#310 id=310 data-nosnippet>310</a>                })],
-<a href=#311 id=311 data-nosnippet>311</a>                depth_stencil_attachment: <span class="prelude-val">None</span>,
-<a href=#312 id=312 data-nosnippet>312</a>                timestamp_writes: <span class="prelude-val">None</span>,
-<a href=#313 id=313 data-nosnippet>313</a>                label: <span class="prelude-val">Some</span>(<span class="string">"upgrade menu render pass"</span>),
-<a href=#314 id=314 data-nosnippet>314</a>                occlusion_query_set: <span class="prelude-val">None</span>,
-<a href=#315 id=315 data-nosnippet>315</a>            });
-<a href=#316 id=316 data-nosnippet>316</a>
-<a href=#317 id=317 data-nosnippet>317</a>            <span class="comment">// --- Add semi-transparent overlay for upgrade menu ---
-<a href=#318 id=318 data-nosnippet>318</a>            </span><span class="kw">let </span>overlay_color = [<span class="number">0.08</span>, <span class="number">0.09</span>, <span class="number">0.11</span>, <span class="number">0.88</span>]; <span class="comment">// darker, neutral semi-transparent grey
-<a href=#319 id=319 data-nosnippet>319</a>            </span><span class="kw">let </span>(w, h) = (
-<a href=#320 id=320 data-nosnippet>320</a>                state.wgpu_renderer.surface_config.width <span class="kw">as </span>f32,
-<a href=#321 id=321 data-nosnippet>321</a>                state.wgpu_renderer.surface_config.height <span class="kw">as </span>f32,
-<a href=#322 id=322 data-nosnippet>322</a>            );
-<a href=#323 id=323 data-nosnippet>323</a>            state
-<a href=#324 id=324 data-nosnippet>324</a>                .upgrade_menu
-<a href=#325 id=325 data-nosnippet>325</a>                .button_manager
-<a href=#326 id=326 data-nosnippet>326</a>                .rectangle_renderer
-<a href=#327 id=327 data-nosnippet>327</a>                .add_rectangle(<span class="kw">crate</span>::renderer::rectangle::Rectangle::new(
-<a href=#328 id=328 data-nosnippet>328</a>                    <span class="number">0.0</span>,
-<a href=#329 id=329 data-nosnippet>329</a>                    <span class="number">0.0</span>,
-<a href=#330 id=330 data-nosnippet>330</a>                    w,
-<a href=#331 id=331 data-nosnippet>331</a>                    h,
-<a href=#332 id=332 data-nosnippet>332</a>                    overlay_color,
-<a href=#333 id=333 data-nosnippet>333</a>                ));
-<a href=#334 id=334 data-nosnippet>334</a>            state
-<a href=#335 id=335 data-nosnippet>335</a>                .upgrade_menu
-<a href=#336 id=336 data-nosnippet>336</a>                .button_manager
-<a href=#337 id=337 data-nosnippet>337</a>                .rectangle_renderer
-<a href=#338 id=338 data-nosnippet>338</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass);
-<a href=#339 id=339 data-nosnippet>339</a>
-<a href=#340 id=340 data-nosnippet>340</a>            <span class="comment">// Render the upgrade menu (rectangles + text)
-<a href=#341 id=341 data-nosnippet>341</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state
-<a href=#342 id=342 data-nosnippet>342</a>                .upgrade_menu
-<a href=#343 id=343 data-nosnippet>343</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass)
-<a href=#344 id=344 data-nosnippet>344</a>            {
-<a href=#345 id=345 data-nosnippet>345</a>                <span class="macro">println!</span>(<span class="string">"Failed to render upgrade menu: {}"</span>, e);
-<a href=#346 id=346 data-nosnippet>346</a>            }
-<a href=#347 id=347 data-nosnippet>347</a>        } <span class="kw">else </span>{
-<a href=#348 id=348 data-nosnippet>348</a>            <span class="kw">if </span>state.upgrade_menu.is_visible() {
-<a href=#349 id=349 data-nosnippet>349</a>                state.upgrade_menu.hide();
-<a href=#350 id=350 data-nosnippet>350</a>            }
-<a href=#351 id=351 data-nosnippet>351</a>            <span class="comment">// Explicitly clear rectangles if menu is not visible
-<a href=#352 id=352 data-nosnippet>352</a>            </span>state
-<a href=#353 id=353 data-nosnippet>353</a>                .upgrade_menu
-<a href=#354 id=354 data-nosnippet>354</a>                .button_manager
-<a href=#355 id=355 data-nosnippet>355</a>                .rectangle_renderer
-<a href=#356 id=356 data-nosnippet>356</a>                .clear_rectangles();
-<a href=#357 id=357 data-nosnippet>357</a>        }
-<a href=#358 id=358 data-nosnippet>358</a>
-<a href=#359 id=359 data-nosnippet>359</a>        window.request_redraw();
-<a href=#360 id=360 data-nosnippet>360</a>
-<a href=#361 id=361 data-nosnippet>361</a>        <span class="comment">// Submit commands and present
-<a href=#362 id=362 data-nosnippet>362</a>        </span>state.wgpu_renderer.queue.submit(<span class="prelude-val">Some</span>(encoder.finish()));
+<a href=#108 id=108 data-nosnippet>108</a>        <span class="comment">// Update audio manager to process any pending audio operations
+<a href=#109 id=109 data-nosnippet>109</a>        </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.game_state.audio_manager.update() {
+<a href=#110 id=110 data-nosnippet>110</a>            <span class="macro">println!</span>(<span class="string">"Failed to update audio manager: {:?}"</span>, e);
+<a href=#111 id=111 data-nosnippet>111</a>        }
+<a href=#112 id=112 data-nosnippet>112</a>
+<a href=#113 id=113 data-nosnippet>113</a>        <span class="comment">// Prepare rendering commands
+<a href=#114 id=114 data-nosnippet>114</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>encoder = state
+<a href=#115 id=115 data-nosnippet>115</a>            .wgpu_renderer
+<a href=#116 id=116 data-nosnippet>116</a>            .device
+<a href=#117 id=117 data-nosnippet>117</a>            .create_command_encoder(<span class="kw-2">&amp;</span>wgpu::CommandEncoderDescriptor { label: <span class="prelude-val">None </span>});
+<a href=#118 id=118 data-nosnippet>118</a>
+<a href=#119 id=119 data-nosnippet>119</a>        <span class="comment">// Update canvas surface
+<a href=#120 id=120 data-nosnippet>120</a>        </span><span class="kw">let </span>(surface_view, surface_texture) = <span class="kw">match </span>state.wgpu_renderer.update_canvas(
+<a href=#121 id=121 data-nosnippet>121</a>            window,
+<a href=#122 id=122 data-nosnippet>122</a>            <span class="kw-2">&amp;mut </span>encoder,
+<a href=#123 id=123 data-nosnippet>123</a>            <span class="kw-2">&amp;</span>state.game_state,
+<a href=#124 id=124 data-nosnippet>124</a>            <span class="kw-2">&amp;mut </span>state.text_renderer,
+<a href=#125 id=125 data-nosnippet>125</a>            state.start_time,
+<a href=#126 id=126 data-nosnippet>126</a>        ) {
+<a href=#127 id=127 data-nosnippet>127</a>            <span class="prelude-val">Ok</span>(result) =&gt; result,
+<a href=#128 id=128 data-nosnippet>128</a>            <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#129 id=129 data-nosnippet>129</a>                <span class="macro">eprintln!</span>(<span class="string">"Failed to update canvas: {}"</span>, err);
+<a href=#130 id=130 data-nosnippet>130</a>                <span class="attr">#[cfg(debug_assertions)]
+<a href=#131 id=131 data-nosnippet>131</a>                </span><span class="macro">eprintln!</span>(<span class="string">"Backtrace: {:?}"</span>, std::backtrace::Backtrace::capture());
+<a href=#132 id=132 data-nosnippet>132</a>                <span class="kw">return</span>;
+<a href=#133 id=133 data-nosnippet>133</a>            }
+<a href=#134 id=134 data-nosnippet>134</a>        };
+<a href=#135 id=135 data-nosnippet>135</a>
+<a href=#136 id=136 data-nosnippet>136</a>        <span class="comment">// --- Debug Info Panel ---
+<a href=#137 id=137 data-nosnippet>137</a>        </span><span class="kw">if </span>state.pause_menu.is_debug_panel_visible() {
+<a href=#138 id=138 data-nosnippet>138</a>            <span class="kw">let </span>window_size = <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config;
+<a href=#139 id=139 data-nosnippet>139</a>
+<a href=#140 id=140 data-nosnippet>140</a>            <span class="comment">// Add timer information to debug text
+<a href=#141 id=141 data-nosnippet>141</a>            </span><span class="kw">let </span>timer_info = <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;</span>state.game_state.game_ui.timer {
+<a href=#142 id=142 data-nosnippet>142</a>                <span class="kw">let </span>remaining = timer.get_remaining_time();
+<a href=#143 id=143 data-nosnippet>143</a>                <span class="kw">let </span>total = timer.config.duration;
+<a href=#144 id=144 data-nosnippet>144</a>                <span class="kw">let </span>remaining_secs = remaining.as_secs_f64();
+<a href=#145 id=145 data-nosnippet>145</a>                <span class="kw">let </span>total_secs = total.as_secs_f64();
+<a href=#146 id=146 data-nosnippet>146</a>                <span class="kw">let </span>progress = <span class="kw">if </span>total_secs &gt; <span class="number">0.0 </span>{
+<a href=#147 id=147 data-nosnippet>147</a>                    remaining_secs / total_secs
+<a href=#148 id=148 data-nosnippet>148</a>                } <span class="kw">else </span>{
+<a href=#149 id=149 data-nosnippet>149</a>                    <span class="number">0.0
+<a href=#150 id=150 data-nosnippet>150</a>                </span>};
+<a href=#151 id=151 data-nosnippet>151</a>                <span class="macro">format!</span>(
+<a href=#152 id=152 data-nosnippet>152</a>                    <span class="string">"Window Size: {} x {}\nTimer: {:.2}s / {:.2}s ({:.1}%)"</span>,
+<a href=#153 id=153 data-nosnippet>153</a>                    window_size.width,
+<a href=#154 id=154 data-nosnippet>154</a>                    window_size.height,
+<a href=#155 id=155 data-nosnippet>155</a>                    remaining_secs,
+<a href=#156 id=156 data-nosnippet>156</a>                    total_secs,
+<a href=#157 id=157 data-nosnippet>157</a>                    progress * <span class="number">100.0
+<a href=#158 id=158 data-nosnippet>158</a>                </span>)
+<a href=#159 id=159 data-nosnippet>159</a>            } <span class="kw">else </span>{
+<a href=#160 id=160 data-nosnippet>160</a>                <span class="macro">format!</span>(
+<a href=#161 id=161 data-nosnippet>161</a>                    <span class="string">"Window Size: {} x {}\nTimer: Not active"</span>,
+<a href=#162 id=162 data-nosnippet>162</a>                    window_size.width, window_size.height
+<a href=#163 id=163 data-nosnippet>163</a>                )
+<a href=#164 id=164 data-nosnippet>164</a>            };
+<a href=#165 id=165 data-nosnippet>165</a>
+<a href=#166 id=166 data-nosnippet>166</a>            <span class="kw">let </span>style = <span class="kw">crate</span>::renderer::text::TextStyle {
+<a href=#167 id=167 data-nosnippet>167</a>                font_family: <span class="string">"HankenGrotesk"</span>.to_string(),
+<a href=#168 id=168 data-nosnippet>168</a>                font_size: <span class="number">22.0</span>,
+<a href=#169 id=169 data-nosnippet>169</a>                line_height: <span class="number">26.0</span>,
+<a href=#170 id=170 data-nosnippet>170</a>                color: glyphon::Color::rgb(<span class="number">220</span>, <span class="number">40</span>, <span class="number">40</span>),
+<a href=#171 id=171 data-nosnippet>171</a>                weight: glyphon::Weight::BOLD,
+<a href=#172 id=172 data-nosnippet>172</a>                style: glyphon::Style::Normal,
+<a href=#173 id=173 data-nosnippet>173</a>            };
+<a href=#174 id=174 data-nosnippet>174</a>            <span class="kw">let </span>pos = <span class="kw">crate</span>::renderer::text::TextPosition {
+<a href=#175 id=175 data-nosnippet>175</a>                x: window_size.width <span class="kw">as </span>f32 - <span class="number">320.0</span>,
+<a href=#176 id=176 data-nosnippet>176</a>                y: <span class="number">20.0</span>,
+<a href=#177 id=177 data-nosnippet>177</a>                max_width: <span class="prelude-val">Some</span>(<span class="number">300.0</span>),
+<a href=#178 id=178 data-nosnippet>178</a>                max_height: <span class="prelude-val">Some</span>(<span class="number">80.0</span>), <span class="comment">// Increased height for two lines
+<a href=#179 id=179 data-nosnippet>179</a>            </span>};
+<a href=#180 id=180 data-nosnippet>180</a>            state.text_renderer.create_text_buffer(
+<a href=#181 id=181 data-nosnippet>181</a>                <span class="string">"debug_info"</span>,
+<a href=#182 id=182 data-nosnippet>182</a>                <span class="kw-2">&amp;</span>timer_info,
+<a href=#183 id=183 data-nosnippet>183</a>                <span class="prelude-val">Some</span>(style),
+<a href=#184 id=184 data-nosnippet>184</a>                <span class="prelude-val">Some</span>(pos),
+<a href=#185 id=185 data-nosnippet>185</a>            );
+<a href=#186 id=186 data-nosnippet>186</a>        } <span class="kw">else </span>{
+<a href=#187 id=187 data-nosnippet>187</a>            <span class="comment">// Hide debug info by making it transparent if it exists
+<a href=#188 id=188 data-nosnippet>188</a>            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(buf) = state.text_renderer.text_buffers.get_mut(<span class="string">"debug_info"</span>) {
+<a href=#189 id=189 data-nosnippet>189</a>                buf.visible = <span class="bool-val">false</span>;
+<a href=#190 id=190 data-nosnippet>190</a>            }
+<a href=#191 id=191 data-nosnippet>191</a>        }
+<a href=#192 id=192 data-nosnippet>192</a>        <span class="comment">// Prepare and render text BEFORE pause menu overlay
+<a href=#193 id=193 data-nosnippet>193</a>        </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.text_renderer.prepare(
+<a href=#194 id=194 data-nosnippet>194</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
+<a href=#195 id=195 data-nosnippet>195</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.queue,
+<a href=#196 id=196 data-nosnippet>196</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
+<a href=#197 id=197 data-nosnippet>197</a>        ) {
+<a href=#198 id=198 data-nosnippet>198</a>            <span class="macro">println!</span>(<span class="string">"Failed to prepare text renderer: {}"</span>, e);
+<a href=#199 id=199 data-nosnippet>199</a>        }
+<a href=#200 id=200 data-nosnippet>200</a>        {
+<a href=#201 id=201 data-nosnippet>201</a>            <span class="kw">let </span><span class="kw-2">mut </span>render_pass = encoder.begin_render_pass(<span class="kw-2">&amp;</span>wgpu::RenderPassDescriptor {
+<a href=#202 id=202 data-nosnippet>202</a>                color_attachments: <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(wgpu::RenderPassColorAttachment {
+<a href=#203 id=203 data-nosnippet>203</a>                    view: <span class="kw-2">&amp;</span>surface_view,
+<a href=#204 id=204 data-nosnippet>204</a>                    resolve_target: <span class="prelude-val">None</span>,
+<a href=#205 id=205 data-nosnippet>205</a>                    ops: wgpu::Operations {
+<a href=#206 id=206 data-nosnippet>206</a>                        load: wgpu::LoadOp::Load,
+<a href=#207 id=207 data-nosnippet>207</a>                        store: wgpu::StoreOp::Store,
+<a href=#208 id=208 data-nosnippet>208</a>                    },
+<a href=#209 id=209 data-nosnippet>209</a>                })],
+<a href=#210 id=210 data-nosnippet>210</a>                depth_stencil_attachment: <span class="prelude-val">None</span>,
+<a href=#211 id=211 data-nosnippet>211</a>                timestamp_writes: <span class="prelude-val">None</span>,
+<a href=#212 id=212 data-nosnippet>212</a>                label: <span class="prelude-val">Some</span>(<span class="string">"text render pass"</span>),
+<a href=#213 id=213 data-nosnippet>213</a>                occlusion_query_set: <span class="prelude-val">None</span>,
+<a href=#214 id=214 data-nosnippet>214</a>            });
+<a href=#215 id=215 data-nosnippet>215</a>            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.text_renderer.render(<span class="kw-2">&amp;mut </span>render_pass) {
+<a href=#216 id=216 data-nosnippet>216</a>                <span class="macro">println!</span>(<span class="string">"Failed to render text: {}"</span>, e);
+<a href=#217 id=217 data-nosnippet>217</a>            }
+<a href=#218 id=218 data-nosnippet>218</a>        }
+<a href=#219 id=219 data-nosnippet>219</a>        <span class="comment">// --- End Game UI ---
+<a href=#220 id=220 data-nosnippet>220</a>
+<a href=#221 id=221 data-nosnippet>221</a>        // If paused, render the pause menu on top
+<a href=#222 id=222 data-nosnippet>222</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Pause {
+<a href=#223 id=223 data-nosnippet>223</a>            <span class="kw">if </span>!state.pause_menu.is_visible() {
+<a href=#224 id=224 data-nosnippet>224</a>                state.pause_menu.show(state.game_state.is_test_mode);
+<a href=#225 id=225 data-nosnippet>225</a>            }
+<a href=#226 id=226 data-nosnippet>226</a>
+<a href=#227 id=227 data-nosnippet>227</a>            <span class="comment">// Create a render pass for the pause menu
+<a href=#228 id=228 data-nosnippet>228</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>render_pass = encoder.begin_render_pass(<span class="kw-2">&amp;</span>wgpu::RenderPassDescriptor {
+<a href=#229 id=229 data-nosnippet>229</a>                color_attachments: <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(wgpu::RenderPassColorAttachment {
+<a href=#230 id=230 data-nosnippet>230</a>                    view: <span class="kw-2">&amp;</span>surface_view,
+<a href=#231 id=231 data-nosnippet>231</a>                    resolve_target: <span class="prelude-val">None</span>,
+<a href=#232 id=232 data-nosnippet>232</a>                    ops: wgpu::Operations {
+<a href=#233 id=233 data-nosnippet>233</a>                        load: wgpu::LoadOp::Load,
+<a href=#234 id=234 data-nosnippet>234</a>                        store: wgpu::StoreOp::Store,
+<a href=#235 id=235 data-nosnippet>235</a>                    },
+<a href=#236 id=236 data-nosnippet>236</a>                })],
+<a href=#237 id=237 data-nosnippet>237</a>                depth_stencil_attachment: <span class="prelude-val">None</span>,
+<a href=#238 id=238 data-nosnippet>238</a>                timestamp_writes: <span class="prelude-val">None</span>,
+<a href=#239 id=239 data-nosnippet>239</a>                label: <span class="prelude-val">Some</span>(<span class="string">"pause menu render pass"</span>),
+<a href=#240 id=240 data-nosnippet>240</a>                occlusion_query_set: <span class="prelude-val">None</span>,
+<a href=#241 id=241 data-nosnippet>241</a>            });
+<a href=#242 id=242 data-nosnippet>242</a>
+<a href=#243 id=243 data-nosnippet>243</a>            <span class="comment">// --- Add semi-transparent grey overlay ---
+<a href=#244 id=244 data-nosnippet>244</a>            </span><span class="kw">let </span>overlay_color = [<span class="number">0.08</span>, <span class="number">0.09</span>, <span class="number">0.11</span>, <span class="number">0.88</span>]; <span class="comment">// darker, neutral semi-transparent grey
+<a href=#245 id=245 data-nosnippet>245</a>            </span><span class="kw">let </span>(w, h) = (
+<a href=#246 id=246 data-nosnippet>246</a>                state.wgpu_renderer.surface_config.width <span class="kw">as </span>f32,
+<a href=#247 id=247 data-nosnippet>247</a>                state.wgpu_renderer.surface_config.height <span class="kw">as </span>f32,
+<a href=#248 id=248 data-nosnippet>248</a>            );
+<a href=#249 id=249 data-nosnippet>249</a>            state
+<a href=#250 id=250 data-nosnippet>250</a>                .pause_menu
+<a href=#251 id=251 data-nosnippet>251</a>                .button_manager
+<a href=#252 id=252 data-nosnippet>252</a>                .rectangle_renderer
+<a href=#253 id=253 data-nosnippet>253</a>                .add_rectangle(<span class="kw">crate</span>::renderer::rectangle::Rectangle::new(
+<a href=#254 id=254 data-nosnippet>254</a>                    <span class="number">0.0</span>,
+<a href=#255 id=255 data-nosnippet>255</a>                    <span class="number">0.0</span>,
+<a href=#256 id=256 data-nosnippet>256</a>                    w,
+<a href=#257 id=257 data-nosnippet>257</a>                    h,
+<a href=#258 id=258 data-nosnippet>258</a>                    overlay_color,
+<a href=#259 id=259 data-nosnippet>259</a>                ));
+<a href=#260 id=260 data-nosnippet>260</a>            state
+<a href=#261 id=261 data-nosnippet>261</a>                .pause_menu
+<a href=#262 id=262 data-nosnippet>262</a>                .button_manager
+<a href=#263 id=263 data-nosnippet>263</a>                .rectangle_renderer
+<a href=#264 id=264 data-nosnippet>264</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass);
+<a href=#265 id=265 data-nosnippet>265</a>            <span class="comment">// --- End overlay ---
+<a href=#266 id=266 data-nosnippet>266</a>
+<a href=#267 id=267 data-nosnippet>267</a>            // Prepare pause menu for rendering (text)
+<a href=#268 id=268 data-nosnippet>268</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.pause_menu.prepare(
+<a href=#269 id=269 data-nosnippet>269</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
+<a href=#270 id=270 data-nosnippet>270</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.queue,
+<a href=#271 id=271 data-nosnippet>271</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
+<a href=#272 id=272 data-nosnippet>272</a>            ) {
+<a href=#273 id=273 data-nosnippet>273</a>                <span class="macro">println!</span>(<span class="string">"Failed to prepare pause menu: {}"</span>, e);
+<a href=#274 id=274 data-nosnippet>274</a>            }
+<a href=#275 id=275 data-nosnippet>275</a>
+<a href=#276 id=276 data-nosnippet>276</a>            <span class="comment">// Render the pause menu (rectangles + text)
+<a href=#277 id=277 data-nosnippet>277</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state
+<a href=#278 id=278 data-nosnippet>278</a>                .pause_menu
+<a href=#279 id=279 data-nosnippet>279</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass)
+<a href=#280 id=280 data-nosnippet>280</a>            {
+<a href=#281 id=281 data-nosnippet>281</a>                <span class="macro">println!</span>(<span class="string">"Failed to render pause menu: {}"</span>, e);
+<a href=#282 id=282 data-nosnippet>282</a>            }
+<a href=#283 id=283 data-nosnippet>283</a>        } <span class="kw">else </span>{
+<a href=#284 id=284 data-nosnippet>284</a>            <span class="kw">if </span>state.pause_menu.is_visible() {
+<a href=#285 id=285 data-nosnippet>285</a>                state.pause_menu.hide();
+<a href=#286 id=286 data-nosnippet>286</a>            }
+<a href=#287 id=287 data-nosnippet>287</a>            <span class="comment">// Explicitly clear rectangles if menu is not visible
+<a href=#288 id=288 data-nosnippet>288</a>            </span>state
+<a href=#289 id=289 data-nosnippet>289</a>                .pause_menu
+<a href=#290 id=290 data-nosnippet>290</a>                .button_manager
+<a href=#291 id=291 data-nosnippet>291</a>                .rectangle_renderer
+<a href=#292 id=292 data-nosnippet>292</a>                .clear_rectangles();
+<a href=#293 id=293 data-nosnippet>293</a>        }
+<a href=#294 id=294 data-nosnippet>294</a>
+<a href=#295 id=295 data-nosnippet>295</a>        <span class="comment">// If in upgrade menu, render the upgrade menu on top
+<a href=#296 id=296 data-nosnippet>296</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::UpgradeMenu {
+<a href=#297 id=297 data-nosnippet>297</a>            <span class="comment">// Prepare the upgrade menu
+<a href=#298 id=298 data-nosnippet>298</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state.upgrade_menu.prepare(
+<a href=#299 id=299 data-nosnippet>299</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
+<a href=#300 id=300 data-nosnippet>300</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.queue,
+<a href=#301 id=301 data-nosnippet>301</a>                <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
+<a href=#302 id=302 data-nosnippet>302</a>            ) {
+<a href=#303 id=303 data-nosnippet>303</a>                <span class="macro">println!</span>(<span class="string">"Failed to prepare upgrade menu: {}"</span>, e);
+<a href=#304 id=304 data-nosnippet>304</a>            }
+<a href=#305 id=305 data-nosnippet>305</a>
+<a href=#306 id=306 data-nosnippet>306</a>            <span class="comment">// Create a render pass for the upgrade menu
+<a href=#307 id=307 data-nosnippet>307</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>render_pass = encoder.begin_render_pass(<span class="kw-2">&amp;</span>wgpu::RenderPassDescriptor {
+<a href=#308 id=308 data-nosnippet>308</a>                color_attachments: <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(wgpu::RenderPassColorAttachment {
+<a href=#309 id=309 data-nosnippet>309</a>                    view: <span class="kw-2">&amp;</span>surface_view,
+<a href=#310 id=310 data-nosnippet>310</a>                    resolve_target: <span class="prelude-val">None</span>,
+<a href=#311 id=311 data-nosnippet>311</a>                    ops: wgpu::Operations {
+<a href=#312 id=312 data-nosnippet>312</a>                        load: wgpu::LoadOp::Load,
+<a href=#313 id=313 data-nosnippet>313</a>                        store: wgpu::StoreOp::Store,
+<a href=#314 id=314 data-nosnippet>314</a>                    },
+<a href=#315 id=315 data-nosnippet>315</a>                })],
+<a href=#316 id=316 data-nosnippet>316</a>                depth_stencil_attachment: <span class="prelude-val">None</span>,
+<a href=#317 id=317 data-nosnippet>317</a>                timestamp_writes: <span class="prelude-val">None</span>,
+<a href=#318 id=318 data-nosnippet>318</a>                label: <span class="prelude-val">Some</span>(<span class="string">"upgrade menu render pass"</span>),
+<a href=#319 id=319 data-nosnippet>319</a>                occlusion_query_set: <span class="prelude-val">None</span>,
+<a href=#320 id=320 data-nosnippet>320</a>            });
+<a href=#321 id=321 data-nosnippet>321</a>
+<a href=#322 id=322 data-nosnippet>322</a>            <span class="comment">// --- Add semi-transparent overlay for upgrade menu ---
+<a href=#323 id=323 data-nosnippet>323</a>            </span><span class="kw">let </span>overlay_color = [<span class="number">0.08</span>, <span class="number">0.09</span>, <span class="number">0.11</span>, <span class="number">0.88</span>]; <span class="comment">// darker, neutral semi-transparent grey
+<a href=#324 id=324 data-nosnippet>324</a>            </span><span class="kw">let </span>(w, h) = (
+<a href=#325 id=325 data-nosnippet>325</a>                state.wgpu_renderer.surface_config.width <span class="kw">as </span>f32,
+<a href=#326 id=326 data-nosnippet>326</a>                state.wgpu_renderer.surface_config.height <span class="kw">as </span>f32,
+<a href=#327 id=327 data-nosnippet>327</a>            );
+<a href=#328 id=328 data-nosnippet>328</a>            state
+<a href=#329 id=329 data-nosnippet>329</a>                .upgrade_menu
+<a href=#330 id=330 data-nosnippet>330</a>                .button_manager
+<a href=#331 id=331 data-nosnippet>331</a>                .rectangle_renderer
+<a href=#332 id=332 data-nosnippet>332</a>                .add_rectangle(<span class="kw">crate</span>::renderer::rectangle::Rectangle::new(
+<a href=#333 id=333 data-nosnippet>333</a>                    <span class="number">0.0</span>,
+<a href=#334 id=334 data-nosnippet>334</a>                    <span class="number">0.0</span>,
+<a href=#335 id=335 data-nosnippet>335</a>                    w,
+<a href=#336 id=336 data-nosnippet>336</a>                    h,
+<a href=#337 id=337 data-nosnippet>337</a>                    overlay_color,
+<a href=#338 id=338 data-nosnippet>338</a>                ));
+<a href=#339 id=339 data-nosnippet>339</a>            state
+<a href=#340 id=340 data-nosnippet>340</a>                .upgrade_menu
+<a href=#341 id=341 data-nosnippet>341</a>                .button_manager
+<a href=#342 id=342 data-nosnippet>342</a>                .rectangle_renderer
+<a href=#343 id=343 data-nosnippet>343</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass);
+<a href=#344 id=344 data-nosnippet>344</a>
+<a href=#345 id=345 data-nosnippet>345</a>            <span class="comment">// Render the upgrade menu (rectangles + text)
+<a href=#346 id=346 data-nosnippet>346</a>            </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = state
+<a href=#347 id=347 data-nosnippet>347</a>                .upgrade_menu
+<a href=#348 id=348 data-nosnippet>348</a>                .render(<span class="kw-2">&amp;</span>state.wgpu_renderer.device, <span class="kw-2">&amp;mut </span>render_pass)
+<a href=#349 id=349 data-nosnippet>349</a>            {
+<a href=#350 id=350 data-nosnippet>350</a>                <span class="macro">println!</span>(<span class="string">"Failed to render upgrade menu: {}"</span>, e);
+<a href=#351 id=351 data-nosnippet>351</a>            }
+<a href=#352 id=352 data-nosnippet>352</a>        } <span class="kw">else </span>{
+<a href=#353 id=353 data-nosnippet>353</a>            <span class="kw">if </span>state.upgrade_menu.is_visible() {
+<a href=#354 id=354 data-nosnippet>354</a>                state.upgrade_menu.hide();
+<a href=#355 id=355 data-nosnippet>355</a>            }
+<a href=#356 id=356 data-nosnippet>356</a>            <span class="comment">// Explicitly clear rectangles if menu is not visible
+<a href=#357 id=357 data-nosnippet>357</a>            </span>state
+<a href=#358 id=358 data-nosnippet>358</a>                .upgrade_menu
+<a href=#359 id=359 data-nosnippet>359</a>                .button_manager
+<a href=#360 id=360 data-nosnippet>360</a>                .rectangle_renderer
+<a href=#361 id=361 data-nosnippet>361</a>                .clear_rectangles();
+<a href=#362 id=362 data-nosnippet>362</a>        }
 <a href=#363 id=363 data-nosnippet>363</a>
-<a href=#364 id=364 data-nosnippet>364</a>        <span class="comment">// Present the surface texture and ensure it's properly handled
-<a href=#365 id=365 data-nosnippet>365</a>        </span>surface_texture.present();
-<a href=#366 id=366 data-nosnippet>366</a>
-<a href=#367 id=367 data-nosnippet>367</a>        <span class="comment">// Poll the device to process any pending operations
-<a href=#368 id=368 data-nosnippet>368</a>        // This helps ensure resources are properly cleaned up and prevents
-<a href=#369 id=369 data-nosnippet>369</a>        // the "SurfaceSemaphores still in use" error during cleanup
-<a href=#370 id=370 data-nosnippet>370</a>        </span>state.wgpu_renderer.device.poll(wgpu::Maintain::Poll);
+<a href=#364 id=364 data-nosnippet>364</a>        window.request_redraw();
+<a href=#365 id=365 data-nosnippet>365</a>
+<a href=#366 id=366 data-nosnippet>366</a>        <span class="comment">// Submit commands and present
+<a href=#367 id=367 data-nosnippet>367</a>        </span>state.wgpu_renderer.queue.submit(<span class="prelude-val">Some</span>(encoder.finish()));
+<a href=#368 id=368 data-nosnippet>368</a>
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="comment">// Present the surface texture and ensure it's properly handled
+<a href=#370 id=370 data-nosnippet>370</a>        </span>surface_texture.present();
 <a href=#371 id=371 data-nosnippet>371</a>
-<a href=#372 id=372 data-nosnippet>372</a>        <span class="comment">// Update enemy pathfinding
-<a href=#373 id=373 data-nosnippet>373</a>        </span>state.game_state.enemy.update(
-<a href=#374 id=374 data-nosnippet>374</a>            state.game_state.player.position,
-<a href=#375 id=375 data-nosnippet>375</a>            state.game_state.delta_time,
-<a href=#376 id=376 data-nosnippet>376</a>            state.game_state.game_ui.level <span class="kw">as </span>u32,
-<a href=#377 id=377 data-nosnippet>377</a>            |from, to| {
-<a href=#378 id=378 data-nosnippet>378</a>                state
-<a href=#379 id=379 data-nosnippet>379</a>                    .game_state
-<a href=#380 id=380 data-nosnippet>380</a>                    .collision_system
-<a href=#381 id=381 data-nosnippet>381</a>                    .cylinder_intersects_geometry(from, to, <span class="number">5.0</span>)
-<a href=#382 id=382 data-nosnippet>382</a>            },
-<a href=#383 id=383 data-nosnippet>383</a>        );
-<a href=#384 id=384 data-nosnippet>384</a>
-<a href=#385 id=385 data-nosnippet>385</a>        <span class="comment">// Handle title screen animation if needed
-<a href=#386 id=386 data-nosnippet>386</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Loading {
-<a href=#387 id=387 data-nosnippet>387</a>            state.game_state.game_ui.stop_timer();
-<a href=#388 id=388 data-nosnippet>388</a>            <span class="self">self</span>.handle_maze_generation();
-<a href=#389 id=389 data-nosnippet>389</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::NewGame {
-<a href=#390 id=390 data-nosnippet>390</a>            state.text_renderer.hide_game_over_display();
-<a href=#391 id=391 data-nosnippet>391</a>            state.upgrade_menu.upgrade_manager.player_upgrades.clear();
-<a href=#392 id=392 data-nosnippet>392</a>            state.game_state.player = <span class="kw">crate</span>::game::player::Player::new();
-<a href=#393 id=393 data-nosnippet>393</a>            state.game_state.enemy = <span class="kw">crate</span>::game::enemy::Enemy::new([<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>], <span class="number">150.0</span>);
-<a href=#394 id=394 data-nosnippet>394</a>            <span class="self">self</span>.new_level(<span class="bool-val">true</span>);
-<a href=#395 id=395 data-nosnippet>395</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::Game
-<a href=#396 id=396 data-nosnippet>396</a>            &amp;&amp; <span class="prelude-val">Some</span>(state.game_state.player.current_cell) == state.game_state.exit_cell
-<a href=#397 id=397 data-nosnippet>397</a>        {
-<a href=#398 id=398 data-nosnippet>398</a>            state.game_state.enemy.pathfinder.position = [<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>];
-<a href=#399 id=399 data-nosnippet>399</a>            state.game_state.enemy.pathfinder.locked = <span class="bool-val">true</span>;
-<a href=#400 id=400 data-nosnippet>400</a>
-<a href=#401 id=401 data-nosnippet>401</a>            <span class="comment">// Check if we should show upgrade menu (every 3 levels)
-<a href=#402 id=402 data-nosnippet>402</a>            </span><span class="kw">let </span>current_level = state.game_state.game_ui.level;
-<a href=#403 id=403 data-nosnippet>403</a>            <span class="kw">if </span>current_level &gt; <span class="number">0 </span>&amp;&amp; current_level % <span class="number">3 </span>== <span class="number">0 </span>{
-<a href=#404 id=404 data-nosnippet>404</a>                <span class="comment">// Show upgrade menu
-<a href=#405 id=405 data-nosnippet>405</a>                </span>state.game_state.current_screen = CurrentScreen::UpgradeMenu;
-<a href=#406 id=406 data-nosnippet>406</a>                state.upgrade_menu.show();
-<a href=#407 id=407 data-nosnippet>407</a>            } <span class="kw">else </span>{
-<a href=#408 id=408 data-nosnippet>408</a>                <span class="comment">// Continue to next level
-<a href=#409 id=409 data-nosnippet>409</a>                </span><span class="self">self</span>.new_level(<span class="bool-val">false</span>);
-<a href=#410 id=410 data-nosnippet>410</a>            }
-<a href=#411 id=411 data-nosnippet>411</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::Game {
-<a href=#412 id=412 data-nosnippet>412</a>            state
-<a href=#413 id=413 data-nosnippet>413</a>                .game_state
-<a href=#414 id=414 data-nosnippet>414</a>                .audio_manager
-<a href=#415 id=415 data-nosnippet>415</a>                .resume_enemy_audio(<span class="string">"enemy"</span>)
-<a href=#416 id=416 data-nosnippet>416</a>                .expect(<span class="string">"Failed to resume enemy audio"</span>);
-<a href=#417 id=417 data-nosnippet>417</a>            <span class="kw">if </span>!state.game_state.is_test_mode {
-<a href=#418 id=418 data-nosnippet>418</a>                state.game_state.enemy.pathfinder.locked = <span class="bool-val">false</span>;
-<a href=#419 id=419 data-nosnippet>419</a>            }
-<a href=#420 id=420 data-nosnippet>420</a>        }
-<a href=#421 id=421 data-nosnippet>421</a>    }
-<a href=#422 id=422 data-nosnippet>422</a>
-<a href=#423 id=423 data-nosnippet>423</a>    <span class="comment">// handle_frame_timing
-<a href=#424 id=424 data-nosnippet>424</a>    </span><span class="kw">pub fn </span>handle_frame_timing(<span class="kw-2">&amp;mut </span><span class="self">self</span>, current_time: Instant) {
-<a href=#425 id=425 data-nosnippet>425</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
-<a href=#426 id=426 data-nosnippet>426</a>            <span class="kw">let </span>duration = current_time.duration_since(state.game_state.last_fps_time);
+<a href=#372 id=372 data-nosnippet>372</a>        <span class="comment">// Poll the device to process any pending operations
+<a href=#373 id=373 data-nosnippet>373</a>        // This helps ensure resources are properly cleaned up and prevents
+<a href=#374 id=374 data-nosnippet>374</a>        // the "SurfaceSemaphores still in use" error during cleanup
+<a href=#375 id=375 data-nosnippet>375</a>        </span>state.wgpu_renderer.device.poll(wgpu::Maintain::Poll);
+<a href=#376 id=376 data-nosnippet>376</a>
+<a href=#377 id=377 data-nosnippet>377</a>        <span class="comment">// Update enemy pathfinding
+<a href=#378 id=378 data-nosnippet>378</a>        </span>state.game_state.enemy.update(
+<a href=#379 id=379 data-nosnippet>379</a>            state.game_state.player.position,
+<a href=#380 id=380 data-nosnippet>380</a>            state.game_state.delta_time,
+<a href=#381 id=381 data-nosnippet>381</a>            state.game_state.game_ui.level <span class="kw">as </span>u32,
+<a href=#382 id=382 data-nosnippet>382</a>            |from, to| {
+<a href=#383 id=383 data-nosnippet>383</a>                state
+<a href=#384 id=384 data-nosnippet>384</a>                    .game_state
+<a href=#385 id=385 data-nosnippet>385</a>                    .collision_system
+<a href=#386 id=386 data-nosnippet>386</a>                    .cylinder_intersects_geometry(from, to, <span class="number">5.0</span>)
+<a href=#387 id=387 data-nosnippet>387</a>            },
+<a href=#388 id=388 data-nosnippet>388</a>        );
+<a href=#389 id=389 data-nosnippet>389</a>
+<a href=#390 id=390 data-nosnippet>390</a>        <span class="comment">// Handle title screen animation if needed
+<a href=#391 id=391 data-nosnippet>391</a>        </span><span class="kw">if </span>state.game_state.current_screen == CurrentScreen::Loading {
+<a href=#392 id=392 data-nosnippet>392</a>            state.game_state.game_ui.stop_timer();
+<a href=#393 id=393 data-nosnippet>393</a>            <span class="self">self</span>.handle_maze_generation();
+<a href=#394 id=394 data-nosnippet>394</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::NewGame {
+<a href=#395 id=395 data-nosnippet>395</a>            state.text_renderer.hide_game_over_display();
+<a href=#396 id=396 data-nosnippet>396</a>            state.upgrade_menu.upgrade_manager.player_upgrades.clear();
+<a href=#397 id=397 data-nosnippet>397</a>            state.game_state.player = <span class="kw">crate</span>::game::player::Player::new();
+<a href=#398 id=398 data-nosnippet>398</a>            state.game_state.enemy = <span class="kw">crate</span>::game::enemy::Enemy::new([<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>], <span class="number">150.0</span>);
+<a href=#399 id=399 data-nosnippet>399</a>            <span class="self">self</span>.new_level(<span class="bool-val">true</span>);
+<a href=#400 id=400 data-nosnippet>400</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::Game
+<a href=#401 id=401 data-nosnippet>401</a>            &amp;&amp; <span class="prelude-val">Some</span>(state.game_state.player.current_cell) == state.game_state.exit_cell
+<a href=#402 id=402 data-nosnippet>402</a>        {
+<a href=#403 id=403 data-nosnippet>403</a>            state.game_state.enemy.pathfinder.position = [<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>];
+<a href=#404 id=404 data-nosnippet>404</a>            state.game_state.enemy.pathfinder.locked = <span class="bool-val">true</span>;
+<a href=#405 id=405 data-nosnippet>405</a>
+<a href=#406 id=406 data-nosnippet>406</a>            <span class="comment">// Check if we should show upgrade menu (every 3 levels)
+<a href=#407 id=407 data-nosnippet>407</a>            </span><span class="kw">let </span>current_level = state.game_state.game_ui.level;
+<a href=#408 id=408 data-nosnippet>408</a>            <span class="kw">if </span>current_level &gt; <span class="number">0 </span>&amp;&amp; current_level % <span class="number">3 </span>== <span class="number">0 </span>{
+<a href=#409 id=409 data-nosnippet>409</a>                <span class="comment">// Show upgrade menu
+<a href=#410 id=410 data-nosnippet>410</a>                </span>state.game_state.current_screen = CurrentScreen::UpgradeMenu;
+<a href=#411 id=411 data-nosnippet>411</a>                state.upgrade_menu.show();
+<a href=#412 id=412 data-nosnippet>412</a>            } <span class="kw">else </span>{
+<a href=#413 id=413 data-nosnippet>413</a>                <span class="comment">// Continue to next level
+<a href=#414 id=414 data-nosnippet>414</a>                </span><span class="self">self</span>.new_level(<span class="bool-val">false</span>);
+<a href=#415 id=415 data-nosnippet>415</a>            }
+<a href=#416 id=416 data-nosnippet>416</a>        } <span class="kw">else if </span>state.game_state.current_screen == CurrentScreen::Game {
+<a href=#417 id=417 data-nosnippet>417</a>            state
+<a href=#418 id=418 data-nosnippet>418</a>                .game_state
+<a href=#419 id=419 data-nosnippet>419</a>                .audio_manager
+<a href=#420 id=420 data-nosnippet>420</a>                .resume_enemy_audio(<span class="string">"enemy"</span>)
+<a href=#421 id=421 data-nosnippet>421</a>                .expect(<span class="string">"Failed to resume enemy audio"</span>);
+<a href=#422 id=422 data-nosnippet>422</a>            <span class="kw">if </span>!state.game_state.is_test_mode {
+<a href=#423 id=423 data-nosnippet>423</a>                state.game_state.enemy.pathfinder.locked = <span class="bool-val">false</span>;
+<a href=#424 id=424 data-nosnippet>424</a>            }
+<a href=#425 id=425 data-nosnippet>425</a>        }
+<a href=#426 id=426 data-nosnippet>426</a>    }
 <a href=#427 id=427 data-nosnippet>427</a>
-<a href=#428 id=428 data-nosnippet>428</a>            state.elapsed_time = current_time.duration_since(state.start_time);
-<a href=#429 id=429 data-nosnippet>429</a>            state.game_state.frame_count += <span class="number">1</span>;
-<a href=#430 id=430 data-nosnippet>430</a>
-<a href=#431 id=431 data-nosnippet>431</a>            <span class="kw">if </span>duration.as_secs_f32() &gt;= <span class="number">1.0 </span>{
-<a href=#432 id=432 data-nosnippet>432</a>                state.game_state.current_fps = state.game_state.frame_count;
-<a href=#433 id=433 data-nosnippet>433</a>                state.game_state.frame_count = <span class="number">0</span>;
-<a href=#434 id=434 data-nosnippet>434</a>                state.game_state.last_fps_time = current_time;
-<a href=#435 id=435 data-nosnippet>435</a>            }
-<a href=#436 id=436 data-nosnippet>436</a>
-<a href=#437 id=437 data-nosnippet>437</a>            <span class="kw">let </span>delta_time = current_time
-<a href=#438 id=438 data-nosnippet>438</a>                .duration_since(state.game_state.last_frame_time)
-<a href=#439 id=439 data-nosnippet>439</a>                .as_secs_f32();
-<a href=#440 id=440 data-nosnippet>440</a>
-<a href=#441 id=441 data-nosnippet>441</a>            state.game_state.delta_time = delta_time;
-<a href=#442 id=442 data-nosnippet>442</a>            state.game_state.last_frame_time = current_time;
-<a href=#443 id=443 data-nosnippet>443</a>
-<a href=#444 id=444 data-nosnippet>444</a>            <span class="kw">if </span>state
-<a href=#445 id=445 data-nosnippet>445</a>                .wgpu_renderer
-<a href=#446 id=446 data-nosnippet>446</a>                .game_renderer
-<a href=#447 id=447 data-nosnippet>447</a>                .debug_renderer
-<a href=#448 id=448 data-nosnippet>448</a>                .debug_render_bounding_boxes
-<a href=#449 id=449 data-nosnippet>449</a>            {
-<a href=#450 id=450 data-nosnippet>450</a>                state
-<a href=#451 id=451 data-nosnippet>451</a>                    .wgpu_renderer
-<a href=#452 id=452 data-nosnippet>452</a>                    .game_renderer
-<a href=#453 id=453 data-nosnippet>453</a>                    .debug_renderer
-<a href=#454 id=454 data-nosnippet>454</a>                    .update_debug_vertices(
-<a href=#455 id=455 data-nosnippet>455</a>                        <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
-<a href=#456 id=456 data-nosnippet>456</a>                        <span class="kw-2">&amp;</span>state.game_state.collision_system,
-<a href=#457 id=457 data-nosnippet>457</a>                    );
-<a href=#458 id=458 data-nosnippet>458</a>            }
-<a href=#459 id=459 data-nosnippet>459</a>        }
-<a href=#460 id=460 data-nosnippet>460</a>    }
-<a href=#461 id=461 data-nosnippet>461</a>
-<a href=#462 id=462 data-nosnippet>462</a>    <span class="comment">// handle_maze_generation
-<a href=#463 id=463 data-nosnippet>463</a>    </span><span class="kw">pub fn </span>handle_maze_generation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#464 id=464 data-nosnippet>464</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
-<a href=#465 id=465 data-nosnippet>465</a>            <span class="comment">// If in test mode, skip maze generation entirely and go directly to game
-<a href=#466 id=466 data-nosnippet>466</a>            </span><span class="kw">if </span>state.game_state.is_test_mode {
-<a href=#467 id=467 data-nosnippet>467</a>                <span class="macro">println!</span>(<span class="string">"Test mode enabled - skipping maze generation and going to game"</span>);
-<a href=#468 id=468 data-nosnippet>468</a>                <span class="comment">// Mark generation as complete immediately
-<a href=#469 id=469 data-nosnippet>469</a>                </span>state
-<a href=#470 id=470 data-nosnippet>470</a>                    .wgpu_renderer
-<a href=#471 id=471 data-nosnippet>471</a>                    .loading_screen_renderer
-<a href=#472 id=472 data-nosnippet>472</a>                    .generator
-<a href=#473 id=473 data-nosnippet>473</a>                    .generation_complete = <span class="bool-val">true</span>;
-<a href=#474 id=474 data-nosnippet>474</a>                <span class="comment">// Set up test environment immediately
-<a href=#475 id=475 data-nosnippet>475</a>                </span>setup_test_environment(<span class="kw-2">&amp;mut </span>state.game_state, <span class="kw-2">&amp;mut </span>state.wgpu_renderer);
-<a href=#476 id=476 data-nosnippet>476</a>                <span class="comment">// Set a dummy maze path to prevent re-entry
-<a href=#477 id=477 data-nosnippet>477</a>                </span>state.game_state.maze_path = <span class="prelude-val">Some</span>(std::path::PathBuf::from(<span class="string">"test_mode"</span>));
-<a href=#478 id=478 data-nosnippet>478</a>                <span class="comment">// Go directly to game screen
-<a href=#479 id=479 data-nosnippet>479</a>                </span>state.game_state.current_screen = CurrentScreen::Game;
-<a href=#480 id=480 data-nosnippet>480</a>                <span class="kw">return</span>;
-<a href=#481 id=481 data-nosnippet>481</a>            }
-<a href=#482 id=482 data-nosnippet>482</a>
-<a href=#483 id=483 data-nosnippet>483</a>            <span class="kw">let </span>renderer = <span class="kw-2">&amp;mut </span>state.wgpu_renderer.loading_screen_renderer;
-<a href=#484 id=484 data-nosnippet>484</a>
-<a href=#485 id=485 data-nosnippet>485</a>            <span class="comment">// Calculate update timing
-<a href=#486 id=486 data-nosnippet>486</a>            </span><span class="kw">let </span>speed = <span class="kw">if </span>renderer.generator.fast_mode {
-<a href=#487 id=487 data-nosnippet>487</a>                Duration::from_millis(<span class="number">10</span>) / <span class="number">20
-<a href=#488 id=488 data-nosnippet>488</a>            </span>} <span class="kw">else </span>{
-<a href=#489 id=489 data-nosnippet>489</a>                Duration::from_millis(<span class="number">10</span>)
-<a href=#490 id=490 data-nosnippet>490</a>            };
-<a href=#491 id=491 data-nosnippet>491</a>
-<a href=#492 id=492 data-nosnippet>492</a>            <span class="comment">// Skip if not time to update or already complete
-<a href=#493 id=493 data-nosnippet>493</a>            </span><span class="kw">if </span>renderer.last_update.elapsed() &lt; speed || renderer.generator.is_complete() {
-<a href=#494 id=494 data-nosnippet>494</a>                <span class="kw">return</span>;
-<a href=#495 id=495 data-nosnippet>495</a>            }
+<a href=#428 id=428 data-nosnippet>428</a>    <span class="comment">// handle_frame_timing
+<a href=#429 id=429 data-nosnippet>429</a>    </span><span class="kw">pub fn </span>handle_frame_timing(<span class="kw-2">&amp;mut </span><span class="self">self</span>, current_time: Instant) {
+<a href=#430 id=430 data-nosnippet>430</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
+<a href=#431 id=431 data-nosnippet>431</a>            <span class="kw">let </span>duration = current_time.duration_since(state.game_state.last_fps_time);
+<a href=#432 id=432 data-nosnippet>432</a>
+<a href=#433 id=433 data-nosnippet>433</a>            state.elapsed_time = current_time.duration_since(state.start_time);
+<a href=#434 id=434 data-nosnippet>434</a>            state.game_state.frame_count += <span class="number">1</span>;
+<a href=#435 id=435 data-nosnippet>435</a>
+<a href=#436 id=436 data-nosnippet>436</a>            <span class="kw">if </span>duration.as_secs_f32() &gt;= <span class="number">1.0 </span>{
+<a href=#437 id=437 data-nosnippet>437</a>                state.game_state.current_fps = state.game_state.frame_count;
+<a href=#438 id=438 data-nosnippet>438</a>                state.game_state.frame_count = <span class="number">0</span>;
+<a href=#439 id=439 data-nosnippet>439</a>                state.game_state.last_fps_time = current_time;
+<a href=#440 id=440 data-nosnippet>440</a>            }
+<a href=#441 id=441 data-nosnippet>441</a>
+<a href=#442 id=442 data-nosnippet>442</a>            <span class="kw">let </span>delta_time = current_time
+<a href=#443 id=443 data-nosnippet>443</a>                .duration_since(state.game_state.last_frame_time)
+<a href=#444 id=444 data-nosnippet>444</a>                .as_secs_f32();
+<a href=#445 id=445 data-nosnippet>445</a>
+<a href=#446 id=446 data-nosnippet>446</a>            state.game_state.delta_time = delta_time;
+<a href=#447 id=447 data-nosnippet>447</a>            state.game_state.last_frame_time = current_time;
+<a href=#448 id=448 data-nosnippet>448</a>
+<a href=#449 id=449 data-nosnippet>449</a>            <span class="kw">if </span>state
+<a href=#450 id=450 data-nosnippet>450</a>                .wgpu_renderer
+<a href=#451 id=451 data-nosnippet>451</a>                .game_renderer
+<a href=#452 id=452 data-nosnippet>452</a>                .debug_renderer
+<a href=#453 id=453 data-nosnippet>453</a>                .debug_render_bounding_boxes
+<a href=#454 id=454 data-nosnippet>454</a>            {
+<a href=#455 id=455 data-nosnippet>455</a>                state
+<a href=#456 id=456 data-nosnippet>456</a>                    .wgpu_renderer
+<a href=#457 id=457 data-nosnippet>457</a>                    .game_renderer
+<a href=#458 id=458 data-nosnippet>458</a>                    .debug_renderer
+<a href=#459 id=459 data-nosnippet>459</a>                    .update_debug_vertices(
+<a href=#460 id=460 data-nosnippet>460</a>                        <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
+<a href=#461 id=461 data-nosnippet>461</a>                        <span class="kw-2">&amp;</span>state.game_state.collision_system,
+<a href=#462 id=462 data-nosnippet>462</a>                    );
+<a href=#463 id=463 data-nosnippet>463</a>            }
+<a href=#464 id=464 data-nosnippet>464</a>        }
+<a href=#465 id=465 data-nosnippet>465</a>    }
+<a href=#466 id=466 data-nosnippet>466</a>
+<a href=#467 id=467 data-nosnippet>467</a>    <span class="comment">// handle_maze_generation
+<a href=#468 id=468 data-nosnippet>468</a>    </span><span class="kw">pub fn </span>handle_maze_generation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#469 id=469 data-nosnippet>469</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(state) = <span class="self">self</span>.state.as_mut() {
+<a href=#470 id=470 data-nosnippet>470</a>            <span class="comment">// If in test mode, skip maze generation entirely and go directly to game
+<a href=#471 id=471 data-nosnippet>471</a>            </span><span class="kw">if </span>state.game_state.is_test_mode {
+<a href=#472 id=472 data-nosnippet>472</a>                <span class="macro">println!</span>(<span class="string">"Test mode enabled - skipping maze generation and going to game"</span>);
+<a href=#473 id=473 data-nosnippet>473</a>                <span class="comment">// Mark generation as complete immediately
+<a href=#474 id=474 data-nosnippet>474</a>                </span>state
+<a href=#475 id=475 data-nosnippet>475</a>                    .wgpu_renderer
+<a href=#476 id=476 data-nosnippet>476</a>                    .loading_screen_renderer
+<a href=#477 id=477 data-nosnippet>477</a>                    .generator
+<a href=#478 id=478 data-nosnippet>478</a>                    .generation_complete = <span class="bool-val">true</span>;
+<a href=#479 id=479 data-nosnippet>479</a>                <span class="comment">// Set up test environment immediately
+<a href=#480 id=480 data-nosnippet>480</a>                </span>setup_test_environment(<span class="kw-2">&amp;mut </span>state.game_state, <span class="kw-2">&amp;mut </span>state.wgpu_renderer);
+<a href=#481 id=481 data-nosnippet>481</a>                <span class="comment">// Set a dummy maze path to prevent re-entry
+<a href=#482 id=482 data-nosnippet>482</a>                </span>state.game_state.maze_path = <span class="prelude-val">Some</span>(std::path::PathBuf::from(<span class="string">"test_mode"</span>));
+<a href=#483 id=483 data-nosnippet>483</a>                <span class="comment">// Go directly to game screen
+<a href=#484 id=484 data-nosnippet>484</a>                </span>state.game_state.current_screen = CurrentScreen::Game;
+<a href=#485 id=485 data-nosnippet>485</a>                <span class="kw">return</span>;
+<a href=#486 id=486 data-nosnippet>486</a>            }
+<a href=#487 id=487 data-nosnippet>487</a>
+<a href=#488 id=488 data-nosnippet>488</a>            <span class="kw">let </span>renderer = <span class="kw-2">&amp;mut </span>state.wgpu_renderer.loading_screen_renderer;
+<a href=#489 id=489 data-nosnippet>489</a>
+<a href=#490 id=490 data-nosnippet>490</a>            <span class="comment">// Calculate update timing
+<a href=#491 id=491 data-nosnippet>491</a>            </span><span class="kw">let </span>speed = <span class="kw">if </span>renderer.generator.fast_mode {
+<a href=#492 id=492 data-nosnippet>492</a>                Duration::from_millis(<span class="number">10</span>) / <span class="number">20
+<a href=#493 id=493 data-nosnippet>493</a>            </span>} <span class="kw">else </span>{
+<a href=#494 id=494 data-nosnippet>494</a>                Duration::from_millis(<span class="number">10</span>)
+<a href=#495 id=495 data-nosnippet>495</a>            };
 <a href=#496 id=496 data-nosnippet>496</a>
-<a href=#497 id=497 data-nosnippet>497</a>            <span class="comment">// Process animation steps
-<a href=#498 id=498 data-nosnippet>498</a>            </span><span class="kw">let </span>steps = <span class="kw">if </span>renderer.generator.fast_mode {
-<a href=#499 id=499 data-nosnippet>499</a>                <span class="number">300
-<a href=#500 id=500 data-nosnippet>500</a>            </span>} <span class="kw">else </span>{
-<a href=#501 id=501 data-nosnippet>501</a>                <span class="number">100
-<a href=#502 id=502 data-nosnippet>502</a>            </span>};
-<a href=#503 id=503 data-nosnippet>503</a>            <span class="kw">for _ in </span><span class="number">0</span>..steps {
-<a href=#504 id=504 data-nosnippet>504</a>                <span class="kw">if </span>!renderer.generator.step() {
-<a href=#505 id=505 data-nosnippet>505</a>                    <span class="kw">break</span>;
-<a href=#506 id=506 data-nosnippet>506</a>                }
-<a href=#507 id=507 data-nosnippet>507</a>            }
-<a href=#508 id=508 data-nosnippet>508</a>
-<a href=#509 id=509 data-nosnippet>509</a>            <span class="comment">// Report progress
-<a href=#510 id=510 data-nosnippet>510</a>            </span><span class="kw">let </span>(current, total) = renderer.generator.get_progress();
-<a href=#511 id=511 data-nosnippet>511</a>
-<a href=#512 id=512 data-nosnippet>512</a>            <span class="kw">if </span>current % <span class="number">50 </span>== <span class="number">0 </span>|| renderer.generator.is_complete() {
-<a href=#513 id=513 data-nosnippet>513</a>                <span class="macro">println!</span>(
-<a href=#514 id=514 data-nosnippet>514</a>                    <span class="string">"Progress: {}/{} ({:.1}%)"</span>,
-<a href=#515 id=515 data-nosnippet>515</a>                    current,
-<a href=#516 id=516 data-nosnippet>516</a>                    total,
-<a href=#517 id=517 data-nosnippet>517</a>                    (current <span class="kw">as </span>f32 * <span class="number">100.0 </span>/ total.max(<span class="number">1</span>) <span class="kw">as </span>f32)
-<a href=#518 id=518 data-nosnippet>518</a>                );
-<a href=#519 id=519 data-nosnippet>519</a>            }
-<a href=#520 id=520 data-nosnippet>520</a>            <span class="kw">if </span>renderer.generator.is_complete() &amp;&amp; state.game_state.maze_path.is_none() {
-<a href=#521 id=521 data-nosnippet>521</a>                <span class="macro">println!</span>(<span class="string">"Maze generation complete! Saving to file..."</span>);
-<a href=#522 id=522 data-nosnippet>522</a>
-<a href=#523 id=523 data-nosnippet>523</a>                <span class="comment">// Play completion sound
-<a href=#524 id=524 data-nosnippet>524</a>                </span>state
-<a href=#525 id=525 data-nosnippet>525</a>                    .game_state
-<a href=#526 id=526 data-nosnippet>526</a>                    .audio_manager
-<a href=#527 id=527 data-nosnippet>527</a>                    .complete()
-<a href=#528 id=528 data-nosnippet>528</a>                    .expect(<span class="string">"Failed to play complete sound!"</span>);
-<a href=#529 id=529 data-nosnippet>529</a>
-<a href=#530 id=530 data-nosnippet>530</a>                <span class="comment">// --- DEBUG PRINT: Applied Upgrades and Stats (print once, with complete sound) ---
-<a href=#531 id=531 data-nosnippet>531</a>                </span><span class="macro">println!</span>(<span class="string">"\n=== [DEBUG] Applied Upgrades and Influenced Stats ==="</span>);
-<a href=#532 id=532 data-nosnippet>532</a>                <span class="kw">use </span><span class="kw">crate</span>::game::upgrades::AvailableUpgrade;
-<a href=#533 id=533 data-nosnippet>533</a>                <span class="kw">let </span>mgr = <span class="kw-2">&amp;</span>state.upgrade_menu.upgrade_manager;
-<a href=#534 id=534 data-nosnippet>534</a>                <span class="kw">let </span>player = <span class="kw-2">&amp;</span>state.game_state.player;
-<a href=#535 id=535 data-nosnippet>535</a>                <span class="kw">for </span>upgrade <span class="kw">in </span>[
-<a href=#536 id=536 data-nosnippet>536</a>                    AvailableUpgrade::SpeedUp,
-<a href=#537 id=537 data-nosnippet>537</a>                    AvailableUpgrade::Dash,
-<a href=#538 id=538 data-nosnippet>538</a>                    AvailableUpgrade::TallBoots,
-<a href=#539 id=539 data-nosnippet>539</a>                    AvailableUpgrade::SlowTime,
-<a href=#540 id=540 data-nosnippet>540</a>                    AvailableUpgrade::SilentStep,
-<a href=#541 id=541 data-nosnippet>541</a>                    AvailableUpgrade::HeadStart,
-<a href=#542 id=542 data-nosnippet>542</a>                    AvailableUpgrade::Unknown,
-<a href=#543 id=543 data-nosnippet>543</a>                ] {
-<a href=#544 id=544 data-nosnippet>544</a>                    <span class="kw">let </span>count = mgr.get_upgrade_count(<span class="kw-2">&amp;</span>upgrade);
-<a href=#545 id=545 data-nosnippet>545</a>                    <span class="kw">if </span>count &gt; <span class="number">0 </span>{
-<a href=#546 id=546 data-nosnippet>546</a>                        <span class="kw">let </span>name = upgrade.to_upgrade().name;
-<a href=#547 id=547 data-nosnippet>547</a>                        <span class="kw">let </span>stat = <span class="kw">match </span>upgrade {
-<a href=#548 id=548 data-nosnippet>548</a>                            AvailableUpgrade::SpeedUp =&gt; {
-<a href=#549 id=549 data-nosnippet>549</a>                                <span class="macro">format!</span>(<span class="string">"base_speed: {:.2}"</span>, player.base_speed)
-<a href=#550 id=550 data-nosnippet>550</a>                            }
-<a href=#551 id=551 data-nosnippet>551</a>                            AvailableUpgrade::Dash =&gt; {
-<a href=#552 id=552 data-nosnippet>552</a>                                <span class="macro">format!</span>(<span class="string">"max_stamina: {:.2}"</span>, player.max_stamina)
-<a href=#553 id=553 data-nosnippet>553</a>                            }
-<a href=#554 id=554 data-nosnippet>554</a>                            AvailableUpgrade::TallBoots =&gt; {
-<a href=#555 id=555 data-nosnippet>555</a>                                <span class="macro">format!</span>(<span class="string">"height: {:.2}"</span>, player.position[<span class="number">1</span>])
-<a href=#556 id=556 data-nosnippet>556</a>                            }
-<a href=#557 id=557 data-nosnippet>557</a>                            AvailableUpgrade::SlowTime =&gt; <span class="macro">format!</span>(<span class="string">"timer: {}s"</span>, player.max_stamina), <span class="comment">// Timer is in game_state, but not directly accessible here; placeholder
-<a href=#558 id=558 data-nosnippet>558</a>                            </span>AvailableUpgrade::SilentStep =&gt; <span class="string">"enemy pathfinding penalty"</span>.to_string(),
-<a href=#559 id=559 data-nosnippet>559</a>                            AvailableUpgrade::HeadStart =&gt; <span class="string">"enemy lock time"</span>.to_string(),
-<a href=#560 id=560 data-nosnippet>560</a>                            AvailableUpgrade::Unknown =&gt; <span class="string">"???"</span>.to_string(),
-<a href=#561 id=561 data-nosnippet>561</a>                        };
-<a href=#562 id=562 data-nosnippet>562</a>                        <span class="macro">println!</span>(<span class="string">"- {} (x{}): {}"</span>, name, count, stat);
-<a href=#563 id=563 data-nosnippet>563</a>                    }
-<a href=#564 id=564 data-nosnippet>564</a>                }
-<a href=#565 id=565 data-nosnippet>565</a>                <span class="macro">println!</span>(<span class="string">"===============================================\n"</span>);
-<a href=#566 id=566 data-nosnippet>566</a>                <span class="comment">// Handle completion
-<a href=#567 id=567 data-nosnippet>567</a>                </span><span class="kw">if </span>renderer.generator.is_complete() {
-<a href=#568 id=568 data-nosnippet>568</a>                    <span class="macro">println!</span>(<span class="string">"Maze generation complete! Saving to file..."</span>);
-<a href=#569 id=569 data-nosnippet>569</a>                    <span class="kw">let </span>maze_lock = renderer.maze.lock().unwrap();
-<a href=#570 id=570 data-nosnippet>570</a>                    state.game_state.maze_path = maze_lock.save_to_file().map_or_else(
-<a href=#571 id=571 data-nosnippet>571</a>                        |err| {
-<a href=#572 id=572 data-nosnippet>572</a>                            <span class="macro">eprintln!</span>(<span class="string">"Failed to save maze: {}"</span>, err);
-<a href=#573 id=573 data-nosnippet>573</a>                            std::process::exit(<span class="number">1</span>);
-<a href=#574 id=574 data-nosnippet>574</a>                        },
-<a href=#575 id=575 data-nosnippet>575</a>                        <span class="prelude-val">Some</span>,
-<a href=#576 id=576 data-nosnippet>576</a>                    );
-<a href=#577 id=577 data-nosnippet>577</a>
-<a href=#578 id=578 data-nosnippet>578</a>                    <span class="comment">// Generate geometry if maze was saved successfully
-<a href=#579 id=579 data-nosnippet>579</a>                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(maze_path) = <span class="kw-2">&amp;</span>state.game_state.maze_path {
-<a href=#580 id=580 data-nosnippet>580</a>                        <span class="kw">let </span>(maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
-<a href=#581 id=581 data-nosnippet>581</a>                        <span class="kw">let </span>(<span class="kw-2">mut </span>floor_vertices, exit_position) = Vertex::create_floor_vertices(
-<a href=#582 id=582 data-nosnippet>582</a>                            <span class="kw-2">&amp;</span>maze_grid,
-<a href=#583 id=583 data-nosnippet>583</a>                            exit_cell,
-<a href=#584 id=584 data-nosnippet>584</a>                            state.game_state.is_test_mode,
-<a href=#585 id=585 data-nosnippet>585</a>                        );
-<a href=#586 id=586 data-nosnippet>586</a>
-<a href=#587 id=587 data-nosnippet>587</a>                        state.wgpu_renderer.game_renderer.exit_position = <span class="prelude-val">Some</span>(exit_position);
-<a href=#588 id=588 data-nosnippet>588</a>
-<a href=#589 id=589 data-nosnippet>589</a>                        floor_vertices.append(<span class="kw-2">&amp;mut </span>Vertex::create_wall_vertices(
-<a href=#590 id=590 data-nosnippet>590</a>                            <span class="kw-2">&amp;</span>maze_grid,
-<a href=#591 id=591 data-nosnippet>591</a>                            state.game_state.is_test_mode,
-<a href=#592 id=592 data-nosnippet>592</a>                        ));
+<a href=#497 id=497 data-nosnippet>497</a>            <span class="comment">// Skip if not time to update or already complete
+<a href=#498 id=498 data-nosnippet>498</a>            </span><span class="kw">if </span>renderer.last_update.elapsed() &lt; speed || renderer.generator.is_complete() {
+<a href=#499 id=499 data-nosnippet>499</a>                <span class="kw">return</span>;
+<a href=#500 id=500 data-nosnippet>500</a>            }
+<a href=#501 id=501 data-nosnippet>501</a>
+<a href=#502 id=502 data-nosnippet>502</a>            <span class="comment">// Process animation steps
+<a href=#503 id=503 data-nosnippet>503</a>            </span><span class="kw">let </span>steps = <span class="kw">if </span>renderer.generator.fast_mode {
+<a href=#504 id=504 data-nosnippet>504</a>                <span class="number">300
+<a href=#505 id=505 data-nosnippet>505</a>            </span>} <span class="kw">else </span>{
+<a href=#506 id=506 data-nosnippet>506</a>                <span class="number">100
+<a href=#507 id=507 data-nosnippet>507</a>            </span>};
+<a href=#508 id=508 data-nosnippet>508</a>            <span class="kw">for _ in </span><span class="number">0</span>..steps {
+<a href=#509 id=509 data-nosnippet>509</a>                <span class="kw">if </span>!renderer.generator.step() {
+<a href=#510 id=510 data-nosnippet>510</a>                    <span class="kw">break</span>;
+<a href=#511 id=511 data-nosnippet>511</a>                }
+<a href=#512 id=512 data-nosnippet>512</a>            }
+<a href=#513 id=513 data-nosnippet>513</a>
+<a href=#514 id=514 data-nosnippet>514</a>            <span class="comment">// Report progress
+<a href=#515 id=515 data-nosnippet>515</a>            </span><span class="kw">let </span>(current, total) = renderer.generator.get_progress();
+<a href=#516 id=516 data-nosnippet>516</a>
+<a href=#517 id=517 data-nosnippet>517</a>            <span class="kw">if </span>current % <span class="number">50 </span>== <span class="number">0 </span>|| renderer.generator.is_complete() {
+<a href=#518 id=518 data-nosnippet>518</a>                <span class="macro">println!</span>(
+<a href=#519 id=519 data-nosnippet>519</a>                    <span class="string">"Progress: {}/{} ({:.1}%)"</span>,
+<a href=#520 id=520 data-nosnippet>520</a>                    current,
+<a href=#521 id=521 data-nosnippet>521</a>                    total,
+<a href=#522 id=522 data-nosnippet>522</a>                    (current <span class="kw">as </span>f32 * <span class="number">100.0 </span>/ total.max(<span class="number">1</span>) <span class="kw">as </span>f32)
+<a href=#523 id=523 data-nosnippet>523</a>                );
+<a href=#524 id=524 data-nosnippet>524</a>            }
+<a href=#525 id=525 data-nosnippet>525</a>            <span class="kw">if </span>renderer.generator.is_complete() &amp;&amp; state.game_state.maze_path.is_none() {
+<a href=#526 id=526 data-nosnippet>526</a>                <span class="macro">println!</span>(<span class="string">"Maze generation complete! Saving to file..."</span>);
+<a href=#527 id=527 data-nosnippet>527</a>
+<a href=#528 id=528 data-nosnippet>528</a>                <span class="comment">// Play completion sound
+<a href=#529 id=529 data-nosnippet>529</a>                </span>state
+<a href=#530 id=530 data-nosnippet>530</a>                    .game_state
+<a href=#531 id=531 data-nosnippet>531</a>                    .audio_manager
+<a href=#532 id=532 data-nosnippet>532</a>                    .complete()
+<a href=#533 id=533 data-nosnippet>533</a>                    .expect(<span class="string">"Failed to play complete sound!"</span>);
+<a href=#534 id=534 data-nosnippet>534</a>
+<a href=#535 id=535 data-nosnippet>535</a>                <span class="comment">// --- DEBUG PRINT: Applied Upgrades and Stats (print once, with complete sound) ---
+<a href=#536 id=536 data-nosnippet>536</a>                </span><span class="macro">println!</span>(<span class="string">"\n=== [DEBUG] Applied Upgrades and Influenced Stats ==="</span>);
+<a href=#537 id=537 data-nosnippet>537</a>                <span class="kw">use </span><span class="kw">crate</span>::game::upgrades::AvailableUpgrade;
+<a href=#538 id=538 data-nosnippet>538</a>                <span class="kw">let </span>mgr = <span class="kw-2">&amp;</span>state.upgrade_menu.upgrade_manager;
+<a href=#539 id=539 data-nosnippet>539</a>                <span class="kw">let </span>player = <span class="kw-2">&amp;</span>state.game_state.player;
+<a href=#540 id=540 data-nosnippet>540</a>                <span class="kw">for </span>upgrade <span class="kw">in </span>[
+<a href=#541 id=541 data-nosnippet>541</a>                    AvailableUpgrade::SpeedUp,
+<a href=#542 id=542 data-nosnippet>542</a>                    AvailableUpgrade::Dash,
+<a href=#543 id=543 data-nosnippet>543</a>                    AvailableUpgrade::TallBoots,
+<a href=#544 id=544 data-nosnippet>544</a>                    AvailableUpgrade::SlowTime,
+<a href=#545 id=545 data-nosnippet>545</a>                    AvailableUpgrade::SilentStep,
+<a href=#546 id=546 data-nosnippet>546</a>                    AvailableUpgrade::HeadStart,
+<a href=#547 id=547 data-nosnippet>547</a>                    AvailableUpgrade::Unknown,
+<a href=#548 id=548 data-nosnippet>548</a>                ] {
+<a href=#549 id=549 data-nosnippet>549</a>                    <span class="kw">let </span>count = mgr.get_upgrade_count(<span class="kw-2">&amp;</span>upgrade);
+<a href=#550 id=550 data-nosnippet>550</a>                    <span class="kw">if </span>count &gt; <span class="number">0 </span>{
+<a href=#551 id=551 data-nosnippet>551</a>                        <span class="kw">let </span>name = upgrade.to_upgrade().name;
+<a href=#552 id=552 data-nosnippet>552</a>                        <span class="kw">let </span>stat = <span class="kw">match </span>upgrade {
+<a href=#553 id=553 data-nosnippet>553</a>                            AvailableUpgrade::SpeedUp =&gt; {
+<a href=#554 id=554 data-nosnippet>554</a>                                <span class="macro">format!</span>(<span class="string">"base_speed: {:.2}"</span>, player.base_speed)
+<a href=#555 id=555 data-nosnippet>555</a>                            }
+<a href=#556 id=556 data-nosnippet>556</a>                            AvailableUpgrade::Dash =&gt; {
+<a href=#557 id=557 data-nosnippet>557</a>                                <span class="macro">format!</span>(<span class="string">"max_stamina: {:.2}"</span>, player.max_stamina)
+<a href=#558 id=558 data-nosnippet>558</a>                            }
+<a href=#559 id=559 data-nosnippet>559</a>                            AvailableUpgrade::TallBoots =&gt; {
+<a href=#560 id=560 data-nosnippet>560</a>                                <span class="macro">format!</span>(<span class="string">"height: {:.2}"</span>, player.position[<span class="number">1</span>])
+<a href=#561 id=561 data-nosnippet>561</a>                            }
+<a href=#562 id=562 data-nosnippet>562</a>                            AvailableUpgrade::SlowTime =&gt; <span class="macro">format!</span>(<span class="string">"timer: {}s"</span>, player.max_stamina), <span class="comment">// Timer is in game_state, but not directly accessible here; placeholder
+<a href=#563 id=563 data-nosnippet>563</a>                            </span>AvailableUpgrade::SilentStep =&gt; <span class="string">"enemy pathfinding penalty"</span>.to_string(),
+<a href=#564 id=564 data-nosnippet>564</a>                            AvailableUpgrade::HeadStart =&gt; <span class="string">"enemy lock time"</span>.to_string(),
+<a href=#565 id=565 data-nosnippet>565</a>                            AvailableUpgrade::Unknown =&gt; <span class="string">"???"</span>.to_string(),
+<a href=#566 id=566 data-nosnippet>566</a>                        };
+<a href=#567 id=567 data-nosnippet>567</a>                        <span class="macro">println!</span>(<span class="string">"- {} (x{}): {}"</span>, name, count, stat);
+<a href=#568 id=568 data-nosnippet>568</a>                    }
+<a href=#569 id=569 data-nosnippet>569</a>                }
+<a href=#570 id=570 data-nosnippet>570</a>                <span class="macro">println!</span>(<span class="string">"===============================================\n"</span>);
+<a href=#571 id=571 data-nosnippet>571</a>                <span class="comment">// Handle completion
+<a href=#572 id=572 data-nosnippet>572</a>                </span><span class="kw">if </span>renderer.generator.is_complete() {
+<a href=#573 id=573 data-nosnippet>573</a>                    <span class="macro">println!</span>(<span class="string">"Maze generation complete! Saving to file..."</span>);
+<a href=#574 id=574 data-nosnippet>574</a>                    <span class="kw">let </span>maze_lock = renderer.maze.lock().unwrap();
+<a href=#575 id=575 data-nosnippet>575</a>                    state.game_state.maze_path = maze_lock.save_to_file().map_or_else(
+<a href=#576 id=576 data-nosnippet>576</a>                        |err| {
+<a href=#577 id=577 data-nosnippet>577</a>                            <span class="macro">eprintln!</span>(<span class="string">"Failed to save maze: {}"</span>, err);
+<a href=#578 id=578 data-nosnippet>578</a>                            std::process::exit(<span class="number">1</span>);
+<a href=#579 id=579 data-nosnippet>579</a>                        },
+<a href=#580 id=580 data-nosnippet>580</a>                        <span class="prelude-val">Some</span>,
+<a href=#581 id=581 data-nosnippet>581</a>                    );
+<a href=#582 id=582 data-nosnippet>582</a>
+<a href=#583 id=583 data-nosnippet>583</a>                    <span class="comment">// Generate geometry if maze was saved successfully
+<a href=#584 id=584 data-nosnippet>584</a>                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(maze_path) = <span class="kw-2">&amp;</span>state.game_state.maze_path {
+<a href=#585 id=585 data-nosnippet>585</a>                        <span class="kw">let </span>(maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
+<a href=#586 id=586 data-nosnippet>586</a>                        <span class="kw">let </span>(<span class="kw-2">mut </span>floor_vertices, exit_position) = Vertex::create_floor_vertices(
+<a href=#587 id=587 data-nosnippet>587</a>                            <span class="kw-2">&amp;</span>maze_grid,
+<a href=#588 id=588 data-nosnippet>588</a>                            exit_cell,
+<a href=#589 id=589 data-nosnippet>589</a>                            state.game_state.is_test_mode,
+<a href=#590 id=590 data-nosnippet>590</a>                        );
+<a href=#591 id=591 data-nosnippet>591</a>
+<a href=#592 id=592 data-nosnippet>592</a>                        state.wgpu_renderer.game_renderer.exit_position = <span class="prelude-val">Some</span>(exit_position);
 <a href=#593 id=593 data-nosnippet>593</a>
-<a href=#594 id=594 data-nosnippet>594</a>                        state.wgpu_renderer.game_renderer.vertex_buffer = state
-<a href=#595 id=595 data-nosnippet>595</a>                            .wgpu_renderer
-<a href=#596 id=596 data-nosnippet>596</a>                            .device
-<a href=#597 id=597 data-nosnippet>597</a>                            .create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor {
-<a href=#598 id=598 data-nosnippet>598</a>                                label: <span class="prelude-val">Some</span>(<span class="string">"Combined Vertex Buffer"</span>),
-<a href=#599 id=599 data-nosnippet>599</a>                                contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>floor_vertices),
-<a href=#600 id=600 data-nosnippet>600</a>                                usage: wgpu::BufferUsages::VERTEX,
-<a href=#601 id=601 data-nosnippet>601</a>                            });
-<a href=#602 id=602 data-nosnippet>602</a>
-<a href=#603 id=603 data-nosnippet>603</a>                        <span class="comment">// Update vertex count so the renderer knows how many vertices to draw
-<a href=#604 id=604 data-nosnippet>604</a>                        </span>state.wgpu_renderer.game_renderer.vertex_count =
-<a href=#605 id=605 data-nosnippet>605</a>                            floor_vertices.len() <span class="kw">as </span>u32;
-<a href=#606 id=606 data-nosnippet>606</a>
-<a href=#607 id=607 data-nosnippet>607</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>(exit_cell_position) = exit_cell {
-<a href=#608 id=608 data-nosnippet>608</a>                            state.game_state.exit_cell = <span class="prelude-val">Some</span>(exit_cell_position);
-<a href=#609 id=609 data-nosnippet>609</a>                            state.game_state.enemy = place_enemy_standard(
-<a href=#610 id=610 data-nosnippet>610</a>                                maze_to_world(
-<a href=#611 id=611 data-nosnippet>611</a>                                    <span class="kw-2">&amp;</span>exit_cell_position,
-<a href=#612 id=612 data-nosnippet>612</a>                                    maze_lock.get_dimensions(),
-<a href=#613 id=613 data-nosnippet>613</a>                                    <span class="number">30.0</span>,
-<a href=#614 id=614 data-nosnippet>614</a>                                    state.game_state.is_test_mode,
-<a href=#615 id=615 data-nosnippet>615</a>                                ),
-<a href=#616 id=616 data-nosnippet>616</a>                                state.game_state.player.position,
-<a href=#617 id=617 data-nosnippet>617</a>                                state.game_state.game_ui.level,
-<a href=#618 id=618 data-nosnippet>618</a>                                |from, to| {
-<a href=#619 id=619 data-nosnippet>619</a>                                    state
-<a href=#620 id=620 data-nosnippet>620</a>                                        .game_state
-<a href=#621 id=621 data-nosnippet>621</a>                                        .collision_system
-<a href=#622 id=622 data-nosnippet>622</a>                                        .cylinder_intersects_geometry(from, to, <span class="number">5.0</span>)
-<a href=#623 id=623 data-nosnippet>623</a>                                },
-<a href=#624 id=624 data-nosnippet>624</a>                            );
-<a href=#625 id=625 data-nosnippet>625</a>                        }
-<a href=#626 id=626 data-nosnippet>626</a>
-<a href=#627 id=627 data-nosnippet>627</a>                        state
-<a href=#628 id=628 data-nosnippet>628</a>                            .game_state
-<a href=#629 id=629 data-nosnippet>629</a>                            .collision_system
-<a href=#630 id=630 data-nosnippet>630</a>                            .build_from_maze(<span class="kw-2">&amp;</span>maze_grid, state.game_state.is_test_mode);
+<a href=#594 id=594 data-nosnippet>594</a>                        floor_vertices.append(<span class="kw-2">&amp;mut </span>Vertex::create_wall_vertices(
+<a href=#595 id=595 data-nosnippet>595</a>                            <span class="kw-2">&amp;</span>maze_grid,
+<a href=#596 id=596 data-nosnippet>596</a>                            state.game_state.is_test_mode,
+<a href=#597 id=597 data-nosnippet>597</a>                        ));
+<a href=#598 id=598 data-nosnippet>598</a>
+<a href=#599 id=599 data-nosnippet>599</a>                        state.wgpu_renderer.game_renderer.vertex_buffer = state
+<a href=#600 id=600 data-nosnippet>600</a>                            .wgpu_renderer
+<a href=#601 id=601 data-nosnippet>601</a>                            .device
+<a href=#602 id=602 data-nosnippet>602</a>                            .create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor {
+<a href=#603 id=603 data-nosnippet>603</a>                                label: <span class="prelude-val">Some</span>(<span class="string">"Combined Vertex Buffer"</span>),
+<a href=#604 id=604 data-nosnippet>604</a>                                contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>floor_vertices),
+<a href=#605 id=605 data-nosnippet>605</a>                                usage: wgpu::BufferUsages::VERTEX,
+<a href=#606 id=606 data-nosnippet>606</a>                            });
+<a href=#607 id=607 data-nosnippet>607</a>
+<a href=#608 id=608 data-nosnippet>608</a>                        <span class="comment">// Update vertex count so the renderer knows how many vertices to draw
+<a href=#609 id=609 data-nosnippet>609</a>                        </span>state.wgpu_renderer.game_renderer.vertex_count =
+<a href=#610 id=610 data-nosnippet>610</a>                            floor_vertices.len() <span class="kw">as </span>u32;
+<a href=#611 id=611 data-nosnippet>611</a>
+<a href=#612 id=612 data-nosnippet>612</a>                        <span class="kw">if let </span><span class="prelude-val">Some</span>(exit_cell_position) = exit_cell {
+<a href=#613 id=613 data-nosnippet>613</a>                            state.game_state.exit_cell = <span class="prelude-val">Some</span>(exit_cell_position);
+<a href=#614 id=614 data-nosnippet>614</a>                            state.game_state.enemy = place_enemy_standard(
+<a href=#615 id=615 data-nosnippet>615</a>                                maze_to_world(
+<a href=#616 id=616 data-nosnippet>616</a>                                    <span class="kw-2">&amp;</span>exit_cell_position,
+<a href=#617 id=617 data-nosnippet>617</a>                                    maze_lock.get_dimensions(),
+<a href=#618 id=618 data-nosnippet>618</a>                                    <span class="number">30.0</span>,
+<a href=#619 id=619 data-nosnippet>619</a>                                    state.game_state.is_test_mode,
+<a href=#620 id=620 data-nosnippet>620</a>                                ),
+<a href=#621 id=621 data-nosnippet>621</a>                                state.game_state.player.position,
+<a href=#622 id=622 data-nosnippet>622</a>                                state.game_state.game_ui.level,
+<a href=#623 id=623 data-nosnippet>623</a>                                |from, to| {
+<a href=#624 id=624 data-nosnippet>624</a>                                    state
+<a href=#625 id=625 data-nosnippet>625</a>                                        .game_state
+<a href=#626 id=626 data-nosnippet>626</a>                                        .collision_system
+<a href=#627 id=627 data-nosnippet>627</a>                                        .cylinder_intersects_geometry(from, to, <span class="number">5.0</span>)
+<a href=#628 id=628 data-nosnippet>628</a>                                },
+<a href=#629 id=629 data-nosnippet>629</a>                            );
+<a href=#630 id=630 data-nosnippet>630</a>                        }
 <a href=#631 id=631 data-nosnippet>631</a>
-<a href=#632 id=632 data-nosnippet>632</a>                        <span class="comment">// Spawn the player at the bottom-left corner of the maze
-<a href=#633 id=633 data-nosnippet>633</a>                        </span>state
-<a href=#634 id=634 data-nosnippet>634</a>                            .game_state
-<a href=#635 id=635 data-nosnippet>635</a>                            .player
-<a href=#636 id=636 data-nosnippet>636</a>                            .spawn_at_maze_entrance(<span class="kw-2">&amp;</span>maze_grid, state.game_state.is_test_mode);
-<a href=#637 id=637 data-nosnippet>637</a>                        <span class="comment">// (No automatic transition to Game here)
-<a href=#638 id=638 data-nosnippet>638</a>                    </span>}
-<a href=#639 id=639 data-nosnippet>639</a>                }
-<a href=#640 id=640 data-nosnippet>640</a>            }
-<a href=#641 id=641 data-nosnippet>641</a>        }
-<a href=#642 id=642 data-nosnippet>642</a>    }
-<a href=#643 id=643 data-nosnippet>643</a>
-<a href=#644 id=644 data-nosnippet>644</a>    <span class="comment">// new_level
-<a href=#645 id=645 data-nosnippet>645</a>    </span><span class="kw">pub fn </span>new_level(<span class="kw-2">&amp;mut </span><span class="self">self</span>, game_over: bool) {
-<a href=#646 id=646 data-nosnippet>646</a>        <span class="kw">let </span>state = <span class="self">self
-<a href=#647 id=647 data-nosnippet>647</a>            </span>.state
-<a href=#648 id=648 data-nosnippet>648</a>            .as_mut()
-<a href=#649 id=649 data-nosnippet>649</a>            .expect(<span class="string">"State must be initialized before use"</span>);
-<a href=#650 id=650 data-nosnippet>650</a>        state.game_state.current_screen = CurrentScreen::Loading;
-<a href=#651 id=651 data-nosnippet>651</a>        state.game_state.maze_path = <span class="prelude-val">None</span>;
-<a href=#652 id=652 data-nosnippet>652</a>        state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
-<a href=#653 id=653 data-nosnippet>653</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
-<a href=#654 id=654 data-nosnippet>654</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
-<a href=#655 id=655 data-nosnippet>655</a>        );
-<a href=#656 id=656 data-nosnippet>656</a>
-<a href=#657 id=657 data-nosnippet>657</a>        <span class="comment">// Clear previous level state
-<a href=#658 id=658 data-nosnippet>658</a>        </span><span class="kw">if </span>game_over {
-<a href=#659 id=659 data-nosnippet>659</a>            state.game_state.player = Player::new();
-<a href=#660 id=660 data-nosnippet>660</a>        } <span class="kw">else </span>{
-<a href=#661 id=661 data-nosnippet>661</a>            <span class="comment">// Only reset position (x/z), orientation, and cell, not stats or height
-<a href=#662 id=662 data-nosnippet>662</a>            </span><span class="kw">let </span>player = <span class="kw-2">&amp;mut </span>state.game_state.player;
-<a href=#663 id=663 data-nosnippet>663</a>            <span class="kw">let </span>current_height = player.position[<span class="number">1</span>];
-<a href=#664 id=664 data-nosnippet>664</a>            player.position[<span class="number">0</span>] = <span class="number">0.0</span>;
-<a href=#665 id=665 data-nosnippet>665</a>            player.position[<span class="number">2</span>] = <span class="number">0.0</span>;
-<a href=#666 id=666 data-nosnippet>666</a>            player.position[<span class="number">1</span>] = current_height; <span class="comment">// preserve height
-<a href=#667 id=667 data-nosnippet>667</a>            </span>player.pitch = <span class="number">3.0</span>;
-<a href=#668 id=668 data-nosnippet>668</a>            player.yaw = <span class="number">316.0</span>;
-<a href=#669 id=669 data-nosnippet>669</a>            player.fov = <span class="number">100.0</span>;
-<a href=#670 id=670 data-nosnippet>670</a>            player.current_cell = <span class="kw">crate</span>::game::maze::generator::Cell::default();
-<a href=#671 id=671 data-nosnippet>671</a>            <span class="comment">// Optionally, reset stamina to max for new level:
-<a href=#672 id=672 data-nosnippet>672</a>            </span>player.stamina = player.max_stamina;
-<a href=#673 id=673 data-nosnippet>673</a>            <span class="comment">// (Do not reset base_speed, max_stamina, regen rates, etc.)
-<a href=#674 id=674 data-nosnippet>674</a>        </span>}
-<a href=#675 id=675 data-nosnippet>675</a>        state.game_state.enemy.pathfinder.position = [<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>];
-<a href=#676 id=676 data-nosnippet>676</a>        state.game_state.enemy.pathfinder.locked = <span class="bool-val">true</span>;
-<a href=#677 id=677 data-nosnippet>677</a>        state.game_state.exit_cell = <span class="prelude-val">None</span>; <span class="comment">// Clear exit cell to prevent accidental win condition
-<a href=#678 id=678 data-nosnippet>678</a>
-<a href=#679 id=679 data-nosnippet>679</a>        // Stop and reset timer
-<a href=#680 id=680 data-nosnippet>680</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;mut </span>state.game_state.game_ui.timer {
-<a href=#681 id=681 data-nosnippet>681</a>            timer.stop();
-<a href=#682 id=682 data-nosnippet>682</a>            timer.reset();
-<a href=#683 id=683 data-nosnippet>683</a>        }
-<a href=#684 id=684 data-nosnippet>684</a>
-<a href=#685 id=685 data-nosnippet>685</a>        <span class="kw">if </span>game_over {
-<a href=#686 id=686 data-nosnippet>686</a>            state.game_state.set_level(<span class="number">1</span>);
-<a href=#687 id=687 data-nosnippet>687</a>            state.game_state.set_score(<span class="number">0</span>);
-<a href=#688 id=688 data-nosnippet>688</a>            state.game_state.game_ui.timer = <span class="prelude-val">Some</span>(GameTimer::new(TimerConfig::default()));
-<a href=#689 id=689 data-nosnippet>689</a>            game::update_game_ui(
-<a href=#690 id=690 data-nosnippet>690</a>                <span class="kw-2">&amp;mut </span>state.text_renderer,
-<a href=#691 id=691 data-nosnippet>691</a>                <span class="kw-2">&amp;mut </span>state.game_state.game_ui,
-<a href=#692 id=692 data-nosnippet>692</a>                <span class="kw-2">&amp;</span>state.game_state.current_screen,
-<a href=#693 id=693 data-nosnippet>693</a>                <span class="self">self</span>.window
-<a href=#694 id=694 data-nosnippet>694</a>                    .as_ref()
-<a href=#695 id=695 data-nosnippet>695</a>                    .expect(<span class="string">"Window must be initialized before use"</span>),
-<a href=#696 id=696 data-nosnippet>696</a>            );
-<a href=#697 id=697 data-nosnippet>697</a>            <span class="comment">// Ensure clean state for new game
-<a href=#698 id=698 data-nosnippet>698</a>            </span>state.game_state.exit_cell = <span class="prelude-val">None</span>;
-<a href=#699 id=699 data-nosnippet>699</a>        } <span class="kw">else </span>{
-<a href=#700 id=700 data-nosnippet>700</a>            <span class="kw">let </span>current_level = state.game_state.game_ui.level;
+<a href=#632 id=632 data-nosnippet>632</a>                        state
+<a href=#633 id=633 data-nosnippet>633</a>                            .game_state
+<a href=#634 id=634 data-nosnippet>634</a>                            .collision_system
+<a href=#635 id=635 data-nosnippet>635</a>                            .build_from_maze(<span class="kw-2">&amp;</span>maze_grid, state.game_state.is_test_mode);
+<a href=#636 id=636 data-nosnippet>636</a>
+<a href=#637 id=637 data-nosnippet>637</a>                        <span class="comment">// Spawn the player at the bottom-left corner of the maze
+<a href=#638 id=638 data-nosnippet>638</a>                        </span>state
+<a href=#639 id=639 data-nosnippet>639</a>                            .game_state
+<a href=#640 id=640 data-nosnippet>640</a>                            .player
+<a href=#641 id=641 data-nosnippet>641</a>                            .spawn_at_maze_entrance(<span class="kw-2">&amp;</span>maze_grid, state.game_state.is_test_mode);
+<a href=#642 id=642 data-nosnippet>642</a>                        <span class="comment">// (No automatic transition to Game here)
+<a href=#643 id=643 data-nosnippet>643</a>                    </span>}
+<a href=#644 id=644 data-nosnippet>644</a>                }
+<a href=#645 id=645 data-nosnippet>645</a>            }
+<a href=#646 id=646 data-nosnippet>646</a>        }
+<a href=#647 id=647 data-nosnippet>647</a>    }
+<a href=#648 id=648 data-nosnippet>648</a>
+<a href=#649 id=649 data-nosnippet>649</a>    <span class="comment">// new_level
+<a href=#650 id=650 data-nosnippet>650</a>    </span><span class="kw">pub fn </span>new_level(<span class="kw-2">&amp;mut </span><span class="self">self</span>, game_over: bool) {
+<a href=#651 id=651 data-nosnippet>651</a>        <span class="kw">let </span>state = <span class="self">self
+<a href=#652 id=652 data-nosnippet>652</a>            </span>.state
+<a href=#653 id=653 data-nosnippet>653</a>            .as_mut()
+<a href=#654 id=654 data-nosnippet>654</a>            .expect(<span class="string">"State must be initialized before use"</span>);
+<a href=#655 id=655 data-nosnippet>655</a>        state.game_state.current_screen = CurrentScreen::Loading;
+<a href=#656 id=656 data-nosnippet>656</a>        state.game_state.maze_path = <span class="prelude-val">None</span>;
+<a href=#657 id=657 data-nosnippet>657</a>        state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
+<a href=#658 id=658 data-nosnippet>658</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.device,
+<a href=#659 id=659 data-nosnippet>659</a>            <span class="kw-2">&amp;</span>state.wgpu_renderer.surface_config,
+<a href=#660 id=660 data-nosnippet>660</a>        );
+<a href=#661 id=661 data-nosnippet>661</a>
+<a href=#662 id=662 data-nosnippet>662</a>        <span class="comment">// Clear previous level state
+<a href=#663 id=663 data-nosnippet>663</a>        </span><span class="kw">if </span>game_over {
+<a href=#664 id=664 data-nosnippet>664</a>            state.game_state.player = Player::new();
+<a href=#665 id=665 data-nosnippet>665</a>        } <span class="kw">else </span>{
+<a href=#666 id=666 data-nosnippet>666</a>            <span class="comment">// Only reset position (x/z), orientation, and cell, not stats or height
+<a href=#667 id=667 data-nosnippet>667</a>            </span><span class="kw">let </span>player = <span class="kw-2">&amp;mut </span>state.game_state.player;
+<a href=#668 id=668 data-nosnippet>668</a>            <span class="kw">let </span>current_height = player.position[<span class="number">1</span>];
+<a href=#669 id=669 data-nosnippet>669</a>            player.position[<span class="number">0</span>] = <span class="number">0.0</span>;
+<a href=#670 id=670 data-nosnippet>670</a>            player.position[<span class="number">2</span>] = <span class="number">0.0</span>;
+<a href=#671 id=671 data-nosnippet>671</a>            player.position[<span class="number">1</span>] = current_height; <span class="comment">// preserve height
+<a href=#672 id=672 data-nosnippet>672</a>            </span>player.pitch = <span class="number">3.0</span>;
+<a href=#673 id=673 data-nosnippet>673</a>            player.yaw = <span class="number">316.0</span>;
+<a href=#674 id=674 data-nosnippet>674</a>            player.fov = <span class="number">100.0</span>;
+<a href=#675 id=675 data-nosnippet>675</a>            player.current_cell = <span class="kw">crate</span>::game::maze::generator::Cell::default();
+<a href=#676 id=676 data-nosnippet>676</a>            <span class="comment">// Optionally, reset stamina to max for new level:
+<a href=#677 id=677 data-nosnippet>677</a>            </span>player.stamina = player.max_stamina;
+<a href=#678 id=678 data-nosnippet>678</a>            <span class="comment">// (Do not reset base_speed, max_stamina, regen rates, etc.)
+<a href=#679 id=679 data-nosnippet>679</a>        </span>}
+<a href=#680 id=680 data-nosnippet>680</a>        state.game_state.enemy.pathfinder.position = [<span class="number">0.0</span>, <span class="number">30.0</span>, <span class="number">0.0</span>];
+<a href=#681 id=681 data-nosnippet>681</a>        state.game_state.enemy.pathfinder.locked = <span class="bool-val">true</span>;
+<a href=#682 id=682 data-nosnippet>682</a>        state.game_state.exit_cell = <span class="prelude-val">None</span>; <span class="comment">// Clear exit cell to prevent accidental win condition
+<a href=#683 id=683 data-nosnippet>683</a>
+<a href=#684 id=684 data-nosnippet>684</a>        // Stop and reset timer
+<a href=#685 id=685 data-nosnippet>685</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;mut </span>state.game_state.game_ui.timer {
+<a href=#686 id=686 data-nosnippet>686</a>            timer.stop();
+<a href=#687 id=687 data-nosnippet>687</a>            timer.reset();
+<a href=#688 id=688 data-nosnippet>688</a>        }
+<a href=#689 id=689 data-nosnippet>689</a>
+<a href=#690 id=690 data-nosnippet>690</a>        <span class="kw">if </span>game_over {
+<a href=#691 id=691 data-nosnippet>691</a>            state.game_state.set_level(<span class="number">1</span>);
+<a href=#692 id=692 data-nosnippet>692</a>            state.game_state.set_score(<span class="number">0</span>);
+<a href=#693 id=693 data-nosnippet>693</a>            state.game_state.game_ui.timer = <span class="prelude-val">Some</span>(GameTimer::new(TimerConfig::default()));
+<a href=#694 id=694 data-nosnippet>694</a>
+<a href=#695 id=695 data-nosnippet>695</a>            <span class="comment">// Restart background music for new game
+<a href=#696 id=696 data-nosnippet>696</a>            </span>state
+<a href=#697 id=697 data-nosnippet>697</a>                .game_state
+<a href=#698 id=698 data-nosnippet>698</a>                .audio_manager
+<a href=#699 id=699 data-nosnippet>699</a>                .restart_background_music()
+<a href=#700 id=700 data-nosnippet>700</a>                .expect(<span class="string">"Failed to restart background music"</span>);
 <a href=#701 id=701 data-nosnippet>701</a>
-<a href=#702 id=702 data-nosnippet>702</a>            <span class="comment">// Calculate completion time and performance metrics
-<a href=#703 id=703 data-nosnippet>703</a>            </span><span class="kw">let </span>(completion_time, <span class="kw">_</span>) = <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;</span>state.game_state.game_ui.timer {
-<a href=#704 id=704 data-nosnippet>704</a>                <span class="kw">let </span>remaining_time = timer.get_remaining_time().as_secs_f32();
-<a href=#705 id=705 data-nosnippet>705</a>                <span class="kw">let </span>total_time = timer.config.duration.as_secs_f32();
-<a href=#706 id=706 data-nosnippet>706</a>                <span class="kw">let </span>completion_time = total_time - remaining_time;
-<a href=#707 id=707 data-nosnippet>707</a>
-<a href=#708 id=708 data-nosnippet>708</a>                <span class="comment">// Performance-based time bonus calculation
-<a href=#709 id=709 data-nosnippet>709</a>                // Optimal time: 15 seconds, Average time: 25 seconds, Slow time: 35+ seconds
-<a href=#710 id=710 data-nosnippet>710</a>                </span><span class="kw">let </span>time_bonus = <span class="kw">if </span>completion_time &lt;= <span class="number">15.0_f32 </span>{
-<a href=#711 id=711 data-nosnippet>711</a>                    <span class="comment">// Exceptional performance: 15-25 seconds added
-<a href=#712 id=712 data-nosnippet>712</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">15.0 </span>- completion_time).max(<span class="number">0.0_f32</span>) / <span class="number">15.0_f32</span>;
-<a href=#713 id=713 data-nosnippet>713</a>                    <span class="number">15.0_f32 </span>+ (performance_ratio * <span class="number">10.0_f32</span>)
-<a href=#714 id=714 data-nosnippet>714</a>                } <span class="kw">else if </span>completion_time &lt;= <span class="number">25.0_f32 </span>{
-<a href=#715 id=715 data-nosnippet>715</a>                    <span class="comment">// Good performance: 8-15 seconds added
-<a href=#716 id=716 data-nosnippet>716</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">25.0 </span>- completion_time) / <span class="number">10.0_f32</span>;
-<a href=#717 id=717 data-nosnippet>717</a>                    <span class="number">8.0_f32 </span>+ (performance_ratio * <span class="number">7.0_f32</span>)
-<a href=#718 id=718 data-nosnippet>718</a>                } <span class="kw">else if </span>completion_time &lt;= <span class="number">35.0_f32 </span>{
-<a href=#719 id=719 data-nosnippet>719</a>                    <span class="comment">// Average performance: 3-8 seconds added
-<a href=#720 id=720 data-nosnippet>720</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">35.0 </span>- completion_time) / <span class="number">10.0_f32</span>;
-<a href=#721 id=721 data-nosnippet>721</a>                    <span class="number">3.0_f32 </span>+ (performance_ratio * <span class="number">5.0_f32</span>)
-<a href=#722 id=722 data-nosnippet>722</a>                } <span class="kw">else </span>{
-<a href=#723 id=723 data-nosnippet>723</a>                    <span class="comment">// Slow completion: 1-3 seconds added
-<a href=#724 id=724 data-nosnippet>724</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">45.0 </span>- completion_time).max(<span class="number">0.0_f32</span>) / <span class="number">10.0_f32</span>;
-<a href=#725 id=725 data-nosnippet>725</a>                    <span class="number">1.0_f32 </span>+ (performance_ratio * <span class="number">2.0_f32</span>)
-<a href=#726 id=726 data-nosnippet>726</a>                };
+<a href=#702 id=702 data-nosnippet>702</a>            <span class="comment">// Set game audio volumes after restarting background music
+<a href=#703 id=703 data-nosnippet>703</a>            </span>state
+<a href=#704 id=704 data-nosnippet>704</a>                .game_state
+<a href=#705 id=705 data-nosnippet>705</a>                .audio_manager
+<a href=#706 id=706 data-nosnippet>706</a>                .set_game_volumes()
+<a href=#707 id=707 data-nosnippet>707</a>                .expect(<span class="string">"Failed to set game volumes"</span>);
+<a href=#708 id=708 data-nosnippet>708</a>
+<a href=#709 id=709 data-nosnippet>709</a>            game::update_game_ui(
+<a href=#710 id=710 data-nosnippet>710</a>                <span class="kw-2">&amp;mut </span>state.text_renderer,
+<a href=#711 id=711 data-nosnippet>711</a>                <span class="kw-2">&amp;mut </span>state.game_state.game_ui,
+<a href=#712 id=712 data-nosnippet>712</a>                <span class="kw-2">&amp;</span>state.game_state.current_screen,
+<a href=#713 id=713 data-nosnippet>713</a>                <span class="self">self</span>.window
+<a href=#714 id=714 data-nosnippet>714</a>                    .as_ref()
+<a href=#715 id=715 data-nosnippet>715</a>                    .expect(<span class="string">"Window must be initialized before use"</span>),
+<a href=#716 id=716 data-nosnippet>716</a>            );
+<a href=#717 id=717 data-nosnippet>717</a>            <span class="comment">// Ensure clean state for new game
+<a href=#718 id=718 data-nosnippet>718</a>            </span>state.game_state.exit_cell = <span class="prelude-val">None</span>;
+<a href=#719 id=719 data-nosnippet>719</a>        } <span class="kw">else </span>{
+<a href=#720 id=720 data-nosnippet>720</a>            <span class="kw">let </span>current_level = state.game_state.game_ui.level;
+<a href=#721 id=721 data-nosnippet>721</a>
+<a href=#722 id=722 data-nosnippet>722</a>            <span class="comment">// Calculate completion time and performance metrics
+<a href=#723 id=723 data-nosnippet>723</a>            </span><span class="kw">let </span>(completion_time, <span class="kw">_</span>) = <span class="kw">if let </span><span class="prelude-val">Some</span>(timer) = <span class="kw-2">&amp;</span>state.game_state.game_ui.timer {
+<a href=#724 id=724 data-nosnippet>724</a>                <span class="kw">let </span>remaining_time = timer.get_remaining_time().as_secs_f32();
+<a href=#725 id=725 data-nosnippet>725</a>                <span class="kw">let </span>total_time = timer.config.duration.as_secs_f32();
+<a href=#726 id=726 data-nosnippet>726</a>                <span class="kw">let </span>completion_time = total_time - remaining_time;
 <a href=#727 id=727 data-nosnippet>727</a>
-<a href=#728 id=728 data-nosnippet>728</a>                (completion_time, time_bonus)
-<a href=#729 id=729 data-nosnippet>729</a>            } <span class="kw">else </span>{
-<a href=#730 id=730 data-nosnippet>730</a>                (<span class="number">30.0_f32</span>, <span class="number">3.0_f32</span>) <span class="comment">// Fallback values
-<a href=#731 id=731 data-nosnippet>731</a>            </span>};
-<a href=#732 id=732 data-nosnippet>732</a>
-<a href=#733 id=733 data-nosnippet>733</a>            <span class="comment">// Enhanced scoring system
-<a href=#734 id=734 data-nosnippet>734</a>            </span><span class="kw">let </span>base_score = <span class="number">150 </span>* current_level <span class="kw">as </span>u32; <span class="comment">// Increased base score
-<a href=#735 id=735 data-nosnippet>735</a>
-<a href=#736 id=736 data-nosnippet>736</a>            // Speed bonus calculation
-<a href=#737 id=737 data-nosnippet>737</a>            </span><span class="kw">let </span>speed_bonus = <span class="kw">if </span>completion_time &lt;= <span class="number">15.0_f32 </span>{
-<a href=#738 id=738 data-nosnippet>738</a>                <span class="comment">// Exceptional: 3x to 5x multiplier
-<a href=#739 id=739 data-nosnippet>739</a>                </span><span class="kw">let </span>multiplier = <span class="number">3.0_f32 </span>+ ((<span class="number">15.0_f32 </span>- completion_time) / <span class="number">15.0_f32</span>) * <span class="number">2.0_f32</span>;
-<a href=#740 id=740 data-nosnippet>740</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
-<a href=#741 id=741 data-nosnippet>741</a>            } <span class="kw">else if </span>completion_time &lt;= <span class="number">25.0_f32 </span>{
-<a href=#742 id=742 data-nosnippet>742</a>                <span class="comment">// Good: 1.5x to 3x multiplier
-<a href=#743 id=743 data-nosnippet>743</a>                </span><span class="kw">let </span>multiplier = <span class="number">1.5_f32 </span>+ ((<span class="number">25.0_f32 </span>- completion_time) / <span class="number">10.0_f32</span>) * <span class="number">1.5_f32</span>;
-<a href=#744 id=744 data-nosnippet>744</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
-<a href=#745 id=745 data-nosnippet>745</a>            } <span class="kw">else if </span>completion_time &lt;= <span class="number">35.0_f32 </span>{
-<a href=#746 id=746 data-nosnippet>746</a>                <span class="comment">// Average: 0.5x to 1.5x multiplier
-<a href=#747 id=747 data-nosnippet>747</a>                </span><span class="kw">let </span>multiplier = <span class="number">0.5_f32 </span>+ ((<span class="number">35.0_f32 </span>- completion_time) / <span class="number">10.0_f32</span>) * <span class="number">1.0_f32</span>;
-<a href=#748 id=748 data-nosnippet>748</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
+<a href=#728 id=728 data-nosnippet>728</a>                <span class="comment">// Performance-based time bonus calculation
+<a href=#729 id=729 data-nosnippet>729</a>                // Optimal time: 15 seconds, Average time: 25 seconds, Slow time: 35+ seconds
+<a href=#730 id=730 data-nosnippet>730</a>                </span><span class="kw">let </span>time_bonus = <span class="kw">if </span>completion_time &lt;= <span class="number">15.0_f32 </span>{
+<a href=#731 id=731 data-nosnippet>731</a>                    <span class="comment">// Exceptional performance: 15-25 seconds added
+<a href=#732 id=732 data-nosnippet>732</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">15.0 </span>- completion_time).max(<span class="number">0.0_f32</span>) / <span class="number">15.0_f32</span>;
+<a href=#733 id=733 data-nosnippet>733</a>                    <span class="number">15.0_f32 </span>+ (performance_ratio * <span class="number">10.0_f32</span>)
+<a href=#734 id=734 data-nosnippet>734</a>                } <span class="kw">else if </span>completion_time &lt;= <span class="number">25.0_f32 </span>{
+<a href=#735 id=735 data-nosnippet>735</a>                    <span class="comment">// Good performance: 8-15 seconds added
+<a href=#736 id=736 data-nosnippet>736</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">25.0 </span>- completion_time) / <span class="number">10.0_f32</span>;
+<a href=#737 id=737 data-nosnippet>737</a>                    <span class="number">8.0_f32 </span>+ (performance_ratio * <span class="number">7.0_f32</span>)
+<a href=#738 id=738 data-nosnippet>738</a>                } <span class="kw">else if </span>completion_time &lt;= <span class="number">35.0_f32 </span>{
+<a href=#739 id=739 data-nosnippet>739</a>                    <span class="comment">// Average performance: 3-8 seconds added
+<a href=#740 id=740 data-nosnippet>740</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">35.0 </span>- completion_time) / <span class="number">10.0_f32</span>;
+<a href=#741 id=741 data-nosnippet>741</a>                    <span class="number">3.0_f32 </span>+ (performance_ratio * <span class="number">5.0_f32</span>)
+<a href=#742 id=742 data-nosnippet>742</a>                } <span class="kw">else </span>{
+<a href=#743 id=743 data-nosnippet>743</a>                    <span class="comment">// Slow completion: 1-3 seconds added
+<a href=#744 id=744 data-nosnippet>744</a>                    </span><span class="kw">let </span>performance_ratio = (<span class="number">45.0 </span>- completion_time).max(<span class="number">0.0_f32</span>) / <span class="number">10.0_f32</span>;
+<a href=#745 id=745 data-nosnippet>745</a>                    <span class="number">1.0_f32 </span>+ (performance_ratio * <span class="number">2.0_f32</span>)
+<a href=#746 id=746 data-nosnippet>746</a>                };
+<a href=#747 id=747 data-nosnippet>747</a>
+<a href=#748 id=748 data-nosnippet>748</a>                (completion_time, time_bonus)
 <a href=#749 id=749 data-nosnippet>749</a>            } <span class="kw">else </span>{
-<a href=#750 id=750 data-nosnippet>750</a>                <span class="comment">// Slow: 0.1x to 0.5x multiplier
-<a href=#751 id=751 data-nosnippet>751</a>                </span><span class="kw">let </span>multiplier =
-<a href=#752 id=752 data-nosnippet>752</a>                    <span class="number">0.1_f32 </span>+ ((<span class="number">45.0_f32 </span>- completion_time).max(<span class="number">0.0_f32</span>) / <span class="number">10.0_f32</span>) * <span class="number">0.4_f32</span>;
-<a href=#753 id=753 data-nosnippet>753</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
-<a href=#754 id=754 data-nosnippet>754</a>            };
+<a href=#750 id=750 data-nosnippet>750</a>                (<span class="number">30.0_f32</span>, <span class="number">3.0_f32</span>) <span class="comment">// Fallback values
+<a href=#751 id=751 data-nosnippet>751</a>            </span>};
+<a href=#752 id=752 data-nosnippet>752</a>
+<a href=#753 id=753 data-nosnippet>753</a>            <span class="comment">// Enhanced scoring system
+<a href=#754 id=754 data-nosnippet>754</a>            </span><span class="kw">let </span>base_score = <span class="number">150 </span>* current_level <span class="kw">as </span>u32; <span class="comment">// Increased base score
 <a href=#755 id=755 data-nosnippet>755</a>
-<a href=#756 id=756 data-nosnippet>756</a>            <span class="comment">// Level progression bonus (small bonus for reaching higher levels)
-<a href=#757 id=757 data-nosnippet>757</a>            </span><span class="kw">let </span>level_bonus = <span class="kw">if </span>current_level &gt; <span class="number">5 </span>{
-<a href=#758 id=758 data-nosnippet>758</a>                (current_level - <span class="number">5</span>) <span class="kw">as </span>u32 * <span class="number">50
-<a href=#759 id=759 data-nosnippet>759</a>            </span>} <span class="kw">else </span>{
-<a href=#760 id=760 data-nosnippet>760</a>                <span class="number">0
-<a href=#761 id=761 data-nosnippet>761</a>            </span>};
-<a href=#762 id=762 data-nosnippet>762</a>
-<a href=#763 id=763 data-nosnippet>763</a>            <span class="comment">// Consecutive level bonus (reward for sustained performance)
-<a href=#764 id=764 data-nosnippet>764</a>            </span><span class="kw">let </span>consecutive_bonus = <span class="kw">if </span>completion_time &lt;= <span class="number">20.0_f32 </span>{
-<a href=#765 id=765 data-nosnippet>765</a>                <span class="comment">// Only give consecutive bonus for good performance
-<a href=#766 id=766 data-nosnippet>766</a>                </span>current_level <span class="kw">as </span>u32 * <span class="number">25
-<a href=#767 id=767 data-nosnippet>767</a>            </span>} <span class="kw">else </span>{
-<a href=#768 id=768 data-nosnippet>768</a>                <span class="number">0
-<a href=#769 id=769 data-nosnippet>769</a>            </span>};
-<a href=#770 id=770 data-nosnippet>770</a>
-<a href=#771 id=771 data-nosnippet>771</a>            <span class="kw">let </span>total_score = base_score + speed_bonus + level_bonus + consecutive_bonus;
-<a href=#772 id=772 data-nosnippet>772</a>
-<a href=#773 id=773 data-nosnippet>773</a>            <span class="comment">// Update score and level
-<a href=#774 id=774 data-nosnippet>774</a>            </span>state
-<a href=#775 id=775 data-nosnippet>775</a>                .game_state
-<a href=#776 id=776 data-nosnippet>776</a>                .set_score(state.game_state.game_ui.score + total_score);
-<a href=#777 id=777 data-nosnippet>777</a>            state.game_state.set_level(current_level + <span class="number">1</span>);
-<a href=#778 id=778 data-nosnippet>778</a>
-<a href=#779 id=779 data-nosnippet>779</a>            <span class="comment">// Enhanced time management: Not supported in new timer, so skip add_time/subtract_time/prev_time
-<a href=#780 id=780 data-nosnippet>780</a>        </span>}
-<a href=#781 id=781 data-nosnippet>781</a>    }
-<a href=#782 id=782 data-nosnippet>782</a>}</code></pre></div></section></main></body></html>
+<a href=#756 id=756 data-nosnippet>756</a>            // Speed bonus calculation
+<a href=#757 id=757 data-nosnippet>757</a>            </span><span class="kw">let </span>speed_bonus = <span class="kw">if </span>completion_time &lt;= <span class="number">15.0_f32 </span>{
+<a href=#758 id=758 data-nosnippet>758</a>                <span class="comment">// Exceptional: 3x to 5x multiplier
+<a href=#759 id=759 data-nosnippet>759</a>                </span><span class="kw">let </span>multiplier = <span class="number">3.0_f32 </span>+ ((<span class="number">15.0_f32 </span>- completion_time) / <span class="number">15.0_f32</span>) * <span class="number">2.0_f32</span>;
+<a href=#760 id=760 data-nosnippet>760</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
+<a href=#761 id=761 data-nosnippet>761</a>            } <span class="kw">else if </span>completion_time &lt;= <span class="number">25.0_f32 </span>{
+<a href=#762 id=762 data-nosnippet>762</a>                <span class="comment">// Good: 1.5x to 3x multiplier
+<a href=#763 id=763 data-nosnippet>763</a>                </span><span class="kw">let </span>multiplier = <span class="number">1.5_f32 </span>+ ((<span class="number">25.0_f32 </span>- completion_time) / <span class="number">10.0_f32</span>) * <span class="number">1.5_f32</span>;
+<a href=#764 id=764 data-nosnippet>764</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
+<a href=#765 id=765 data-nosnippet>765</a>            } <span class="kw">else if </span>completion_time &lt;= <span class="number">35.0_f32 </span>{
+<a href=#766 id=766 data-nosnippet>766</a>                <span class="comment">// Average: 0.5x to 1.5x multiplier
+<a href=#767 id=767 data-nosnippet>767</a>                </span><span class="kw">let </span>multiplier = <span class="number">0.5_f32 </span>+ ((<span class="number">35.0_f32 </span>- completion_time) / <span class="number">10.0_f32</span>) * <span class="number">1.0_f32</span>;
+<a href=#768 id=768 data-nosnippet>768</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
+<a href=#769 id=769 data-nosnippet>769</a>            } <span class="kw">else </span>{
+<a href=#770 id=770 data-nosnippet>770</a>                <span class="comment">// Slow: 0.1x to 0.5x multiplier
+<a href=#771 id=771 data-nosnippet>771</a>                </span><span class="kw">let </span>multiplier =
+<a href=#772 id=772 data-nosnippet>772</a>                    <span class="number">0.1_f32 </span>+ ((<span class="number">45.0_f32 </span>- completion_time).max(<span class="number">0.0_f32</span>) / <span class="number">10.0_f32</span>) * <span class="number">0.4_f32</span>;
+<a href=#773 id=773 data-nosnippet>773</a>                (base_score <span class="kw">as </span>f32 * multiplier) <span class="kw">as </span>u32
+<a href=#774 id=774 data-nosnippet>774</a>            };
+<a href=#775 id=775 data-nosnippet>775</a>
+<a href=#776 id=776 data-nosnippet>776</a>            <span class="comment">// Level progression bonus (small bonus for reaching higher levels)
+<a href=#777 id=777 data-nosnippet>777</a>            </span><span class="kw">let </span>level_bonus = <span class="kw">if </span>current_level &gt; <span class="number">5 </span>{
+<a href=#778 id=778 data-nosnippet>778</a>                (current_level - <span class="number">5</span>) <span class="kw">as </span>u32 * <span class="number">50
+<a href=#779 id=779 data-nosnippet>779</a>            </span>} <span class="kw">else </span>{
+<a href=#780 id=780 data-nosnippet>780</a>                <span class="number">0
+<a href=#781 id=781 data-nosnippet>781</a>            </span>};
+<a href=#782 id=782 data-nosnippet>782</a>
+<a href=#783 id=783 data-nosnippet>783</a>            <span class="comment">// Consecutive level bonus (reward for sustained performance)
+<a href=#784 id=784 data-nosnippet>784</a>            </span><span class="kw">let </span>consecutive_bonus = <span class="kw">if </span>completion_time &lt;= <span class="number">20.0_f32 </span>{
+<a href=#785 id=785 data-nosnippet>785</a>                <span class="comment">// Only give consecutive bonus for good performance
+<a href=#786 id=786 data-nosnippet>786</a>                </span>current_level <span class="kw">as </span>u32 * <span class="number">25
+<a href=#787 id=787 data-nosnippet>787</a>            </span>} <span class="kw">else </span>{
+<a href=#788 id=788 data-nosnippet>788</a>                <span class="number">0
+<a href=#789 id=789 data-nosnippet>789</a>            </span>};
+<a href=#790 id=790 data-nosnippet>790</a>
+<a href=#791 id=791 data-nosnippet>791</a>            <span class="kw">let </span>total_score = base_score + speed_bonus + level_bonus + consecutive_bonus;
+<a href=#792 id=792 data-nosnippet>792</a>
+<a href=#793 id=793 data-nosnippet>793</a>            <span class="comment">// Update score and level
+<a href=#794 id=794 data-nosnippet>794</a>            </span>state
+<a href=#795 id=795 data-nosnippet>795</a>                .game_state
+<a href=#796 id=796 data-nosnippet>796</a>                .set_score(state.game_state.game_ui.score + total_score);
+<a href=#797 id=797 data-nosnippet>797</a>            state.game_state.set_level(current_level + <span class="number">1</span>);
+<a href=#798 id=798 data-nosnippet>798</a>
+<a href=#799 id=799 data-nosnippet>799</a>            <span class="comment">// Enhanced time management: Not supported in new timer, so skip add_time/subtract_time/prev_time
+<a href=#800 id=800 data-nosnippet>800</a>        </span>}
+<a href=#801 id=801 data-nosnippet>801</a>    }
+<a href=#802 id=802 data-nosnippet>802</a>}</code></pre></div></section></main></body></html>
