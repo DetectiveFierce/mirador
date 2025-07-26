@@ -105,6 +105,11 @@ impl App {
             .update_enemy_position("enemy", state.game_state.enemy.pathfinder.position)
             .expect("Failed to update enemy position");
 
+        // Update audio manager to process any pending audio operations
+        if let Err(e) = state.game_state.audio_manager.update() {
+            println!("Failed to update audio manager: {:?}", e);
+        }
+
         // Prepare rendering commands
         let mut encoder = state
             .wgpu_renderer
@@ -686,6 +691,21 @@ impl App {
             state.game_state.set_level(1);
             state.game_state.set_score(0);
             state.game_state.game_ui.timer = Some(GameTimer::new(TimerConfig::default()));
+
+            // Restart background music for new game
+            state
+                .game_state
+                .audio_manager
+                .restart_background_music()
+                .expect("Failed to restart background music");
+
+            // Set game audio volumes after restarting background music
+            state
+                .game_state
+                .audio_manager
+                .set_game_volumes()
+                .expect("Failed to set game volumes");
+
             game::update_game_ui(
                 &mut state.text_renderer,
                 &mut state.game_state.game_ui,
