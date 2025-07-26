@@ -119,6 +119,21 @@ impl Vec3 {
     pub fn length(&self) -> f32 {
         (self.x().powi(2) + self.y().powi(2) + self.z().powi(2)).sqrt()
     }
+    /// Calculates the Euclidean distance between this vector and another.
+    ///
+    /// # Arguments
+    /// * `other` - The other vector to calculate distance to
+    ///
+    /// # Returns
+    /// The distance between the two vectors
+    ///
+    /// # Example
+    /// ```
+    /// # use your_crate::math::Vec3;
+    /// let v1 = Vec3::new(0.0, 0.0, 0.0);
+    /// let v2 = Vec3::new(3.0, 4.0, 0.0);
+    /// assert_eq!(v1.distance_to(&v2), 5.0);
+    /// ```
     pub fn distance_to(&self, other: &Self) -> f32 {
         (*self - *other).length()
     }
@@ -228,27 +243,48 @@ impl Mul<f32> for Vec3 {
     }
 }
 
-// Helper struct for 2D operations
+/// A 2D vector for 2D mathematical operations.
+///
+/// This struct represents a 2D vector with x and z components, commonly used
+/// for 2D positioning and calculations in the game.
 #[derive(Copy, Clone, Debug)]
 pub struct Vec2(pub [f32; 2]);
 
 impl Vec2 {
+    /// Creates a new 2D vector with the given x and z components.
+    ///
+    /// # Arguments
+    /// * `x` - The x component
+    /// * `z` - The z component
+    ///
+    /// # Returns
+    /// A new Vec2 instance
     pub fn new(x: f32, z: f32) -> Self {
         Vec2([x, z])
     }
 
+    /// Returns the x component of the vector.
     pub fn x(&self) -> f32 {
         self.0[0]
     }
 
+    /// Returns the z component of the vector.
     pub fn z(&self) -> f32 {
         self.0[1]
     }
 
+    /// Calculates the length (magnitude) of the vector.
+    ///
+    /// # Returns
+    /// The Euclidean length of the vector
     pub fn length(&self) -> f32 {
         (self.x().powi(2) + self.z().powi(2)).sqrt()
     }
 
+    /// Normalizes the vector to unit length.
+    ///
+    /// # Returns
+    /// A normalized vector with length 1, or a zero vector if the original length is zero
     pub fn normalize(&self) -> Self {
         let length = self.length();
         if length <= f32::EPSILON {
@@ -257,10 +293,34 @@ impl Vec2 {
         Self([self.x() / length, self.z() / length])
     }
 
+    /// Calculates the Euclidean distance between this vector and another.
+    ///
+    /// # Arguments
+    /// * `other` - The other vector to calculate distance to
+    ///
+    /// # Returns
+    /// The distance between the two vectors
     pub fn distance_to(&self, other: &Self) -> f32 {
         (*self - *other).length()
     }
 
+    /// Rotates the vector by the specified angle in radians.
+    ///
+    /// This method applies a 2D rotation transformation to the vector.
+    /// The rotation is counterclockwise around the origin.
+    ///
+    /// # Arguments
+    /// * `angle` - The rotation angle in radians
+    ///
+    /// # Returns
+    /// A new vector rotated by the specified angle
+    ///
+    /// # Example
+    /// ```
+    /// # use your_crate::math::Vec2;
+    /// let v = Vec2::new(1.0, 0.0);
+    /// let rotated = v.rotate(std::f32::consts::PI / 2.0); // Rotate 90 degrees
+    /// ```
     pub fn rotate(&self, angle: f32) -> Self {
         let cos_a = angle.cos();
         let sin_a = angle.sin();

@@ -1,3 +1,57 @@
+//! Game renderer module for the Mirador 3D maze game.
+//!
+//! This module provides the main rendering system for the 3D maze game, handling
+//! all visual elements including the maze geometry, enemies, UI elements, and
+//! special effects. The renderer uses WebGPU for hardware-accelerated graphics
+//! and implements a multi-pass rendering pipeline for optimal performance.
+//!
+//! # Overview
+//!
+//! The game renderer consists of several specialized renderers:
+//! - `GameRenderer`: Main renderer coordinating all visual elements
+//! - `CompassRenderer`: Renders the directional compass overlay
+//! - `EnemyRenderer`: Handles enemy visualization and animation
+//! - `StarRenderer`: Creates animated starfield background effects
+//! - `TimerBarRenderer`: Renders the time remaining indicator
+//! - `StaminaBarRenderer`: Displays player stamina levels
+//! - `DebugRenderer`: Development tools for debugging and visualization
+//!
+//! # Rendering Pipeline
+//!
+//! The renderer uses a structured multi-pass approach:
+//! 1. **Background Pass**: Animated starfield using `StarRenderer`
+//! 2. **Geometry Pass**: Maze floors and walls with depth testing
+//! 3. **Entity Pass**: Enemies and interactive elements
+//! 4. **UI Pass**: Compass, timer, stamina bars, and overlays
+//! 5. **Debug Pass**: Optional development overlays
+//!
+//! # Coordinate System
+//!
+//! Uses a right-handed coordinate system:
+//! - X-axis: Right direction
+//! - Y-axis: Up direction  
+//! - Z-axis: Toward viewer (negative Z is forward)
+//! - Maze positioned at world origin (0, 0, 0)
+//!
+//! # Usage
+//!
+//! ```rust
+//! use mirador::renderer::game_renderer::GameRenderer;
+//! use wgpu::{Device, Queue, SurfaceConfiguration};
+//!
+//! // Create renderer
+//! let mut renderer = GameRenderer::new(&device, &queue, &surface_config);
+//!
+//! // Load textures
+//! renderer.load_ceiling_texture(&device, &queue)?;
+//!
+//! // Update depth buffer on resize
+//! let depth_view = renderer.update_depth_texture(&device, width, height);
+//!
+//! // Render frame
+//! renderer.render_game(&queue, &game_state, &mut pass, aspect_ratio);
+//! ```
+
 pub mod compass;
 pub mod debug;
 pub mod enemy;
@@ -71,31 +125,88 @@ use wgpu::util::DeviceExt;
 /// - `depth_texture` - Optional depth buffer for proper 3D occlusion (recreated on resize)
 /// - `star_renderer` - Background renderer for animated starfield effects
 /// - `debug_renderer` - Development tools for rendering bounding boxes and debug overlays
-// Add this to your GameRenderer struct
+/// - `compass_renderer` - Renders the directional compass overlay
+/// - `exit_position` - Optional coordinates of the maze exit for special rendering
+/// - `enemy_renderer` - Handles enemy visualization and animation
+/// - `start_time` - Tracks animation start time for time-based effects
+/// - `timer_bar_renderer` - Renders the time remaining indicator
+/// - `stamina_bar_renderer` - Displays player stamina levels
+/// - `ceiling_texture` - Optional texture for ceiling rendering
+/// - `ceiling_texture_view` - Texture view for ceiling rendering
+/// - `ceiling_sampler` - Sampler for ceiling texture filtering
+/// - `ceiling_bind_group` - Bind group for ceiling texture resources
 pub struct GameRenderer {
+    /// Main render pipeline for maze geometry with depth testing and alpha blending
     pub pipeline: wgpu::RenderPipeline,
+    /// Combined vertex buffer containing both floor and wall geometry data
     pub vertex_buffer: wgpu::Buffer,
+    /// Total number of vertices to render from the combined buffer
     pub vertex_count: u32,
+    /// GPU buffer storing model-view-projection matrix for vertex transformations
     pub uniform_buffer: wgpu::Buffer,
+    /// WebGPU bind group linking uniform buffer to shader binding point 0
     pub uniform_bind_group: wgpu::BindGroup,
+    /// Optional depth buffer for proper 3D occlusion (recreated on resize)
     pub depth_texture: Option<wgpu::Texture>,
+    /// Background renderer for animated starfield effects
     pub star_renderer: StarRenderer,
+    /// Development tools for rendering bounding boxes and debug overlays
     pub debug_renderer: DebugRenderer,
+    /// Renders the directional compass overlay
     pub compass_renderer: CompassRenderer,
+    /// Optional coordinates of the maze exit for special rendering
     pub exit_position: Option<(f32, f32)>,
+    /// Handles enemy visualization and animation
     pub enemy_renderer: EnemyRenderer,
-    // Add this field to track start time for animation
+    /// Tracks animation start time for time-based effects
     pub start_time: Instant,
+    /// Renders the time remaining indicator
     pub timer_bar_renderer: TimerBarRenderer,
+    /// Displays player stamina levels
     pub stamina_bar_renderer: StaminaBarRenderer,
-    // Ceiling texture resources
+    /// Optional texture for ceiling rendering
     pub ceiling_texture: Option<wgpu::Texture>,
+    /// Texture view for ceiling rendering
     pub ceiling_texture_view: Option<wgpu::TextureView>,
+    /// Sampler for ceiling texture filtering
     pub ceiling_sampler: Option<wgpu::Sampler>,
+    /// Bind group for ceiling texture resources
     pub ceiling_bind_group: Option<wgpu::BindGroup>,
 }
 
 impl GameRenderer {
+    /// Creates a new `GameRenderer` instance with all necessary GPU resources.
+    ///
+    /// This constructor initializes all rendering components including the main
+    /// pipeline, vertex buffers, uniform buffers, and specialized renderers for
+    /// various game elements.
+    ///
+    /// # Arguments
+    ///
+    /// * `device` - WebGPU device for creating GPU resources
+    /// * `queue` - WebGPU queue for command submission
+    /// * `surface_config` - Surface configuration for format and size information
+    ///
+    /// # Returns
+    ///
+    /// A fully initialized `GameRenderer` instance ready for rendering.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mirador::renderer::game_renderer::GameRenderer;
+    /// use wgpu::{Device, Queue, SurfaceConfiguration};
+    ///
+    /// let renderer = GameRenderer::new(&device, &queue, &surface_config);
+    /// ```
+    ///
+    /// # GPU Resource Creation
+    ///
+    /// The constructor creates several GPU resources:
+    /// - Render pipeline with depth testing and alpha blending
+    /// - Uniform buffer for transformation matrices
+    /// - Bind group for shader resource binding
+    /// - Specialized renderers for stars, compass, enemies, and UI elements
     pub fn new(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -208,7 +319,38 @@ impl GameRenderer {
         }
     }
 
-    /// Loads the ceiling texture and creates the bind group for texturing
+    /// Loads the ceiling texture and creates the bind group for texturing.
+    ///
+    /// This method loads the ceiling texture from the assets directory and sets up
+    /// all necessary GPU resources for texture rendering, including the texture
+    /// itself, texture view, sampler, and bind group.
+    ///
+    /// # Arguments
+    ///
+    /// * `device` - WebGPU device for creating GPU resources
+    /// * `queue` - WebGPU queue for uploading texture data
+    ///
+    /// # Returns
+    ///
+    /// `Result<(), Box<dyn std::error::Error>>` - Success or error from texture loading
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mirador::renderer::game_renderer::GameRenderer;
+    /// use wgpu::{Device, Queue};
+    ///
+    /// let mut renderer = GameRenderer::new(&device, &queue, &surface_config);
+    /// renderer.load_ceiling_texture(&device, &queue)?;
+    /// ```
+    ///
+    /// # Texture Details
+    ///
+    /// - Loads texture from `assets/tiles.jpg`
+    /// - Creates RGBA8 texture with sRGB format
+    /// - Uses repeat addressing for seamless tiling
+    /// - Linear filtering for smooth texture interpolation
+    /// - Creates bind group with uniform buffer, texture, and sampler
     pub fn load_ceiling_texture(
         &mut self,
         device: &wgpu::Device,
@@ -330,6 +472,37 @@ impl GameRenderer {
         Ok(())
     }
 
+    /// Updates or creates the depth texture for proper 3D occlusion.
+    ///
+    /// This method manages the depth buffer, creating a new one when the surface
+    /// dimensions change or when no depth texture exists. The depth texture is
+    /// essential for proper 3D rendering with depth testing.
+    ///
+    /// # Arguments
+    ///
+    /// * `device` - WebGPU device for creating GPU resources
+    /// * `width` - New width of the surface
+    /// * `height` - New height of the surface
+    ///
+    /// # Returns
+    ///
+    /// A `wgpu::TextureView` of the depth texture for use in render passes.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mirador::renderer::game_renderer::GameRenderer;
+    /// use wgpu::Device;
+    ///
+    /// let mut renderer = GameRenderer::new(&device, &queue, &surface_config);
+    /// let depth_view = renderer.update_depth_texture(&device, 1920, 1080);
+    /// ```
+    ///
+    /// # Memory Management
+    ///
+    /// - Automatically drops old depth texture when recreating
+    /// - Only recreates when dimensions actually change
+    /// - Uses Depth24Plus format for optimal precision and performance
     pub fn update_depth_texture(
         &mut self,
         device: &wgpu::Device,
@@ -376,6 +549,43 @@ impl GameRenderer {
             .create_view(&wgpu::TextureViewDescriptor::default())
     }
 
+    /// Renders the complete game scene including maze, enemies, and UI elements.
+    ///
+    /// This is the main rendering method that coordinates all visual elements
+    /// in the correct order. It calculates view and projection matrices once
+    /// and applies them to all rendered objects for consistency.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue` - WebGPU queue for command submission
+    /// * `game_state` - Current game state containing player and enemy information
+    /// * `pass` - Render pass to record drawing commands
+    /// * `aspect` - Aspect ratio of the surface for projection calculations
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mirador::renderer::game_renderer::GameRenderer;
+    /// use mirador::game::GameState;
+    /// use wgpu::{Queue, RenderPass};
+    ///
+    /// let mut renderer = GameRenderer::new(&device, &queue, &surface_config);
+    /// renderer.render_game(&queue, &game_state, &mut pass, 16.0 / 9.0);
+    /// ```
+    ///
+    /// # Rendering Order
+    ///
+    /// The method renders elements in this order:
+    /// 1. **Maze/Floor**: Main geometry with depth testing
+    /// 2. **Enemies**: Animated enemy entities
+    /// 3. **UI Elements**: Compass, timer, stamina bars (handled separately)
+    ///
+    /// # Matrix Calculations
+    ///
+    /// - View matrix from player camera position and orientation
+    /// - Projection matrix with configurable FOV and aspect ratio
+    /// - Combined view-projection matrix for efficient rendering
+    /// - Model matrix for floor (identity) and individual enemy transforms
     pub fn render_game(
         &mut self,
         queue: &wgpu::Queue,

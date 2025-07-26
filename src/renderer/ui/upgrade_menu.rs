@@ -1,3 +1,10 @@
+//! Upgrade Menu System
+//!
+//! This module provides a comprehensive upgrade menu interface for the game,
+//! allowing players to select from randomly presented upgrades between levels.
+//! The menu displays three upgrade options in a visually appealing layout with
+//! buttons, icons, and tooltips.
+
 use crate::game::upgrades::{AvailableUpgrade, Upgrade, UpgradeManager};
 use crate::renderer::ui::button::{
     Button, ButtonAnchor, ButtonManager, ButtonPosition, TextAlign, create_primary_button_style,
@@ -8,24 +15,67 @@ use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
 use winit::window::Window;
 
+/// Represents the possible actions that can be taken in the upgrade menu.
+///
+/// This enum is used to track which upgrade slot was selected by the player,
+/// allowing the game loop to respond appropriately to user choices.
 #[derive(Debug, Clone, PartialEq)]
 pub enum UpgradeMenuAction {
+    /// Player selected the first upgrade option
     SelectUpgrade1,
+    /// Player selected the second upgrade option
     SelectUpgrade2,
+    /// Player selected the third upgrade option
     SelectUpgrade3,
+    /// No action was taken or action was reset
     None,
 }
 
+/// The main upgrade menu system that handles display and interaction logic.
+///
+/// This struct manages the entire upgrade selection process, including:
+/// - Rendering the upgrade menu UI with three selectable options
+/// - Managing button interactions and visual feedback
+/// - Applying selected upgrades to the game state
+/// - Handling menu visibility and layout changes
+///
+/// # Layout
+/// The menu displays as a centered modal with three vertical upgrade slots,
+/// each showing the upgrade name, icon, level information, and description tooltip.
 pub struct UpgradeMenu {
+    /// Manages all UI buttons within the upgrade menu
     pub button_manager: ButtonManager,
+    /// Handles upgrade selection, application, and persistence
     pub upgrade_manager: UpgradeManager,
+    /// The three currently available upgrade options presented to the player
     pub current_upgrades: Vec<Upgrade>,
+    /// Whether the upgrade menu is currently visible and active
     pub visible: bool,
+    /// The last action performed by the player (which upgrade was selected)
     pub last_action: UpgradeMenuAction,
-    pub content_initialized: bool, // Flag to prevent content from changing after initialization
+    /// Prevents content from being reinitialized after first setup
+    ///
+    /// This flag ensures that upgrade text, icons, and tooltips remain stable
+    /// once displayed, preventing flickering or content changes during interaction.
+    pub content_initialized: bool,
 }
 
 impl UpgradeMenu {
+    /// Creates a new upgrade menu instance with the specified rendering context.
+    ///
+    /// # Arguments
+    /// * `device` - WGPU device for GPU operations
+    /// * `queue` - WGPU command queue for rendering operations
+    /// * `surface_format` - The texture format of the rendering surface
+    /// * `window` - Window reference for layout calculations
+    ///
+    /// # Returns
+    /// A new `UpgradeMenu` instance with initialized button layout but hidden by default.
+    ///
+    /// # Example
+    /// ```rust
+    /// let upgrade_menu = UpgradeMenu::new(&device, &queue, surface_format, &window);
+    /// ```
     pub fn new(
         device: &Device,
         queue: &Queue,
@@ -47,6 +97,21 @@ impl UpgradeMenu {
         }
     }
 
+    /// Creates the visual layout for the upgrade menu with three selectable upgrade slots.
+    ///
+    /// This method sets up:
+    /// - A centered modal container (80% of window width, 70% of window height)
+    /// - Three evenly spaced upgrade slot buttons within the container
+    /// - Proper styling, spacing, and positioning for all UI elements
+    ///
+    /// # Arguments
+    /// * `button_manager` - Mutable reference to the button manager for adding UI elements
+    /// * `window_size` - Current window dimensions for layout calculations
+    ///
+    /// # Layout Details
+    /// - Container: Rounded rectangle with medium grey background
+    /// - Slots: 25% container width each, with 5% spacing between them
+    /// - Buttons: Tall aspect ratio with large text (32pt font) and rounded corners
     fn create_upgrade_layout(button_manager: &mut ButtonManager, window_size: PhysicalSize<u32>) {
         let window_width = window_size.width as f32;
         let window_height = window_size.height as f32;
@@ -125,6 +190,19 @@ impl UpgradeMenu {
         button_manager.update_button_positions();
     }
 
+    /// Makes the upgrade menu visible and initializes it with three random upgrade options.
+    ///
+    /// This method:
+    /// 1. Sets the menu to visible state
+    /// 2. Resets the last action to None
+    /// 3. Selects 3 random upgrades from the available pool
+    /// 4. Makes all UI buttons visible
+    /// 5. Updates button content with upgrade information
+    ///
+    /// # Side Effects
+    /// - Modifies `self.visible`, `self.last_action`, and `self.current_upgrades`
+    /// - Updates button text, icons, and tooltips through the button manager
+    /// - Triggers content initialization if not already done
     pub fn show(&mut self) {
         self.visible = true;
         self.last_action = UpgradeMenuAction::None;
@@ -144,6 +222,21 @@ impl UpgradeMenu {
         // and we don't want to interfere with the stable text content
     }
 
+    /// Updates the content of upgrade buttons with current upgrade information.
+    ///
+    /// This method performs a three-pass update to avoid borrow conflicts:
+    /// 1. **First pass**: Updates button text, icons, and prepares text content
+    /// 2. **Second pass**: Applies main text updates to the text renderer
+    /// 3. **Third pass**: Updates level text and recalculates positions
+    ///
+    /// The method only runs once per menu display (controlled by `content_initialized`)
+    /// to prevent content flickering and ensure stable UI presentation.
+    ///
+    /// # Content Updates
+    /// - Button text: Set to upgrade name (e.g., "Speed Up", "Dash")
+    /// - Icons: Matched to upgrade type using `get_icon_id_for_upgrade_name`
+    /// - Level text: Shows current upgrade level (e.g., "Level 2")
+    /// - Tooltips: Displays upgrade description and effects
     fn update_upgrade_buttons(&mut self) {
         // Only update if content hasn't been initialized yet
         if self.content_initialized {
@@ -227,6 +320,27 @@ impl UpgradeMenu {
         self.content_initialized = true;
     }
 
+    /// Maps upgrade names to their corresponding icon identifiers.
+    ///
+    /// This function provides a centralized mapping between upgrade names
+    /// and their visual icon representations in the UI.
+    ///
+    /// # Arguments
+    /// * `upgrade_name` - The name of the upgrade (e.g., "Speed Up", "Dash")
+    ///
+    /// # Returns
+    /// A `String` containing the icon identifier for the upgrade.
+    /// Returns "blank_icon" for unknown upgrade names.
+    ///
+    /// # Supported Upgrades
+    /// - "Speed Up" → "speed_up_icon"
+    /// - "Slow Time" → "slow_down_icon"
+    /// - "Silent Step" → "silent_step_icon"
+    /// - "Tall Boots" → "tall_boots_icon"
+    /// - "Head Start" → "head_start_icon"
+    /// - "Dash" → "dash_icon"
+    /// - "Unknown" → "unknown_icon"
+    /// - Others → "blank_icon"
     fn get_icon_id_for_upgrade_name(upgrade_name: &str) -> String {
         match upgrade_name {
             "Speed Up" => "speed_up_icon".to_string(),
@@ -240,6 +354,15 @@ impl UpgradeMenu {
         }
     }
 
+    /// Hides the upgrade menu and resets its state for the next use.
+    ///
+    /// This method:
+    /// - Sets visibility to false
+    /// - Resets the last action to None
+    /// - Clears the content initialization flag for next display
+    /// - Hides all UI buttons
+    ///
+    /// After calling this method, the menu can be shown again with new upgrade options.
     pub fn hide(&mut self) {
         self.visible = false;
         self.last_action = UpgradeMenuAction::None;
@@ -251,10 +374,33 @@ impl UpgradeMenu {
         }
     }
 
+    /// Returns whether the upgrade menu is currently visible.
+    ///
+    /// # Returns
+    /// `true` if the menu is visible and active, `false` otherwise.
     pub fn is_visible(&self) -> bool {
         self.visible
     }
 
+    /// Handles user input events for the upgrade menu.
+    ///
+    /// This method processes window events when the menu is visible, including:
+    /// - Mouse clicks on upgrade buttons
+    /// - Keyboard input for upgrade selection
+    /// - Playing appropriate sound effects
+    /// - Applying selected upgrades to the game state
+    /// - Automatically hiding the menu after selection
+    ///
+    /// # Arguments
+    /// * `event` - The window event to process
+    /// * `game_state` - Mutable reference to the game state for applying upgrades
+    ///
+    /// # Side Effects
+    /// - Updates `self.last_action` based on user interaction
+    /// - Applies upgrade effects to the player and game state
+    /// - Plays upgrade selection sound effects
+    /// - Hides the menu after successful upgrade selection
+    /// - Prints confirmation message to console
     pub fn handle_input(&mut self, event: &WindowEvent, game_state: &mut crate::game::GameState) {
         if !self.visible {
             return;
@@ -312,6 +458,13 @@ impl UpgradeMenu {
         }
     }
 
+    /// Updates the upgrade menu's internal state.
+    ///
+    /// This method should be called every frame when the menu is visible.
+    /// It updates button states, handles hover effects, and maintains
+    /// proper UI responsiveness.
+    ///
+    /// Does nothing if the menu is not visible.
     pub fn update(&mut self) {
         if !self.visible {
             return;
@@ -320,7 +473,29 @@ impl UpgradeMenu {
         self.button_manager.update_button_states();
     }
 
-    /// Applies all owned upgrades to the player and game state, stacking effects as appropriate.
+    /// Applies all owned upgrades to the player and game state, with proper stacking effects.
+    ///
+    /// This method handles the complete upgrade application process:
+    /// 1. **Reset Phase**: Resets affected player fields to their base values
+    /// 2. **Application Phase**: Applies all owned upgrades with proper stacking
+    /// 3. **Finalization Phase**: Updates derived values (like current speed)
+    ///
+    /// # Arguments
+    /// * `game_state` - Mutable reference to the game state to modify
+    ///
+    /// # Upgrade Effects
+    /// - **Speed Up**: +10% movement and sprint speed per level (multiplicative)
+    /// - **Dash**: +10% max stamina per level (multiplicative)
+    /// - **Tall Boots**: +3 height units per level (additive)
+    /// - **Slow Time**: +5 seconds to level timer per level (additive)
+    /// - **Silent Step**: 5% worse enemy pathfinding per level
+    /// - **Head Start**: +3 seconds enemy lock delay per level
+    ///
+    /// # Implementation Notes
+    /// - Multiplicative effects use `powi()` for proper stacking
+    /// - Additive effects use simple multiplication
+    /// - Some effects are applied at level start (timer, enemy delays)
+    /// - Player speed is synchronized with base speed after application
     pub fn apply_upgrade_effects(&self, game_state: &mut crate::game::GameState) {
         // Reset affected player fields to base values
         game_state.player.base_speed = 100.0;
@@ -366,6 +541,24 @@ impl UpgradeMenu {
         game_state.player.speed = game_state.player.base_speed;
     }
 
+    /// Applies a specific upgrade by name to the player's upgrade collection.
+    ///
+    /// This is a convenience method that:
+    /// 1. Converts the upgrade name string to an `AvailableUpgrade` enum
+    /// 2. Adds the upgrade to the player's owned upgrades
+    /// 3. Immediately applies all upgrade effects to the game state
+    ///
+    /// # Arguments
+    /// * `upgrade_name` - The name of the upgrade to apply (e.g., "Speed Up")
+    /// * `game_state` - Mutable reference to the game state to modify
+    ///
+    /// # Fallback Behavior
+    /// If an unknown upgrade name is provided, defaults to "Speed Up".
+    ///
+    /// # Example
+    /// ```rust
+    /// upgrade_menu.apply_upgrade_by_name("Dash", &mut game_state);
+    /// ```
     fn apply_upgrade_by_name(
         &mut self,
         upgrade_name: &str,
@@ -385,17 +578,62 @@ impl UpgradeMenu {
         self.apply_upgrade_effects(game_state);
     }
 
+    /// Retrieves and resets the last action performed in the upgrade menu.
+    ///
+    /// This method implements a "consume-on-read" pattern, returning the
+    /// last action and immediately resetting it to `None`. This prevents
+    /// the same action from being processed multiple times.
+    ///
+    /// # Returns
+    /// The last `UpgradeMenuAction` that was performed, or `None` if no
+    /// action was taken or the action was already consumed.
+    ///
+    /// # Usage Pattern
+    /// ```rust
+    /// match upgrade_menu.get_last_action() {
+    ///     UpgradeMenuAction::SelectUpgrade1 => { /* handle upgrade 1 */ },
+    ///     UpgradeMenuAction::SelectUpgrade2 => { /* handle upgrade 2 */ },
+    ///     UpgradeMenuAction::SelectUpgrade3 => { /* handle upgrade 3 */ },
+    ///     UpgradeMenuAction::None => { /* no action */ },
+    /// }
+    /// ```
     pub fn get_last_action(&mut self) -> UpgradeMenuAction {
         let action = self.last_action.clone();
         self.last_action = UpgradeMenuAction::None;
         action
     }
 
+    /// Handles window resize events by updating the button manager and recreating the layout.
+    ///
+    /// This method ensures the upgrade menu remains properly sized and positioned
+    /// when the game window is resized. It updates both the rendering resolution
+    /// and the UI layout to match the new window dimensions.
+    ///
+    /// # Arguments
+    /// * `queue` - WGPU command queue for rendering operations
+    /// * `resolution` - New window resolution for text rendering
+    ///
+    /// # Side Effects
+    /// - Updates button manager's internal resolution
+    /// - Recreates the entire UI layout with new dimensions
+    /// - Resets content initialization if menu is currently visible
     pub fn resize(&mut self, queue: &Queue, resolution: Resolution) {
         self.button_manager.resize(queue, resolution);
         self.recreate_layout_for_new_size();
     }
 
+    /// Recreates the upgrade menu layout for the current window size.
+    ///
+    /// This method is called after window resize events to ensure the
+    /// UI layout matches the new window dimensions. It:
+    /// 1. Clears all existing buttons and layout data
+    /// 2. Recreates the layout using current window size
+    /// 3. Resets content initialization flag
+    /// 4. Re-initializes content if menu is currently visible
+    ///
+    /// # Layout Preservation
+    /// The method maintains the same visual proportions and styling
+    /// while adapting to the new window size.
     fn recreate_layout_for_new_size(&mut self) {
         // Clear existing buttons
         self.button_manager.buttons.clear();
@@ -417,6 +655,26 @@ impl UpgradeMenu {
         }
     }
 
+    /// Prepares the upgrade menu for rendering by updating text buffers and GPU resources.
+    ///
+    /// This method must be called before `render()` each frame when the menu is visible.
+    /// It handles text layout, buffer updates, and other preparation tasks required
+    /// for proper rendering.
+    ///
+    /// # Arguments
+    /// * `device` - WGPU device for GPU operations
+    /// * `queue` - WGPU command queue for buffer updates
+    /// * `surface_config` - Current surface configuration for rendering context
+    ///
+    /// # Returns
+    /// * `Ok(())` - Preparation completed successfully
+    /// * `Err(PrepareError)` - Text preparation failed (e.g., layout issues, GPU errors)
+    ///
+    /// # Usage
+    /// ```rust
+    /// upgrade_menu.prepare(&device, &queue, &surface_config)?;
+    /// upgrade_menu.render(&device, &mut render_pass)?;
+    /// ```
     pub fn prepare(
         &mut self,
         device: &Device,
@@ -426,6 +684,28 @@ impl UpgradeMenu {
         self.button_manager.prepare(device, queue, surface_config)
     }
 
+    /// Renders the upgrade menu to the current render pass.
+    ///
+    /// This method draws all visible upgrade menu elements, including:
+    /// - Background container with rounded corners
+    /// - Three upgrade slot buttons with styling
+    /// - Button text, icons, and level indicators
+    /// - Tooltip text (if hovering over buttons)
+    ///
+    /// # Arguments
+    /// * `device` - WGPU device for GPU operations
+    /// * `render_pass` - Current render pass to draw into
+    ///
+    /// # Returns
+    /// * `Ok(())` - Rendering completed successfully
+    /// * `Err(RenderError)` - Rendering failed (e.g., GPU errors, resource issues)
+    ///
+    /// # Behavior
+    /// - Does nothing and returns `Ok(())` if the menu is not visible
+    /// - All rendering is handled by the internal `ButtonManager`
+    ///
+    /// # Prerequisites
+    /// Must call `prepare()` before calling this method each frame.
     pub fn render(
         &mut self,
         device: &Device,

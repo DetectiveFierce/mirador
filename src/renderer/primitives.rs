@@ -17,11 +17,18 @@ pub const CEILING_TEXTURE_SCALE: f32 = 0.005;
 /// This struct stores a 4x4 matrix (typically Model-View-Projection) to be sent to the GPU as a uniform buffer.
 // Updated Uniforms structure to include time for animation
 // Updated Uniforms structure to include time for animation
+/// Uniform data passed to shaders for transformation and timing.
+///
+/// This struct contains the transformation matrix and time value that are
+/// passed to shaders for rendering calculations.
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Pod, Zeroable)]
 pub struct Uniforms {
+    /// 4x4 transformation matrix for vertex transformations.
     pub matrix: [[f32; 4]; 4],
+    /// Current time value for shader animations.
     pub time: f32,
+    /// Padding bytes for 16-byte alignment requirements.
     pub _padding: [f32; 7], // Padding for 16-byte alignment
 }
 
@@ -32,6 +39,10 @@ impl Default for Uniforms {
 }
 
 impl Uniforms {
+    /// Creates a new Uniforms instance with identity matrix and zero time.
+    ///
+    /// # Returns
+    /// A new Uniforms instance with default values
     pub fn new() -> Self {
         Self {
             matrix: [
@@ -45,6 +56,13 @@ impl Uniforms {
         }
     }
 
+    /// Creates a WGPU buffer containing the uniform data.
+    ///
+    /// # Arguments
+    /// * `device` - The WGPU device to create the buffer on
+    ///
+    /// # Returns
+    /// A WGPU buffer containing the uniform data
     pub fn create_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -53,6 +71,14 @@ impl Uniforms {
         })
     }
 
+    /// Creates a bind group and layout for the uniform buffer.
+    ///
+    /// # Arguments
+    /// * `buffer` - The uniform buffer to bind
+    /// * `device` - The WGPU device to create the bind group on
+    ///
+    /// # Returns
+    /// A tuple containing the bind group and its layout
     pub fn create_bind_group(
         &self,
         buffer: &wgpu::Buffer,
@@ -84,6 +110,10 @@ impl Uniforms {
         (bind_group, layout)
     }
 
+    /// Returns the uniform data as a byte slice.
+    ///
+    /// # Returns
+    /// A byte slice containing the uniform data
     pub fn as_bytes(&self) -> &[u8] {
         bytemuck::bytes_of(self)
     }

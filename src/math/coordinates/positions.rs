@@ -8,9 +8,13 @@ use crate::game::maze::generator::Cell;
 /// Enum representing cardinal directions in the maze
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
+    /// North direction (0°)
     North,
+    /// East direction (90°)
     East,
+    /// South direction (180°)
     South,
+    /// West direction (270°)
     West,
 }
 

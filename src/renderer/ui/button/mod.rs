@@ -1,6 +1,40 @@
+//! Button module - contains all button-related functionality for the UI system
+//!
+//! This module provides a complete button system for the Mirador game UI, including:
+//! - Button creation and management
+//! - Interactive states (normal, hover, pressed, disabled)
+//! - Text rendering with multiple text elements (main text, level text, tooltips)
+//! - Icon support for upgrade buttons
+//! - Responsive positioning and scaling
+//! - Mouse input handling
+//!
+//! The button system supports various button types:
+//! - Standard buttons with text
+//! - Upgrade menu buttons with icons, level text, and tooltips
+//! - Responsive buttons that adapt to window size
+//! - Buttons with different spacing strategies (wrap, horizontal bar, tall)
+//!
+//! # Examples
+//!
+//! ```rust
+//! // Create a basic button
+//! let button = Button::new("start_game", "Start Game")
+//!     .with_style(ButtonStyle::default())
+//!     .with_position(ButtonPosition::new(100.0, 100.0, 200.0, 50.0));
+//!
+//! // Create an upgrade button with level text and tooltip
+//! let upgrade_button = Button::new("speed_upgrade", "Speed Boost")
+//!     .with_style(upgrade_style)
+//!     .with_level_text()
+//!     .with_tooltip_text();
+//! ```
+
 // Button module - contains all button-related functionality
+/// Button styling and theme definitions.
 pub mod styles;
+/// Button type definitions and enums.
 pub mod types;
+/// Button utility functions and extensions.
 pub mod utils;
 
 // Re-export types for convenience
@@ -18,22 +52,51 @@ use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::window::Window;
 
+/// Represents a UI button with text, styling, and interactive behavior
+///
+/// A Button can contain multiple text elements:
+/// - Main text (required): The primary button label
+/// - Level text (optional): Smaller text showing level information (e.g., "Level 1")
+/// - Tooltip text (optional): Descriptive text explaining the button's function
+/// - Icon (optional): Visual representation for upgrade buttons
+///
+/// Buttons support various interactive states and can be positioned using different
+/// anchor points and spacing strategies.
 #[derive(Debug)]
 pub struct Button {
+    /// Unique identifier for the button
     pub id: String,
+    /// The main text displayed on the button
     pub text: String,
+    /// Visual styling configuration (colors, padding, corner radius, etc.)
     pub style: ButtonStyle,
+    /// Position and size of the button
     pub position: ButtonPosition,
+    /// Whether the button can be interacted with
     pub enabled: bool,
+    /// Whether the button is visible
     pub visible: bool,
+    /// Current interactive state (normal, hover, pressed, disabled)
     pub state: ButtonState,
+    /// Internal ID for the main text buffer
     pub text_id: String,
-    pub level_text_id: Option<String>, // For additional text like "Level 1"
-    pub tooltip_text_id: Option<String>, // For tooltip text below level text
-    pub icon_id: Option<String>,       // For upgrade-specific icons
+    /// Internal ID for the level text buffer (if level text is enabled)
+    pub level_text_id: Option<String>,
+    /// Internal ID for the tooltip text buffer (if tooltip is enabled)
+    pub tooltip_text_id: Option<String>,
+    /// ID of the icon to display (for upgrade buttons)
+    pub icon_id: Option<String>,
 }
 
 impl Button {
+    /// Creates a new button with the given ID and text
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the button
+    /// * `text` - The text to display on the button
+    ///
+    /// # Returns
+    /// A new Button instance with default styling and positioning
     pub fn new(id: &str, text: &str) -> Self {
         let text_id = format!("button_{}", id);
         Self {
@@ -51,35 +114,87 @@ impl Button {
         }
     }
 
+    /// Sets the button's visual style
+    ///
+    /// # Arguments
+    /// * `style` - The ButtonStyle to apply
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn with_style(mut self, style: ButtonStyle) -> Self {
         self.style = style;
         self
     }
 
+    /// Sets the button's position and size
+    ///
+    /// # Arguments
+    /// * `position` - The ButtonPosition defining location and dimensions
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn with_position(mut self, position: ButtonPosition) -> Self {
         self.position = position;
         self
     }
 
+    /// Sets the text alignment within the button
+    ///
+    /// # Arguments
+    /// * `text_align` - The TextAlign value (Left, Center, Right)
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn with_text_align(mut self, text_align: TextAlign) -> Self {
         self.style.text_align = text_align;
         self
     }
 
+    /// Enables level text display for this button
+    ///
+    /// Level text is typically used for upgrade buttons to show the current level
+    /// (e.g., "Level 1", "Level 2"). The text will be displayed in a smaller,
+    /// italic font below the main text.
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn with_level_text(mut self) -> Self {
         self.level_text_id = Some(format!("level_{}", self.id));
         self
     }
 
+    /// Enables tooltip text display for this button
+    ///
+    /// Tooltip text provides additional information about the button's function.
+    /// It's displayed in a smaller font below the level text (if present) or
+    /// below the main text.
+    ///
+    /// # Returns
+    /// Self for method chaining
     pub fn with_tooltip_text(mut self) -> Self {
         self.tooltip_text_id = Some(format!("tooltip_{}", self.id));
         self
     }
 
+    /// Sets the button's visibility
+    ///
+    /// # Arguments
+    /// * `visible` - Whether the button should be visible
     pub fn set_visible(&mut self, visible: bool) {
         self.visible = visible;
     }
 
+    /// Checks if the given point (x, y) is within the button's bounds
+    ///
+    /// This method is used for hit detection during mouse interactions.
+    /// Only visible and enabled buttons can be hit.
+    ///
+    /// # Arguments
+    /// * `x` - X coordinate of the point to test
+    /// * `y` - Y coordinate of the point to test
+    ///
+    /// # Returns
+    /// `true` if the point is within the button's bounds, `false` otherwise
     pub fn contains_point(&self, x: f32, y: f32) -> bool {
         if !self.visible || !self.enabled {
             return false;
@@ -94,22 +209,61 @@ impl Button {
     }
 }
 
+/// Manages a collection of buttons and handles their rendering and interaction
+///
+/// ButtonManager is responsible for:
+/// - Storing and organizing buttons
+/// - Handling mouse input and button state updates
+/// - Rendering buttons with their associated text and icons
+/// - Managing text buffers for button text elements
+/// - Providing click detection and event handling
+///
+/// The manager maintains button order for consistent rendering and supports
+/// various button types including upgrade menu buttons with icons and tooltips.
 pub struct ButtonManager {
+    /// Map of button ID to Button instance
     pub buttons: HashMap<String, Button>,
-    pub button_order: Vec<String>, // Track the order buttons were added
+    /// Ordered list of button IDs to maintain rendering order
+    pub button_order: Vec<String>,
+    /// Text renderer for button text elements
     pub text_renderer: TextRenderer,
+    /// Rectangle renderer for button backgrounds
     pub rectangle_renderer: RectangleRenderer,
+    /// Icon renderer for upgrade button icons
     pub icon_renderer: IconRenderer,
+    /// Current window dimensions for responsive positioning
     pub window_size: PhysicalSize<u32>,
+    /// Current mouse cursor position
     pub mouse_position: (f32, f32),
+    /// Whether the left mouse button is currently pressed
     pub mouse_pressed: bool,
+    /// ID of the button that was just clicked (if any)
     pub just_clicked: Option<String>,
-    pub container_rect: Option<Rectangle>, // For upgrade menu container
-    pub last_mouse_position: (f32, f32),   // Cache for mouse position changes
-    pub last_mouse_pressed: bool,          // Cache for mouse press state
+    /// Optional container rectangle for upgrade menu background
+    pub container_rect: Option<Rectangle>,
+    /// Previous mouse position for change detection optimization
+    pub last_mouse_position: (f32, f32),
+    /// Previous mouse press state for change detection optimization
+    pub last_mouse_pressed: bool,
 }
 
 impl ButtonManager {
+    /// Creates a new ButtonManager with initialized renderers and loaded icons
+    ///
+    /// This constructor:
+    /// - Initializes text, rectangle, and icon renderers
+    /// - Loads all upgrade icons from the assets directory
+    /// - Sets up the window size for responsive positioning
+    /// - Prepares the manager for button management and rendering
+    ///
+    /// # Arguments
+    /// * `device` - WGPU device for creating render resources
+    /// * `queue` - WGPU queue for uploading resources
+    /// * `surface_format` - Texture format for the render surface
+    /// * `window` - Window reference for size information
+    ///
+    /// # Returns
+    /// A new ButtonManager instance ready for use
     pub fn new(
         device: &Device,
         queue: &Queue,
@@ -155,6 +309,23 @@ impl ButtonManager {
         }
     }
 
+    /// Adds a button to the manager and sets up its text buffers
+    ///
+    /// This method:
+    /// - Calculates button dimensions based on text content and spacing strategy
+    /// - Creates text buffers for main text, level text, and tooltip text
+    /// - Positions text elements within the button bounds
+    /// - Tracks button order for consistent rendering
+    /// - Handles different button spacing strategies (Wrap, Hbar, Tall)
+    ///
+    /// For upgrade buttons (ButtonSpacing::Tall), this method also:
+    /// - Positions text at the top of the button
+    /// - Sets up level text below the main text
+    /// - Configures tooltip text at the bottom
+    /// - Prepares icon positioning
+    ///
+    /// # Arguments
+    /// * `button` - The Button instance to add
     pub fn add_button(&mut self, button: Button) {
         let text_id = button.text_id.clone();
         let text = button.text.clone();
@@ -312,6 +483,17 @@ impl ButtonManager {
             .insert(button_with_size.id.clone(), button_with_size);
     }
 
+    /// Updates icon positions for all visible upgrade buttons
+    ///
+    /// This method:
+    /// - Clears existing icons from the renderer
+    /// - Only processes buttons with ButtonSpacing::Tall (upgrade buttons)
+    /// - Calculates icon positions based on button scaling (hover effects)
+    /// - Centers icons within the button bounds
+    /// - Applies hover scaling to icons to match button scaling
+    ///
+    /// Icons are positioned at the center of the button with appropriate margins
+    /// and scale with the button during hover/press states.
     pub fn update_icon_positions(&mut self) {
         // Clear existing icons
         self.icon_renderer.clear_icons();
@@ -366,10 +548,28 @@ impl ButtonManager {
         }
     }
 
+    /// Gets a mutable reference to a button by ID
+    ///
+    /// # Arguments
+    /// * `id` - The button ID to look up
+    ///
+    /// # Returns
+    /// `Some(&mut Button)` if the button exists, `None` otherwise
     pub fn get_button_mut(&mut self, id: &str) -> Option<&mut Button> {
         self.buttons.get_mut(id)
     }
 
+    /// Checks if a specific button was clicked in the last input cycle
+    ///
+    /// This method checks the `just_clicked` state and returns true if the
+    /// specified button was clicked. It also resets the click state and
+    /// prints a debug message with the button text.
+    ///
+    /// # Arguments
+    /// * `id` - The button ID to check for clicks
+    ///
+    /// # Returns
+    /// `true` if the button was clicked, `false` otherwise
     pub fn is_button_clicked(&mut self, id: &str) -> bool {
         if let Some(clicked_id) = &self.just_clicked {
             if clicked_id == id {
@@ -396,6 +596,17 @@ impl ButtonManager {
         false
     }
 
+    /// Handles window events for button interaction
+    ///
+    /// This method processes mouse input events to:
+    /// - Track mouse button press/release states
+    /// - Update mouse cursor position
+    /// - Detect button clicks when mouse is released over a pressed button
+    /// - Handle window resize events
+    /// - Trigger button state updates
+    ///
+    /// # Arguments
+    /// * `event` - The window event to process
     pub fn handle_input(&mut self, event: &WindowEvent) {
         match event {
             WindowEvent::MouseInput {
@@ -435,6 +646,21 @@ impl ButtonManager {
         }
     }
 
+    /// Updates button states based on mouse interaction and applies visual changes
+    ///
+    /// This method:
+    /// - Optimizes performance by checking if mouse state has changed
+    /// - Updates button states (Normal, Hover, Pressed, Disabled) based on mouse position
+    /// - Applies visual changes including color, weight, and text size scaling
+    /// - Handles text positioning for hover scaling effects
+    /// - Updates level text and tooltip text styling and positioning
+    /// - Manages visibility for disabled/invisible buttons
+    /// - Triggers icon position updates for upgrade buttons
+    ///
+    /// For upgrade buttons (ButtonSpacing::Tall), this method also:
+    /// - Scales text size on hover (20% larger) and press (10% larger)
+    /// - Adjusts text positioning to account for button scaling
+    /// - Updates level text and tooltip text with proper scaling
     pub fn update_button_states(&mut self) {
         // Early exit if mouse state hasn't changed
         if self.mouse_position == self.last_mouse_position
@@ -691,6 +917,25 @@ impl ButtonManager {
         self.update_icon_positions();
     }
 
+    /// Updates button positions and text layout after window resize or other changes
+    ///
+    /// This method recalculates:
+    /// - Button dimensions based on current window size
+    /// - Text positioning within buttons
+    /// - Level text and tooltip text positioning
+    /// - Icon positions for upgrade buttons
+    /// - Scaling effects for hover states
+    ///
+    /// The method handles different button spacing strategies:
+    /// - Wrap: Button size matches text content
+    /// - Hbar: Button width is proportional to window width
+    /// - Tall: Button height is proportional to window height (for upgrade buttons)
+    ///
+    /// For upgrade buttons, this method also:
+    /// - Positions main text at the top
+    /// - Places level text below the main text
+    /// - Positions tooltip text at the bottom
+    /// - Applies hover scaling transformations
     pub fn update_button_positions(&mut self) {
         // To avoid borrow checker issues, first collect level text content for each button
         let mut level_texts: Vec<(String, String)> = Vec::new();
@@ -942,6 +1187,17 @@ impl ButtonManager {
         self.update_icon_positions();
     }
 
+    /// Resizes the button manager and its renderers to match the new window resolution
+    ///
+    /// This method updates:
+    /// - Window size for positioning calculations
+    /// - Text renderer resolution
+    /// - Rectangle renderer dimensions
+    /// - Icon renderer dimensions
+    ///
+    /// # Arguments
+    /// * `queue` - WGPU queue for uploading new resources
+    /// * `resolution` - New window resolution
     pub fn resize(&mut self, queue: &Queue, resolution: glyphon::Resolution) {
         // Update window size for correct positioning calculations
         self.window_size = winit::dpi::PhysicalSize {
@@ -956,6 +1212,18 @@ impl ButtonManager {
             .resize(resolution.width as f32, resolution.height as f32);
     }
 
+    /// Prepares the text renderer for rendering
+    ///
+    /// This method delegates to the text renderer's prepare method to set up
+    /// text buffers and resources for the current frame.
+    ///
+    /// # Arguments
+    /// * `device` - WGPU device for creating resources
+    /// * `queue` - WGPU queue for uploading resources
+    /// * `surface_config` - Surface configuration for rendering
+    ///
+    /// # Returns
+    /// `Ok(())` on success, `Err(PrepareError)` on failure
     pub fn prepare(
         &mut self,
         device: &Device,
@@ -965,6 +1233,28 @@ impl ButtonManager {
         self.text_renderer.prepare(device, queue, surface_config)
     }
 
+    /// Renders all buttons and their associated elements
+    ///
+    /// This method renders in the following order:
+    /// 1. Container rectangle (if present, for upgrade menu background)
+    /// 2. Button background rectangles with proper colors and scaling
+    /// 3. Button icons (for upgrade buttons)
+    /// 4. Button text elements (main text, level text, tooltips)
+    ///
+    /// The rendering order ensures proper layering:
+    /// - Backgrounds are rendered first
+    /// - Icons are rendered on top of backgrounds
+    /// - Text is rendered last for proper visibility
+    ///
+    /// For upgrade buttons, hover scaling is applied to both the background
+    /// rectangle and the corner radius for smooth visual effects.
+    ///
+    /// # Arguments
+    /// * `device` - WGPU device for rendering
+    /// * `render_pass` - Render pass to record commands
+    ///
+    /// # Returns
+    /// `Ok(())` on success, `Err(RenderError)` on failure
     pub fn render(
         &mut self,
         device: &Device,

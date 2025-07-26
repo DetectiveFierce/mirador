@@ -1,16 +1,91 @@
+//! Enemy AI system for the Mirador game.
+//!
+//! This module provides a sophisticated enemy AI system with pathfinding, level-based scaling,
+//! and strategic placement. The enemy AI adapts its behavior based on the current game level,
+//! becoming more aggressive and intelligent as the player progresses.
+//!
+//! # Key Features
+//!
+//! - **Level-based scaling**: Enemy speed, aggression, and intelligence scale with game level
+//! - **Advanced pathfinding**: Uses rotation-based pathfinding with collision detection
+//! - **Strategic placement**: Enemies are placed intelligently relative to player and exit
+//! - **Stuck detection**: AI can detect when stuck and attempt escape maneuvers
+//! - **Pursuit behavior**: Enemies become more aggressive when player is within detection range
+//!
+//! # Usage
+//!
+//! ```rust
+//! use crate::game::enemy::{Enemy, place_enemy_standard};
+//!
+//! // Create an enemy at a specific position
+//! let mut enemy = Enemy::new([100.0, 30.0, 100.0], 150.0);
+//!
+//! // Update enemy AI each frame
+//! enemy.update(player_position, delta_time, current_level, collision_checker);
+//!
+//! // Place enemy strategically
+//! let enemy = place_enemy_standard(exit_pos, player_pos, level, collision_checker);
+//! ```
+
 use crate::math::vec::Vec3;
 use std::f32::consts::PI;
 
-// 1. Add Enemy struct to your game state module
+/// Represents an enemy entity in the game with AI-driven behavior.
+///
+/// The enemy uses a pathfinding system to navigate toward the player while avoiding
+/// obstacles. Its behavior scales with the game level, becoming more aggressive
+/// and intelligent as the player progresses.
+///
+/// # Behavior Scaling
+///
+/// - **Speed**: Increases by 20% per level, capped at 500% of base speed
+/// - **Path radius**: Decreases with level (enemy gets closer before acting)
+/// - **Arrival threshold**: Decreases with level (enemy is more persistent)
+/// - **Rotation step**: Increases with level (enemy tries more directions faster)
+/// - **Pursuit distance**: Increases with level (enemy detects player from farther away)
+///
+/// # Example
+///
+/// ```rust
+/// let mut enemy = Enemy::new([100.0, 30.0, 100.0], 150.0);
+///
+/// // Update enemy behavior each frame
+/// enemy.update(
+///     player_position,
+///     delta_time,
+///     current_level,
+///     |start, end| collision_system.intersects(start, end)
+/// );
+/// ```
 #[derive(Debug, Clone)]
 pub struct Enemy {
+    /// The visual size of the enemy sprite in pixels
     pub size: f32,
+    /// The pathfinding system that controls enemy movement
     pub pathfinder: EnemyPathfinder,
+    /// Base movement speed in units per second (before level scaling)
     pub base_speed: f32,
+    /// Current movement speed after level-based scaling
     pub current_speed: f32,
 }
 
 impl Enemy {
+    /// Creates a new enemy at the specified position with the given path radius.
+    ///
+    /// # Arguments
+    ///
+    /// * `position` - The initial 3D position of the enemy `[x, y, z]`
+    /// * `path_radius` - The radius within which the enemy will actively pathfind toward the player
+    ///
+    /// # Returns
+    ///
+    /// A new `Enemy` instance with default settings.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let enemy = Enemy::new([100.0, 30.0, 100.0], 150.0);
+    /// ```
     pub fn new(position: [f32; 3], path_radius: f32) -> Self {
         Self {
             size: 100.0, // Default sprite size
@@ -20,7 +95,35 @@ impl Enemy {
         }
     }
 
-    /// Updates enemy with level-based aggression scaling
+    /// Updates the enemy's behavior and position based on the current game state.
+    ///
+    /// This method handles level-based scaling, pathfinding updates, and movement.
+    /// The enemy will attempt to move toward the player while avoiding obstacles.
+    ///
+    /// # Arguments
+    ///
+    /// * `player_position` - Current 3D position of the player `[x, y, z]`
+    /// * `delta_time` - Time elapsed since last frame in seconds
+    /// * `level` - Current game level (affects enemy aggression)
+    /// * `line_intersects_geometry` - Function to check if a line intersects with game geometry
+    ///
+    /// # Behavior
+    ///
+    /// - Scales enemy aggression based on level
+    /// - Updates pathfinding to find optimal path to player
+    /// - Moves enemy toward current target while respecting speed limits
+    /// - Handles collision detection and avoidance
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// enemy.update(
+    ///     [50.0, 30.0, 50.0],  // player position
+    ///     0.016,               // delta time (60 FPS)
+    ///     3,                   // level 3
+    ///     |start, end| collision_system.line_intersects_wall(start, end)
+    /// );
+    /// ```
     pub fn update<F>(
         &mut self,
         player_position: [f32; 3],
@@ -59,7 +162,28 @@ impl Enemy {
         }
     }
 
-    /// Scales enemy aggression based on level
+    /// Scales enemy aggression parameters based on the current game level.
+    ///
+    /// This method adjusts various enemy attributes to make them more challenging
+    /// as the player progresses through levels.
+    ///
+    /// # Scaling Factors
+    ///
+    /// - **Speed**: Increases by 20% per level, capped at 500% of base speed
+    /// - **Path radius**: Decreases by 15% per level, minimum 30% of original
+    /// - **Arrival threshold**: Decreases by 10% per level, minimum 20% of original
+    /// - **Rotation step**: Increases by 25% per level, maximum 300% of original
+    /// - **Pursuit distance**: Increases by 30% per level, maximum 400% of original
+    ///
+    /// # Arguments
+    ///
+    /// * `level` - Current game level (1-based)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// enemy.scale_aggression_by_level(5); // Scale for level 5
+    /// ```
     fn scale_aggression_by_level(&mut self, level: u32) {
         let level_f = level as f32;
 
@@ -71,7 +195,23 @@ impl Enemy {
         self.pathfinder.update_aggression_for_level(level);
     }
 
-    /// Get current aggression level for debugging
+    /// Returns current aggression statistics for debugging purposes.
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing:
+    /// - `f32`: Current movement speed
+    /// - `f32`: Current path radius
+    /// - `f32`: Current arrival threshold
+    /// - `f32`: Current rotation step
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let (speed, radius, threshold, rotation) = enemy.get_aggression_stats();
+    /// println!("Enemy speed: {}, radius: {}, threshold: {}, rotation: {}",
+    ///          speed, radius, threshold, rotation);
+    /// ```
     pub fn get_aggression_stats(&self) -> (f32, f32, f32, f32) {
         (
             self.current_speed,
@@ -82,26 +222,84 @@ impl Enemy {
     }
 }
 
+/// Advanced pathfinding system for enemy movement and navigation.
+///
+/// The `EnemyPathfinder` handles all aspects of enemy movement including:
+/// - Target calculation and pathfinding
+/// - Collision detection and avoidance
+/// - Stuck detection and recovery
+/// - Level-based behavior scaling
+/// - Pursuit behavior when player is detected
+///
+/// # Pathfinding Strategy
+///
+/// The pathfinder uses a rotation-based approach where it:
+/// 1. Calculates an ideal path toward the player
+/// 2. If blocked, rotates around the ideal direction to find alternative paths
+/// 3. Uses level-based parameters to adjust aggressiveness
+/// 4. Implements stuck detection to prevent infinite loops
+///
+/// # Example
+///
+/// ```rust
+/// let mut pathfinder = EnemyPathfinder::new([100.0, 30.0, 100.0], 150.0);
+///
+/// // Update pathfinding
+/// if let Some(target) = pathfinder.update(player_pos, level, collision_checker) {
+///     // Enemy has a valid target to move toward
+/// }
+/// ```
 #[derive(Debug, Clone)]
 pub struct EnemyPathfinder {
+    /// Current 3D position of the enemy `[x, y, z]`
     pub position: [f32; 3],
+    /// Current target position the enemy is moving toward
     pub current_target: Option<[f32; 3]>,
+    /// Current path radius (scales with level)
     pub path_radius: f32,
+    /// Base path radius (before level scaling)
     pub base_path_radius: f32,
+    /// Current rotation step for pathfinding (scales with level)
     pub rotation_step: f32,
+    /// Base rotation step (before level scaling)
     pub base_rotation_step: f32,
+    /// Distance threshold for considering target reached (scales with level)
     pub arrival_threshold: f32,
+    /// Base arrival threshold (before level scaling)
     pub base_arrival_threshold: f32,
+    /// Counter for stuck detection
     pub stuck_counter: i32,
+    /// Previous position for stuck detection
     pub last_position: [f32; 3],
+    /// Whether the enemy has reached the player
     pub reached_player: bool,
+    /// Whether the enemy is locked (cannot move)
     pub locked: bool,
+    /// Current aggression level (matches game level)
     pub aggression_level: u32,
-    pub pursuit_distance: f32, // Distance at which enemy starts pursuing more aggressively
+    /// Distance at which enemy starts pursuing more aggressively (scales with level)
+    pub pursuit_distance: f32,
+    /// Base pursuit distance (before level scaling)
     pub base_pursuit_distance: f32,
 }
 
 impl EnemyPathfinder {
+    /// Creates a new pathfinder at the specified position with the given path radius.
+    ///
+    /// # Arguments
+    ///
+    /// * `position` - Initial 3D position `[x, y, z]`
+    /// * `path_radius` - Base path radius for pathfinding calculations
+    ///
+    /// # Returns
+    ///
+    /// A new `EnemyPathfinder` instance with default settings.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let pathfinder = EnemyPathfinder::new([100.0, 30.0, 100.0], 150.0);
+    /// ```
     pub fn new(position: [f32; 3], path_radius: f32) -> Self {
         Self {
             position,
@@ -122,7 +320,27 @@ impl EnemyPathfinder {
         }
     }
 
-    /// Updates aggression parameters based on level
+    /// Updates aggression parameters based on the current game level.
+    ///
+    /// This method scales various pathfinding parameters to make the enemy
+    /// more challenging and intelligent at higher levels.
+    ///
+    /// # Scaling Details
+    ///
+    /// - **Path radius**: Decreases by 15% per level (enemy gets closer before acting)
+    /// - **Arrival threshold**: Decreases by 10% per level (enemy is more persistent)
+    /// - **Rotation step**: Increases by 25% per level (enemy tries more directions faster)
+    /// - **Pursuit distance**: Increases by 30% per level (enemy detects player from farther away)
+    ///
+    /// # Arguments
+    ///
+    /// * `level` - Current game level (1-based)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// pathfinder.update_aggression_for_level(3); // Scale for level 3
+    /// ```
     pub fn update_aggression_for_level(&mut self, level: u32) {
         self.aggression_level = level;
         let level_f = level as f32;
@@ -148,7 +366,31 @@ impl EnemyPathfinder {
         self.pursuit_distance = self.base_pursuit_distance * pursuit_multiplier;
     }
 
-    /// Main pathfinding update function with level awareness
+    /// Main pathfinding update function with level awareness.
+    ///
+    /// This method handles the complete pathfinding cycle including:
+    /// - Stuck detection and recovery
+    /// - Target calculation and validation
+    /// - Level-based behavior adjustments
+    ///
+    /// # Arguments
+    ///
+    /// * `player_position` - Current 3D position of the player `[x, y, z]`
+    /// * `level` - Current game level for behavior scaling
+    /// * `line_intersects_geometry` - Function to check for collision with geometry
+    ///
+    /// # Returns
+    ///
+    /// `Some(target_position)` if a valid target was found, `None` otherwise.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// if let Some(target) = pathfinder.update(player_pos, level, collision_checker) {
+    ///     // Enemy has a valid target to move toward
+    ///     println!("Moving toward: {:?}", target);
+    /// }
+    /// ```
     pub fn update<F>(
         &mut self,
         player_position: [f32; 3],
@@ -169,7 +411,27 @@ impl EnemyPathfinder {
         self.current_target
     }
 
-    /// Updates stuck detection with level-based sensitivity
+    /// Updates stuck detection with level-based sensitivity.
+    ///
+    /// This method tracks enemy movement and detects when the enemy is stuck.
+    /// Higher levels have lower tolerance for being stuck and reset faster.
+    ///
+    /// # Arguments
+    ///
+    /// * `level` - Current game level for tolerance scaling
+    ///
+    /// # Behavior
+    ///
+    /// - Tracks distance moved since last update
+    /// - Higher levels have lower stuck thresholds
+    /// - Resets stuck counter faster at higher levels
+    /// - Updates last position for next frame
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// pathfinder.update_stuck_detection(5); // Update for level 5
+    /// ```
     fn update_stuck_detection(&mut self, level: u32) {
         let current_vec = Vec3(self.position);
         let last_vec = Vec3(self.last_position);
@@ -193,7 +455,32 @@ impl EnemyPathfinder {
         self.last_position = self.position;
     }
 
-    /// Determines if the enemy needs a new target with level-based urgency
+    /// Determines if the enemy needs a new target with level-based urgency.
+    ///
+    /// This method checks various conditions to determine if the enemy should
+    /// recalculate its path. Higher levels recalculate targets more frequently.
+    ///
+    /// # Arguments
+    ///
+    /// * `level` - Current game level for urgency scaling
+    ///
+    /// # Returns
+    ///
+    /// `true` if a new target should be calculated, `false` otherwise.
+    ///
+    /// # Conditions
+    ///
+    /// - No current target exists
+    /// - Distance to target is within arrival threshold
+    /// - Stuck counter exceeds level-based threshold
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// if pathfinder.needs_new_target(3) {
+    ///     // Calculate new target for level 3
+    /// }
+    /// ```
     fn needs_new_target(&self, level: u32) -> bool {
         match self.current_target {
             None => true,
@@ -210,7 +497,41 @@ impl EnemyPathfinder {
         }
     }
 
-    /// Calculates a new target point with level-based aggression
+    /// Calculates a new target point with level-based aggression.
+    ///
+    /// This method implements the core pathfinding algorithm using a rotation-based
+    /// approach. It tries to find the optimal path toward the player while avoiding
+    /// obstacles and adapting behavior based on the current level.
+    ///
+    /// # Arguments
+    ///
+    /// * `player_position` - Current 3D position of the player `[x, y, z]`
+    /// * `level` - Current game level for behavior scaling
+    /// * `line_intersects_geometry` - Function to check for collision with geometry
+    ///
+    /// # Algorithm
+    ///
+    /// 1. **Direct pursuit**: If player is within close pursuit radius, move directly toward player
+    /// 2. **Ideal path**: Try to move toward ideal target point
+    /// 3. **Rotation search**: If blocked, rotate around ideal direction to find alternative paths
+    /// 4. **Escape behavior**: If stuck, try escape maneuvers with increased radius
+    ///
+    /// # Level Scaling
+    ///
+    /// - Higher levels have tighter pursuit radius
+    /// - More aggressive rotation patterns at higher levels
+    /// - Enhanced escape behavior with more directions
+    /// - Varied radius calculations based on stuck counter
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// pathfinder.calculate_new_target(
+    ///     [50.0, 30.0, 50.0],  // player position
+    ///     3,                   // level 3
+    ///     |start, end| collision_system.intersects(start, end)
+    /// );
+    /// ```
     fn calculate_new_target<F>(
         &mut self,
         player_position: [f32; 3],
@@ -331,7 +652,42 @@ impl EnemyPathfinder {
         }
     }
 
-    /// Enhanced path safety checking with level-based precision
+    /// Enhanced path safety checking with level-based precision.
+    ///
+    /// This method validates that a path from start to end is safe by checking
+    /// for collisions at multiple points along the path. Higher levels use
+    /// more thorough checking with smaller collision buffers.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - Starting position `[x, y, z]`
+    /// * `end` - Ending position `[x, y, z]`
+    /// * `line_intersects_geometry` - Function to check for collision with geometry
+    ///
+    /// # Returns
+    ///
+    /// `true` if the path is safe, `false` if it intersects with geometry.
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Divides path into multiple check points based on level
+    /// 2. Checks each point for collision with geometry
+    /// 3. Performs buffer checking perpendicular to path direction
+    /// 4. Higher levels use more check points and smaller buffers
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let is_safe = pathfinder.is_safe_path(
+    ///     [100.0, 30.0, 100.0],  // start
+    ///     [150.0, 30.0, 150.0],  // end
+    ///     |start, end| collision_system.intersects(start, end)
+    /// );
+    ///
+    /// if is_safe {
+    ///     // Path is clear, enemy can move
+    /// }
+    /// ```
     fn is_safe_path<F>(&self, start: [f32; 3], end: [f32; 3], line_intersects_geometry: F) -> bool
     where
         F: Fn([f32; 3], [f32; 3]) -> bool,
@@ -370,12 +726,35 @@ impl EnemyPathfinder {
         true
     }
 
-    /// Updates the enemy's position (call this when the enemy moves)
+    /// Updates the enemy's position (call this when the enemy moves).
+    ///
+    /// # Arguments
+    ///
+    /// * `new_position` - New 3D position `[x, y, z]`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// pathfinder.set_position([120.0, 30.0, 120.0]);
+    /// ```
     pub fn set_position(&mut self, new_position: [f32; 3]) {
         self.position = new_position;
     }
 
-    /// Gets the current movement direction
+    /// Gets the current movement direction toward the target.
+    ///
+    /// # Returns
+    ///
+    /// `Some(direction)` if there's a valid target, `None` otherwise.
+    /// The direction is a normalized 3D vector `[x, y, z]`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// if let Some(direction) = pathfinder.get_movement_direction() {
+    ///     println!("Moving in direction: {:?}", direction);
+    /// }
+    /// ```
     pub fn get_movement_direction(&self) -> Option<[f32; 3]> {
         self.current_target.map(|target| {
             let position_vec = Vec3(self.position);
@@ -385,7 +764,19 @@ impl EnemyPathfinder {
         })
     }
 
-    /// Gets the distance to the current target
+    /// Gets the distance to the current target.
+    ///
+    /// # Returns
+    ///
+    /// `Some(distance)` if there's a valid target, `None` otherwise.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// if let Some(distance) = pathfinder.distance_to_target() {
+    ///     println!("Distance to target: {:.2}", distance);
+    /// }
+    /// ```
     pub fn distance_to_target(&self) -> Option<f32> {
         self.current_target.map(|target| {
             let position_vec = Vec3(self.position);
@@ -394,7 +785,21 @@ impl EnemyPathfinder {
         })
     }
 
-    /// Check if the enemy has reached its current target
+    /// Check if the enemy has reached its current target.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the enemy is within the arrival threshold of its target,
+    /// `false` otherwise. Returns `true` if there's no current target.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// if pathfinder.has_reached_target() {
+    ///     println!("Enemy has reached its target");
+    ///     // Calculate new target
+    /// }
+    /// ```
     pub fn has_reached_target(&self) -> bool {
         match self.current_target {
             Some(target) => {
@@ -407,7 +812,45 @@ impl EnemyPathfinder {
     }
 }
 
-/// Places an enemy strategically with level-based positioning
+/// Places an enemy strategically with level-based positioning.
+///
+/// This function calculates an optimal position for an enemy based on the
+/// player's position, exit position, and current game level. Higher levels
+/// place enemies closer to the exit for increased challenge.
+///
+/// # Arguments
+///
+/// * `exit_position` - 3D position of the level exit `[x, y, z]`
+/// * `player_position` - 3D position of the player `[x, y, z]`
+/// * `level` - Current game level for positioning scaling
+/// * `placement_factor` - Factor between 0.0 and 1.0 for placement along player-exit line
+/// * `offset_distance` - Optional perpendicular offset from the main path
+/// * `line_intersects_geometry` - Function to check for collision with geometry
+///
+/// # Returns
+///
+/// A new `Enemy` instance positioned strategically relative to the player and exit.
+///
+/// # Placement Strategy
+///
+/// 1. **Base position**: Calculated along the line from player to exit
+/// 2. **Level scaling**: Higher levels place enemies closer to exit
+/// 3. **Offset application**: Applies perpendicular offset if specified
+/// 4. **Validation**: Ensures position doesn't intersect with geometry
+/// 5. **Path radius**: Scaled based on level and distance to exit
+///
+/// # Example
+///
+/// ```rust
+/// let enemy = place_enemy(
+///     [200.0, 30.0, 200.0],  // exit position
+///     [50.0, 30.0, 50.0],    // player position
+///     3,                     // level 3
+///     0.6,                   // 60% along player-exit line
+///     Some(50.0),            // 50 unit offset
+///     |start, end| collision_system.intersects(start, end)
+/// );
+/// ```
 pub fn place_enemy<F>(
     exit_position: [f32; 3],
     player_position: [f32; 3],
@@ -480,7 +923,39 @@ where
     enemy
 }
 
-/// Validates and adjusts enemy position to ensure it doesn't intersect with geometry
+/// Validates and adjusts enemy position to ensure it doesn't intersect with geometry.
+///
+/// This function checks if the proposed enemy position creates valid paths to both
+/// the player and exit. If not, it searches for alternative positions in a circular
+/// pattern around the proposed position.
+///
+/// # Arguments
+///
+/// * `proposed_position` - The initial proposed position `[x, y, z]`
+/// * `player_position` - Current player position `[x, y, z]`
+/// * `exit_position` - Level exit position `[x, y, z]`
+/// * `line_intersects_geometry` - Function to check for collision with geometry
+///
+/// # Returns
+///
+/// A validated position that doesn't intersect with geometry, or a fallback position.
+///
+/// # Algorithm
+///
+/// 1. Check if proposed position creates valid paths to player and exit
+/// 2. If invalid, search in 8 directions around the proposed position
+/// 3. If still invalid, return midpoint between player and exit
+///
+/// # Example
+///
+/// ```rust
+/// let valid_position = validate_enemy_position(
+///     [100.0, 30.0, 100.0],  // proposed position
+///     [50.0, 30.0, 50.0],    // player position
+///     [200.0, 30.0, 200.0],  // exit position
+///     |start, end| collision_system.intersects(start, end)
+/// );
+/// ```
 fn validate_enemy_position<F>(
     proposed_position: [f32; 3],
     player_position: [f32; 3],
@@ -525,7 +1000,32 @@ where
     }
 }
 
-/// Convenience function for level-aware standard enemy placement
+/// Convenience function for level-aware standard enemy placement.
+///
+/// This function provides a simplified interface for placing enemies with
+/// standard parameters. It uses a 60% placement factor and no offset.
+///
+/// # Arguments
+///
+/// * `exit_position` - 3D position of the level exit `[x, y, z]`
+/// * `player_position` - 3D position of the player `[x, y, z]`
+/// * `level` - Current game level for positioning and behavior scaling
+/// * `line_intersects_geometry` - Function to check for collision with geometry
+///
+/// # Returns
+///
+/// A new `Enemy` instance with standard placement parameters.
+///
+/// # Example
+///
+/// ```rust
+/// let enemy = place_enemy_standard(
+///     [200.0, 30.0, 200.0],  // exit position
+///     [50.0, 30.0, 50.0],    // player position
+///     3,                     // level 3
+///     |start, end| collision_system.intersects(start, end)
+/// );
+/// ```
 pub fn place_enemy_standard<F>(
     exit_position: [f32; 3],
     player_position: [f32; 3],

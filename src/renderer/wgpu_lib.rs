@@ -217,6 +217,16 @@ impl WgpuRenderer {
         }
     }
 
+    /// Gets the current surface texture and creates a view for rendering.
+    ///
+    /// This method acquires the next texture from the swap chain and creates
+    /// a texture view for use in render passes.
+    ///
+    /// # Returns
+    /// A Result containing the surface texture and texture view, or an error string
+    ///
+    /// # Errors
+    /// Returns an error if the surface is outdated or texture acquisition fails
     pub fn get_surface_texture_and_view(
         &mut self,
     ) -> Result<(SurfaceTexture, TextureView), String> {
@@ -666,6 +676,15 @@ impl WgpuRenderer {
         self.game_over_renderer.render(&mut game_over_pass, window);
     }
 
+    /// Renders text elements to the surface.
+    ///
+    /// This method prepares the text renderer and renders all text elements
+    /// to the provided surface view using a dedicated render pass.
+    ///
+    /// # Arguments
+    /// * `encoder` - The command encoder for recording render commands
+    /// * `surface_view` - The texture view to render to
+    /// * `text_renderer` - The text renderer containing text elements to render
     pub fn render_text(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,

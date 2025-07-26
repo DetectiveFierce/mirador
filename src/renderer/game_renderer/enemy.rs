@@ -1,3 +1,9 @@
+//! Enemy rendering module for the Mirador game.
+//!
+//! This module handles the rendering of enemy entities in the game world.
+//! It provides billboard-based rendering with smooth rotation towards the player,
+//! texture support, and depth-aware rendering.
+
 use crate::game::GameState;
 use crate::game::enemy::Enemy;
 use crate::renderer::pipeline_builder::{
@@ -5,28 +11,59 @@ use crate::renderer::pipeline_builder::{
 };
 use wgpu::{self, util::DeviceExt};
 
+/// Uniform data structure for enemy rendering shader.
+///
+/// Contains view-projection matrix, enemy position, size, player position,
+/// and padding for proper memory alignment.
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct EnemyUniforms {
+    /// View-projection matrix for transforming vertices to screen space
     view_proj_matrix: [[f32; 4]; 4],
+    /// Current position of the enemy in world space (x, y, z)
     enemy_position: [f32; 3],
+    /// Size/scale of the enemy sprite
     enemy_size: f32,
+    /// Current position of the player in world space (x, y, z)
     player_position: [f32; 3],
+    /// Padding for proper memory alignment
     _padding: f32,
 }
 
+/// Renders enemy entities as billboard sprites that face the player.
+///
+/// The enemy renderer creates textured billboards that automatically rotate
+/// to face the player with smooth interpolation. It supports depth testing
+/// and alpha blending for proper integration with the game world.
 pub struct EnemyRenderer {
+    /// The render pipeline for enemy rendering
     pipeline: wgpu::RenderPipeline,
+    /// Vertex buffer containing billboard quad vertices
     vertex_buffer: wgpu::Buffer,
+    /// Uniform buffer containing shader uniforms
     uniform_buffer: wgpu::Buffer,
+    /// Bind group containing uniforms, texture, and sampler
     bind_group: wgpu::BindGroup,
 
-    // For smooth rotation
+    /// Current smoothed rotation angle in radians
     smoothed_rotation: f32,
+    /// Smoothing factor for rotation interpolation (0.0 = very smooth, 1.0 = instant)
     smoothing_factor: f32,
 }
 
 impl EnemyRenderer {
+    /// Creates a new enemy renderer for the specified enemy.
+    ///
+    /// # Arguments
+    ///
+    /// * `enemy` - The enemy entity to render
+    /// * `device` - WGPU device for creating GPU resources
+    /// * `queue` - WGPU queue for uploading data to GPU
+    /// * `surface_config` - Surface configuration for pipeline creation
+    ///
+    /// # Returns
+    ///
+    /// A new `EnemyRenderer` instance configured for the given enemy.
     pub fn new(
         enemy: Enemy,
         device: &wgpu::Device,
@@ -132,6 +169,19 @@ impl EnemyRenderer {
         }
     }
 
+    /// Loads the slime texture from the assets directory.
+    ///
+    /// Attempts to load the slime texture from "assets/Slime.png". If loading fails,
+    /// creates a fallback red texture for debugging purposes.
+    ///
+    /// # Arguments
+    ///
+    /// * `device` - WGPU device for creating the texture
+    /// * `queue` - WGPU queue for uploading texture data
+    ///
+    /// # Returns
+    ///
+    /// A WGPU texture containing the slime image or a fallback texture.
     fn load_slime_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
         let path = "assets/Slime.png";
 
@@ -186,6 +236,18 @@ impl EnemyRenderer {
         texture
     }
 
+    /// Creates vertex buffer containing billboard quad vertices.
+    ///
+    /// Creates a quad centered at the origin that will be transformed by the shader
+    /// to create a billboard effect. The quad includes both position and texture coordinates.
+    ///
+    /// # Arguments
+    ///
+    /// * `device` - WGPU device for creating the vertex buffer
+    ///
+    /// # Returns
+    ///
+    /// A WGPU buffer containing the billboard vertices.
     fn create_billboard_vertices(device: &wgpu::Device) -> wgpu::Buffer {
         // Create a quad centered at origin that will be positioned and rotated by the shader
         // The quad is in local space and will be transformed to world space
@@ -208,7 +270,17 @@ impl EnemyRenderer {
         })
     }
 
-    /// Update enemy position and rotation to face player
+    /// Updates enemy position and rotation to face the player.
+    ///
+    /// Calculates the direction to the player and smoothly interpolates the enemy's
+    /// rotation to face that direction. Updates the uniform buffer with current
+    /// game state data.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue` - WGPU queue for uploading uniform data
+    /// * `game_state` - Current game state containing player and enemy positions
+    /// * `view_proj_matrix` - Current view-projection matrix for rendering
     pub fn update(
         &mut self,
         queue: &wgpu::Queue,
@@ -246,7 +318,15 @@ impl EnemyRenderer {
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
-    /// Render the enemy
+
+    /// Renders the enemy to the specified render pass.
+    ///
+    /// Sets up the render pipeline, vertex buffer, and bind group, then draws
+    /// the enemy billboard using 6 vertices (2 triangles).
+    ///
+    /// # Arguments
+    ///
+    /// * `render_pass` - The render pass to draw to
     pub fn render(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
@@ -254,12 +334,26 @@ impl EnemyRenderer {
         render_pass.draw(0..6, 0..1);
     }
 
-    /// Get current rotation angle (in radians)
+    /// Gets the current rotation angle of the enemy.
+    ///
+    /// # Returns
+    ///
+    /// The current smoothed rotation angle in radians.
     pub fn get_rotation(&self) -> f32 {
         self.smoothed_rotation
     }
 
-    /// Set smoothing factor for rotation (0.0 = very smooth, 1.0 = instant)
+    /// Sets the smoothing factor for rotation interpolation.
+    ///
+    /// Controls how quickly the enemy rotates to face the player.
+    /// Lower values create smoother, slower rotation while higher values
+    /// create more responsive, faster rotation.
+    ///
+    /// # Arguments
+    ///
+    /// * `factor` - Smoothing factor between 0.01 and 1.0
+    ///   - 0.01: Very smooth, slow rotation
+    ///   - 1.0: Instant rotation with no smoothing
     pub fn set_smoothing_factor(&mut self, factor: f32) {
         self.smoothing_factor = factor.clamp(0.01, 1.0);
     }

@@ -22,7 +22,7 @@ pub mod constants {
     /// In test mode, the floor is 1/4 the size of normal mode
     pub fn get_floor_size(is_test_mode: bool) -> f32 {
         if is_test_mode {
-            1500.0 // 1/4 of 3000.0
+            1500.0 // 1/4 of 3000.0 <-- meth-a-matics ??
         } else {
             3000.0
         }

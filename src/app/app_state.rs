@@ -25,9 +25,13 @@ pub struct AppState {
     pub key_state: KeyState,
     /// The text renderer for all game UI text elements.
     pub text_renderer: TextRenderer,
+    /// The timestamp when the game started.
     pub start_time: Instant,
+    /// The total elapsed time since the game started.
     pub elapsed_time: Duration,
+    /// The pause menu UI component.
     pub pause_menu: crate::renderer::ui::pause_menu::PauseMenu,
+    /// The upgrade menu UI component.
     pub upgrade_menu: crate::renderer::ui::upgrade_menu::UpgradeMenu,
 }
 

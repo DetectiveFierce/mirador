@@ -48,7 +48,15 @@ use crate::game::Player;
 /// overlap do we need to perform more expensive exact collision tests.
 #[derive(Debug, Clone)]
 pub struct AABB {
+    /// The minimum corner of the bounding box as [x, y, z] coordinates.
+    ///
+    /// This represents the point with the smallest x, y, and z values
+    /// that define the lower-left-back corner of the axis-aligned box.
     pub min: [f32; 3],
+    /// The maximum corner of the bounding box as [x, y, z] coordinates.
+    ///
+    /// This represents the point with the largest x, y, and z values
+    /// that define the upper-right-front corner of the axis-aligned box.
     pub max: [f32; 3],
 }
 
@@ -304,13 +312,29 @@ impl WallFace {
 /// number of individual face tests required.
 #[derive(Debug, Clone)]
 pub enum BVHNode {
+    /// Leaf node containing wall faces.
+    ///
+    /// Fields:
+    /// - `aabb`: The bounding box that contains all faces in this leaf.
+    /// - `faces`: The wall faces contained in this leaf node.
     Leaf {
+        /// The bounding box that contains all faces in this leaf.
         aabb: AABB,
+        /// The wall faces contained in this leaf node.
         faces: Vec<WallFace>,
     },
+    /// Internal node with two children.
+    ///
+    /// Fields:
+    /// - `aabb`: The bounding box that contains both children.
+    /// - `left`: The left child node.
+    /// - `right`: The right child node.
     Internal {
+        /// The bounding box that contains both children.
         aabb: AABB,
+        /// The left child node.
         left: Box<BVHNode>,
+        /// The right child node.
         right: Box<BVHNode>,
     },
 }
@@ -354,6 +378,10 @@ impl BVHNode {
 /// 4. For collision queries, traverse only branches whose AABBs intersect the query volume
 #[derive(Debug, Default, Clone)]
 pub struct BVH {
+    /// The root node of the BVH tree.
+    ///
+    /// If `None`, the BVH is empty and contains no wall faces.
+    /// If `Some`, contains the root node of the BVH tree structure.
     pub root: Option<BVHNode>,
 }
 
@@ -646,16 +674,27 @@ impl BVH {
 /// * Resolving collisions with physically-based responses
 /// * Supporting wall sliding for smooth player movement
 ///
+/// # Fields
+///
+/// - `bvh`: The bounding volume hierarchy used for fast spatial queries of wall faces.
+/// - `player_radius`: The radius of the player's cylindrical collision shape (in world units).
+/// - `player_height`: The height of the player's cylindrical collision shape (in world units).
+/// - `maze_dimensions`: The dimensions of the maze as a tuple (width, height), in grid cells.
 /// # How To Use
 ///
 /// 1. Create a `CollisionSystem` with appropriate player dimensions
 /// 2. Build the BVH from maze geometry using `build_from_maze()`
 /// 3. For each player movement, call `check_and_resolve_collision()`
 #[derive(Debug, Default, Clone)]
+
 pub struct CollisionSystem {
+    /// The bounding volume hierarchy for spatial partitioning of wall faces.
     pub bvh: BVH,
+    /// The radius of the player's collision cylinder.
     pub player_radius: f32,
+    /// The height of the player's collision cylinder.
     pub player_height: f32,
+    /// The dimensions of the maze grid (width, height).
     pub maze_dimensions: (usize, usize),
 }
 
@@ -1161,6 +1200,33 @@ impl CollisionSystem {
         resolved_pos
     }
 
+    /// Detects if the player is stuck between opposing wall faces.
+    ///
+    /// This method identifies situations where the player is positioned between
+    /// two wall faces with opposite normal vectors, which can cause the player
+    /// to become trapped and unable to move.
+    ///
+    /// # Arguments
+    ///
+    /// * `faces` - A slice of wall faces that potentially collide with the player
+    /// * `pos` - The player's current position
+    ///
+    /// # Returns
+    ///
+    /// `true` if the player is stuck between opposing faces, `false` otherwise
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Iterate through all pairs of faces
+    /// 2. Check if their normal vectors are roughly opposite (dot product < -0.95)
+    /// 3. If so, calculate the distance to each face
+    /// 4. If the player is within radius of both faces, they are stuck
+    ///
+    /// # Use Case
+    ///
+    /// This detection is used to trigger special handling when the player
+    /// becomes trapped in a corner or narrow passage, allowing the system
+    /// to find an escape route.
     fn is_stuck_between_faces(&self, faces: &[&WallFace], pos: [f32; 3]) -> bool {
         // Check if there are opposing faces (normals pointing in opposite directions)
         for i in 0..faces.len() {
@@ -1188,6 +1254,30 @@ impl CollisionSystem {
         false
     }
 
+    /// Calculates the signed distance from a point to a wall face.
+    ///
+    /// This method computes the perpendicular distance from a given point
+    /// to a wall face using vector projection onto the face's normal vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `pos` - The point to measure distance from
+    /// * `face` - The wall face to measure distance to
+    ///
+    /// # Returns
+    ///
+    /// The absolute distance from the point to the face plane
+    ///
+    /// # Mathematical Method
+    ///
+    /// 1. Calculate the vector from the point to the face center
+    /// 2. Project this vector onto the face's normal vector using dot product
+    /// 3. Return the absolute value of the projection
+    ///
+    /// # Note
+    ///
+    /// This method returns the absolute distance, so it doesn't distinguish
+    /// between being on the front or back side of the face.
     fn distance_to_face(&self, pos: [f32; 3], face: &WallFace) -> f32 {
         let face_center = face.aabb.center();
         let to_face = [
@@ -1203,6 +1293,32 @@ impl CollisionSystem {
         distance.abs()
     }
 
+    /// Attempts to find a safe position when the player is stuck.
+    ///
+    /// This method is called when the player becomes trapped between opposing
+    /// wall faces. It tries to move the player in different directions to find
+    /// a position that doesn't collide with any walls.
+    ///
+    /// # Arguments
+    ///
+    /// * `current_pos` - The player's current stuck position
+    ///
+    /// # Returns
+    ///
+    /// A safe position if found, otherwise returns the current position
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Try moving in four cardinal directions (+X, -X, +Z, -Z)
+    /// 2. Use a small escape distance (half the player radius)
+    /// 3. Test each potential position for collisions
+    /// 4. Return the first safe position found
+    /// 5. If no safe position is found, return the current position
+    ///
+    /// # Use Case
+    ///
+    /// This method provides a fallback mechanism to prevent the player from
+    /// becoming permanently stuck in corners or narrow passages.
     fn find_safe_position(&self, current_pos: [f32; 3]) -> [f32; 3] {
         // Try moving in different directions to find a safe spot
         let escape_distance = self.player_radius / 2.0;
@@ -1339,6 +1455,33 @@ impl CollisionSystem {
         desired_pos
     }
 
+    /// Tests if a swept cylinder intersects with any geometry in the scene.
+    ///
+    /// This method performs collision detection for a cylinder that moves along
+    /// a line segment from start to end. It's useful for testing movement paths
+    /// or line-of-sight calculations.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The starting position of the cylinder center
+    /// * `end` - The ending position of the cylinder center
+    /// * `radius` - The radius of the cylinder
+    ///
+    /// # Returns
+    ///
+    /// `true` if the cylinder intersects any wall face, `false` otherwise
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Create an expanded AABB that encompasses the entire cylinder path
+    /// 2. Query the BVH for potential wall faces that might intersect
+    /// 3. For each potential face, perform detailed cylinder-face intersection test
+    /// 4. Return true if any intersection is found
+    ///
+    /// # Performance
+    ///
+    /// This method uses the BVH for efficient broad-phase collision detection,
+    /// then performs detailed tests only on potentially intersecting faces.
     pub fn cylinder_intersects_geometry(
         &self,
         start: [f32; 3],
@@ -1586,14 +1729,34 @@ impl CollisionSystem {
         false
     }
 
-    /// Helper function to check if a point (expanded by radius) intersects with face bounds
+    /// Checks if a point (expanded by radius) intersects with face bounds.
+    ///
+    /// This helper method determines if a cylindrical volume centered at a point
+    /// intersects with the bounds of a wall face. It's used in cylinder-wall
+    /// intersection tests to determine if the cylinder overlaps the face's area.
     ///
     /// # Arguments
     ///
-    /// * `point` - The center point to check
-    /// * `radius` - The radius to expand the point by
-    /// * `face` - The face to check against
+    /// * `point` - The center point of the cylinder
+    /// * `radius` - The radius of the cylinder
+    /// * `face` - The wall face to check against
     /// * `normal_axis` - The axis perpendicular to the face (0=X, 1=Y, 2=Z)
+    ///
+    /// # Returns
+    ///
+    /// `true` if the expanded point intersects the face bounds, `false` otherwise
+    ///
+    /// # Algorithm
+    ///
+    /// For each face orientation (X, Y, or Z-facing):
+    /// 1. Expand the point by the radius in the two non-normal axes
+    /// 2. Check if this expanded area overlaps with the face's AABB bounds
+    /// 3. Return true if there's any overlap
+    ///
+    /// # Use Case
+    ///
+    /// This method is called during cylinder-wall intersection tests to determine
+    /// if a cylinder at a specific point would intersect with a wall face's area.
     fn point_in_expanded_face_bounds(
         &self,
         point: [f32; 3],
@@ -1630,15 +1793,36 @@ impl CollisionSystem {
         }
     }
 
-    /// Helper function for when the cylinder path is parallel to the face
+    /// Tests cylinder intersection when the path is parallel to the face.
+    ///
+    /// This helper method handles the special case where a cylinder's movement
+    /// path is parallel to a wall face. In this case, the cylinder sweeps out
+    /// a rectangular volume that can be tested against the face bounds.
     ///
     /// # Arguments
     ///
-    /// * `start` - Start point of cylinder center
-    /// * `end` - End point of cylinder center
-    /// * `radius` - Cylinder radius
-    /// * `face` - The face to check against
+    /// * `start` - Start point of the cylinder center path
+    /// * `end` - End point of the cylinder center path
+    /// * `radius` - Radius of the cylinder
+    /// * `face` - The wall face to test against
     /// * `normal_axis` - The axis perpendicular to the face (0=X, 1=Y, 2=Z)
+    ///
+    /// # Returns
+    ///
+    /// `true` if the cylinder path intersects the face bounds, `false` otherwise
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Expand the start and end points by the cylinder radius
+    /// 2. Create a bounding box for the entire swept volume
+    /// 3. Test if this bounding box overlaps with the face's AABB
+    /// 4. The test is performed in the two axes perpendicular to the face normal
+    ///
+    /// # Use Case
+    ///
+    /// This method is called when the cylinder movement path is parallel to a
+    /// wall face, which requires a different intersection test than the general
+    /// case.
     fn cylinder_intersects_face_bounds_parallel(
         &self,
         start: [f32; 3],

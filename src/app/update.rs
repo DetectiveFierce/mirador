@@ -1,6 +1,7 @@
 //! Update logic for Mirador App.
 //!
 //! Contains update and game logic methods for the App struct.
+
 use crate::game::GameTimer;
 use crate::game::enemy::place_enemy_standard;
 use crate::game::maze::parse_maze_file;
@@ -18,7 +19,35 @@ use wgpu::util::DeviceExt;
 use super::event_handler::App;
 
 impl App {
-    // handle_redraw
+    /// Handles the main rendering loop and game state updates.
+    ///
+    /// This method is called every frame and orchestrates the complete rendering pipeline.
+    /// It handles different game screens (loading, title, game, pause, upgrade menu),
+    /// updates game state, renders the scene, and manages UI overlays.
+    ///
+    /// # Rendering Pipeline
+    /// 1. **Screen-Specific Logic**: Handles different game screens appropriately
+    /// 2. **Game State Updates**: Updates player, enemy, audio, and UI systems
+    /// 3. **Rendering**: Creates command encoder and renders the scene
+    /// 4. **UI Overlays**: Renders pause menu, upgrade menu, and debug information
+    /// 5. **Frame Submission**: Submits commands and presents the frame
+    ///
+    /// # Screen Handling
+    /// - **Loading**: Handles maze generation and loading screen rendering
+    /// - **Title**: Renders title screen and handles transitions
+    /// - **Game**: Updates player movement, enemy AI, and game logic
+    /// - **Pause**: Renders pause menu overlay
+    /// - **UpgradeMenu**: Handles upgrade selection and menu interactions
+    ///
+    /// # Error Handling
+    /// - Logs errors for canvas update failures
+    /// - Continues execution even if some systems fail
+    /// - Provides debug backtraces in debug builds
+    ///
+    /// # Performance
+    /// - Skips rendering if window is minimized
+    /// - Uses efficient command encoding for GPU operations
+    /// - Manages GPU resource cleanup and polling
     pub fn handle_redraw(&mut self) {
         let window = self
             .window
@@ -376,6 +405,7 @@ impl App {
 
         // Manage enemy locked state based on timer and test mode
         if state.game_state.current_screen == CurrentScreen::Game {
+            let was_locked = state.game_state.enemy.pathfinder.locked;
             if state.game_state.is_test_mode {
                 // Always keep enemy locked in test mode
                 state.game_state.enemy.pathfinder.locked = true;
@@ -392,6 +422,14 @@ impl App {
             } else {
                 // Lock enemy when no timer exists
                 state.game_state.enemy.pathfinder.locked = true;
+            }
+
+            // Debug: Print when enemy lock state changes
+            if was_locked != state.game_state.enemy.pathfinder.locked {
+                println!(
+                    "Enemy lock state changed: {} -> {}",
+                    was_locked, state.game_state.enemy.pathfinder.locked
+                );
             }
         }
 
@@ -458,7 +496,30 @@ impl App {
         }
     }
 
-    // handle_frame_timing
+    /// Updates frame timing and performance metrics.
+    ///
+    /// This method calculates delta time between frames, updates FPS counter,
+    /// and manages performance-related state. It's called every frame to ensure
+    /// smooth gameplay and accurate timing.
+    ///
+    /// # Arguments
+    /// - `current_time`: The current frame timestamp
+    ///
+    /// # Calculations
+    /// - **Delta Time**: Time elapsed since the last frame
+    /// - **FPS**: Frames per second, updated every second
+    /// - **Frame Count**: Total frames rendered since start
+    /// - **Elapsed Time**: Total time since application start
+    ///
+    /// # Performance Monitoring
+    /// - Updates debug renderer vertices if bounding box rendering is enabled
+    /// - Maintains accurate timing for game systems
+    /// - Provides timing data for performance analysis
+    ///
+    /// # Side Effects
+    /// - Updates `game_state.delta_time` for use by other systems
+    /// - Updates FPS counter and frame timing state
+    /// - Triggers debug renderer updates when needed
     pub fn handle_frame_timing(&mut self, current_time: Instant) {
         if let Some(state) = self.state.as_mut() {
             let duration = current_time.duration_since(state.game_state.last_fps_time);
@@ -497,7 +558,38 @@ impl App {
         }
     }
 
-    // handle_maze_generation
+    /// Handles procedural maze generation and loading screen logic.
+    ///
+    /// This method manages the maze generation process, which can be either
+    /// animated (showing generation steps) or instant (fast mode). It handles
+    /// both normal maze generation and test mode maze creation.
+    ///
+    /// # Generation Process
+    /// 1. **Test Mode Check**: Skips generation and goes directly to game in test mode
+    /// 2. **Animation Control**: Manages generation speed and progress reporting
+    /// 3. **Completion Handling**: Saves maze to file and generates geometry
+    /// 4. **State Setup**: Initializes player, enemy, and collision systems
+    ///
+    /// # Animation Modes
+    /// - **Normal Mode**: Shows generation steps with configurable speed
+    /// - **Fast Mode**: Completes generation quickly for faster gameplay
+    /// - **Test Mode**: Uses predefined test maze instead of generation
+    ///
+    /// # Progress Reporting
+    /// - Logs generation progress every 50 steps
+    /// - Shows completion percentage
+    /// - Automatically completes generation when 70%+ complete
+    ///
+    /// # Maze Completion
+    /// - Saves maze to file with timestamp
+    /// - Generates floor, wall, and ceiling geometry
+    /// - Places player at maze entrance
+    /// - Places enemy based on exit position
+    /// - Builds collision system from maze data
+    ///
+    /// # Audio Integration
+    /// - Plays completion sound when generation finishes
+    /// - Manages audio state during generation process
     pub fn handle_maze_generation(&mut self) {
         if let Some(state) = self.state.as_mut() {
             // If in test mode, skip maze generation entirely and go directly to game
@@ -698,7 +790,52 @@ impl App {
         }
     }
 
-    // new_level
+    /// Initializes a new level or restarts the game.
+    ///
+    /// This method handles the transition to a new level or game restart. It manages
+    /// player state, enemy positioning, timer configuration, and scoring systems.
+    /// The method implements a sophisticated scoring system based on completion time
+    /// and performance metrics.
+    ///
+    /// # Arguments
+    /// - `game_over`: Whether this is a game restart (true) or level progression (false)
+    ///
+    /// # Game Restart (game_over = true)
+    /// - Resets player to starting position and stats
+    /// - Resets level to 1 and score to 0
+    /// - Initializes new timer with default configuration
+    /// - Restarts background music
+    /// - Clears all upgrade effects
+    ///
+    /// # Level Progression (game_over = false)
+    /// - Preserves player stats and upgrades
+    /// - Resets only position and orientation
+    /// - Calculates performance-based scoring
+    /// - Updates level counter
+    /// - Maintains upgrade effects
+    ///
+    /// # Scoring System
+    /// The scoring system rewards performance with multiple components:
+    /// - **Base Score**: 150 points per level
+    /// - **Speed Bonus**: Multiplier based on completion time
+    ///   - Exceptional (≤15s): 3x-5x multiplier
+    ///   - Good (≤25s): 1.5x-3x multiplier
+    ///   - Average (≤35s): 0.5x-1.5x multiplier
+    ///   - Slow (>35s): 0.1x-0.5x multiplier
+    /// - **Level Bonus**: Additional points for higher levels (level > 5)
+    /// - **Consecutive Bonus**: Reward for sustained good performance
+    ///
+    /// # State Management
+    /// - Resets maze path to trigger new generation
+    /// - Clears exit cell and timer state
+    /// - Resets enemy position and locks enemy
+    /// - Manages audio state transitions
+    ///
+    /// # Player State
+    /// - **Game Restart**: Complete reset of all stats
+    /// - **Level Progression**: Preserves upgrades, resets position only
+    /// - **Height Adjustment**: Accounts for TallBoots upgrades
+    /// - **Stamina Reset**: Refills stamina for new level
     pub fn new_level(&mut self, game_over: bool) {
         let state = self
             .state
@@ -725,7 +862,7 @@ impl App {
                 .upgrade_manager
                 .get_upgrade_count(&crate::game::upgrades::AvailableUpgrade::TallBoots);
             player.position[1] = crate::math::coordinates::constants::PLAYER_HEIGHT
-                + 3.0 * (tall_boots_count as f32);
+                + 5.0 * (tall_boots_count as f32);
             player.pitch = 3.0;
             player.yaw = 316.0;
             player.fov = 100.0;

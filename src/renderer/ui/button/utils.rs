@@ -1,9 +1,33 @@
 use glyphon::Color;
 
-// Color manipulation helpers for glyphon::Color
+/// Extension trait for color manipulation operations.
+///
+/// This trait provides methods for modifying colors by darkening, brightening,
+/// and saturating them for UI button states and effects.
 pub trait ColorExt {
+    /// Darkens the color by the specified factor.
+    ///
+    /// # Arguments
+    /// * `factor` - Darkening factor between 0.0 and 1.0
+    ///
+    /// # Returns
+    /// A darker version of the color
     fn darken(&self, factor: f32) -> Self;
+    /// Brightens the color by the specified factor.
+    ///
+    /// # Arguments
+    /// * `factor` - Brightening factor between 0.0 and 1.0
+    ///
+    /// # Returns
+    /// A brighter version of the color
     fn brighten(&self, factor: f32) -> Self;
+    /// Increases the saturation of the color by the specified factor.
+    ///
+    /// # Arguments
+    /// * `factor` - Saturation factor between 0.0 and 1.0
+    ///
+    /// # Returns
+    /// A more saturated version of the color
     fn saturate(&self, factor: f32) -> Self;
 }
 
@@ -57,7 +81,16 @@ impl ColorExt for Color {
     }
 }
 
-// Add a helper function for DPI scaling
+/// Calculates DPI scaling factor based on window height.
+///
+/// This function provides a simple DPI scaling calculation that scales UI elements
+/// based on the window height, with reasonable bounds to prevent extreme scaling.
+///
+/// # Arguments
+/// * `window_height` - The height of the window in pixels
+///
+/// # Returns
+/// A scaling factor between 0.7 and 2.0
 pub fn dpi_scale(window_height: f32) -> f32 {
     (window_height / 1080.0).clamp(0.7, 2.0)
 }

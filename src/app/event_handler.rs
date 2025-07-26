@@ -14,14 +14,44 @@ use winit::{
     window::{Window, WindowId},
 };
 
+/// Main application struct that manages the game lifecycle and event handling.
+///
+/// This struct implements the [`ApplicationHandler`] trait to handle all window and device events.
+/// It manages the WGPU instance, application state, and window lifecycle.
+///
+/// # Fields
+/// - `instance`: The WGPU instance for graphics operations
+/// - `state`: Optional application state (None until window is created)
+/// - `window`: Optional window reference (None until window is created)
+///
+/// # Lifecycle
+/// 1. Created with `App::new()` - initializes WGPU instance
+/// 2. Window is set via `set_window()` - creates surface and application state
+/// 3. Events are handled via `ApplicationHandler` trait methods
+/// 4. Application runs until window is closed
 #[derive(Default)]
 pub struct App {
+    /// The WGPU instance for graphics operations.
     pub instance: wgpu::Instance,
+    /// The current application state, None until initialized.
     pub state: Option<AppState>,
+    /// The application window, None until set.
     pub window: Option<Arc<Window>>,
 }
 
 impl App {
+    /// Creates a new [`App`] instance with default WGPU configuration.
+    ///
+    /// This initializes the WGPU instance with default settings. The application
+    /// state and window will be None until `set_window()` is called.
+    ///
+    /// # Returns
+    /// A new [`App`] instance ready for window creation.
+    ///
+    /// # Example
+    /// ```
+    /// let app = App::new();
+    /// ```
     pub fn new() -> Self {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
         Self {
@@ -31,6 +61,30 @@ impl App {
         }
     }
 
+    /// Asynchronously sets up the application window and initializes all game systems.
+    ///
+    /// This method creates the window, WGPU surface, and initializes all application
+    /// state including renderers, audio systems, and game state. This is typically
+    /// called when the application is resumed or when the window is first created.
+    ///
+    /// # Arguments
+    /// - `window`: The window to associate with this application
+    ///
+    /// # Initialization Steps
+    /// 1. Sets window size to 1360x768
+    /// 2. Creates WGPU surface from the window
+    /// 3. Initializes [`AppState`] with all renderers and game systems
+    /// 4. Stores window and state references
+    ///
+    /// # Panics
+    /// - If surface creation fails
+    /// - If [`AppState`] initialization fails
+    ///
+    /// # Example
+    /// ```ignore
+    /// let window = event_loop.create_window(Window::default_attributes())?;
+    /// app.set_window(window).await;
+    /// ```
     pub async fn set_window(&mut self, window: Window) {
         let window = Arc::new(window);
         let initial_width = 1360;
@@ -56,6 +110,24 @@ impl App {
         self.state.get_or_insert(state);
     }
 
+    /// Handles window resize events and updates all rendering systems.
+    ///
+    /// This method is called when the window is resized. It updates the WGPU surface
+    /// configuration and resizes all UI components to match the new window dimensions.
+    ///
+    /// # Arguments
+    /// - `width`: New window width in pixels
+    /// - `height`: New window height in pixels
+    ///
+    /// # Behavior
+    /// - Only processes resize if both dimensions are greater than 0
+    /// - Updates WGPU surface configuration
+    /// - Resizes pause menu and upgrade menu UI components
+    /// - Logs error and backtrace if state is not initialized
+    ///
+    /// # Safety
+    /// This method safely handles cases where the application state hasn't been
+    /// initialized yet, logging errors instead of panicking.
     pub fn handle_resized(&mut self, width: u32, height: u32) {
         if width > 0 && height > 0 {
             let state = match &mut self.state {
@@ -82,6 +154,17 @@ impl App {
 }
 
 impl ApplicationHandler for App {
+    /// Handles application resume events by creating a new window.
+    ///
+    /// This method is called when the application is resumed (e.g., when switching
+    /// back to the application on mobile devices). It creates a new window and
+    /// initializes the application state.
+    ///
+    /// # Arguments
+    /// - `event_loop`: The active event loop for creating the window
+    ///
+    /// # Panics
+    /// - If window creation fails
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window = match event_loop.create_window(Window::default_attributes()) {
             Ok(window) => window,
@@ -92,6 +175,22 @@ impl ApplicationHandler for App {
         pollster::block_on(self.set_window(window));
     }
 
+    /// Handles device events, primarily mouse movement for camera control.
+    ///
+    /// This method processes device events, with special handling for mouse movement
+    /// to control the player's camera orientation. Mouse movement is only processed
+    /// when the game is active and mouse capture is enabled.
+    ///
+    /// # Arguments
+    /// - `_event_loop`: The active event loop (unused)
+    /// - `_device_id`: The device ID (unused)
+    /// - `event`: The device event to process
+    ///
+    /// # Mouse Movement Handling
+    /// - Only processes mouse movement when in Game or ExitReached screens
+    /// - Requires mouse capture to be enabled
+    /// - Updates player camera orientation based on mouse delta
+    /// - Calls `triage_mouse()` to handle cursor state
     fn device_event(
         &mut self,
         _event_loop: &ActiveEventLoop,
@@ -115,6 +214,32 @@ impl ApplicationHandler for App {
         }
     }
 
+    /// Handles window events including input, resize, and close requests.
+    ///
+    /// This is the main event processing method that handles all window-related events.
+    /// It processes keyboard input, mouse input, window resize, close requests, and
+    /// redraw requests. The method also manages game state transitions and UI interactions.
+    ///
+    /// # Arguments
+    /// - `event_loop`: The active event loop
+    /// - `_`: Window ID (unused)
+    /// - `event`: The window event to process
+    ///
+    /// # Event Types Handled
+    /// - **CloseRequested**: Initiates application shutdown
+    /// - **Resized**: Calls `handle_resized()` to update rendering
+    /// - **KeyboardInput**: Processes game controls and UI navigation
+    /// - **MouseInput**: Handles mouse button presses for UI interaction
+    /// - **RedrawRequested**: Triggers frame rendering and game updates
+    ///
+    /// # Game State Management
+    /// - Manages transitions between different game screens
+    /// - Handles pause menu interactions and state
+    /// - Processes upgrade menu visibility and interactions
+    /// - Manages mouse capture state based on current screen
+    ///
+    /// # Panics
+    /// - If application state is not initialized
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
         let state = match self.state.as_mut() {
             Some(state) => state,

@@ -1,31 +1,188 @@
+//! Compass rendering system for directional navigation.
+//!
+//! This module provides a complete compass rendering system that displays
+//! a directional indicator pointing toward the maze exit. The compass uses
+//! a base texture with an animated needle that rotates to show the correct
+//! direction relative to the player's orientation.
+//!
+//! # Features
+//!
+//! - **Directional Navigation**: Points toward the maze exit from player position
+//! - **Player Orientation**: Accounts for player's current facing direction
+//! - **Smooth Animation**: Interpolated needle rotation for fluid movement
+//! - **Multiple Needle Frames**: 12-directional needle sprites for precise indication
+//! - **Screen Positioning**: Configurable position and size via uniforms
+//!
+//! # Usage
+//!
+//! ```rust
+//! // Create compass renderer
+//! let compass = CompassRenderer::new(device, queue, surface_config);
+//!
+//! // Update direction based on player and exit positions
+//! compass.update_compass_with_yaw(player_pos, exit_pos, player_yaw);
+//!
+//! // Render compass overlay
+//! compass.render(&mut render_pass, window);
+//! ```
+//!
+//! # Texture Requirements
+//!
+//! The compass system expects the following texture files:
+//! - `assets/compass/gold-compass.png` - Base compass background
+//! - `assets/compass/needle/needle-0.png` through `needle-11.png` - Needle sprites
+//!
+//! # Coordinate System
+//!
+//! The compass uses normalized screen coordinates (0.0 to 1.0) for positioning
+//! and world coordinates for direction calculations. The needle rotation is
+//! calculated relative to the player's forward direction.
+
 use crate::renderer::pipeline_builder::BindGroupLayoutBuilder;
 use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::pipeline_builder::create_uniform_buffer;
 use wgpu;
 use wgpu::util::DeviceExt;
 
+/// Uniform data for compass positioning and sizing.
+///
+/// This struct contains the data sent to the GPU shader to control
+/// the compass position and size on screen. The data is packed to
+/// match GPU memory alignment requirements.
+///
+/// # Memory Layout
+///
+/// - `screen_position`: Normalized screen coordinates [x, y] (0.0 to 1.0)
+/// - `compass_size`: Size as fraction of screen [width, height] (0.0 to 1.0)
+/// - `_padding`: Ensures proper GPU memory alignment
+///
+/// # Default Values
+///
+/// - Position: Bottom-right corner (0.85, 0.85)
+/// - Size: 12% of screen (0.12, 0.12)
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct CompassUniforms {
-    screen_position: [f32; 2], // Bottom-right position
-    compass_size: [f32; 2],    // Width and height
+    /// Screen position in normalized coordinates (0.0 to 1.0).
+    /// Origin is at bottom-left, with (1.0, 1.0) at top-right.
+    screen_position: [f32; 2],
+
+    /// Compass size as fraction of screen dimensions.
+    /// Values of 0.12 mean 12% of screen width/height.
+    compass_size: [f32; 2],
+
+    /// Padding for GPU memory alignment requirements.
     _padding: [f32; 4],
 }
 
+/// Compass renderer for directional navigation overlay.
+///
+/// This struct manages the complete compass rendering system, including
+/// texture loading, shader pipeline setup, and directional calculations.
+/// The compass provides visual feedback to help players navigate toward
+/// the maze exit.
+///
+/// # Rendering Pipeline
+///
+/// The compass uses a two-pass rendering approach:
+/// 1. **Base Pass**: Renders the compass background texture
+/// 2. **Needle Pass**: Renders the directional needle on top
+///
+/// # Texture Management
+///
+/// - **Base Texture**: Static compass background (gold-compass.png)
+/// - **Needle Textures**: 12 directional needle sprites (needle-0.png to needle-11.png)
+/// - **Bind Groups**: Separate bind groups for base and each needle direction
+///
+/// # Smoothing System
+///
+/// The compass uses exponential smoothing to prevent jarring needle movements:
+/// - `smoothing_factor`: Controls responsiveness (0.01 = very smooth, 1.0 = instant)
+/// - `smoothed_compass_angle`: Current interpolated angle for needle selection
+///
+/// # Performance Characteristics
+///
+/// - **GPU Memory**: Pre-allocated textures and bind groups
+/// - **CPU Usage**: Minimal per-frame calculations
+/// - **Rendering**: Two draw calls per frame (base + needle)
+///
+/// # Thread Safety
+///
+/// This struct is not thread-safe and should only be accessed from the
+/// main rendering thread.
+///
+/// # Example
+///
+/// ```rust
+/// # use crate::renderer::game_renderer::compass::CompassRenderer;
+/// # let device: wgpu::Device = unimplemented!();
+/// # let queue: wgpu::Queue = unimplemented!();
+/// # let surface_config: wgpu::SurfaceConfiguration = unimplemented!();
+///
+/// let compass = CompassRenderer::new(&device, &queue, &surface_config);
+///
+/// // Update direction
+/// compass.update_compass_with_yaw(player_pos, exit_pos, player_yaw);
+///
+/// // Render
+/// compass.render(&mut render_pass, window);
+/// ```
 pub struct CompassRenderer {
+    /// WGPU render pipeline for compass rendering.
+    ///
+    /// Handles vertex processing, fragment shading, and blending for
+    /// the compass overlay. Uses alpha blending for semitransparent rendering.
     pipeline: wgpu::RenderPipeline,
+
+    /// Vertex buffer containing compass quad geometry.
+    ///
+    /// Contains a simple quad (-1 to 1) that gets positioned and scaled
+    /// via uniforms in the vertex shader.
     vertex_buffer: wgpu::Buffer,
+
+    /// Uniform buffer for compass position and size data.
+    ///
+    /// Contains `CompassUniforms` struct that controls where and how
+    /// large the compass appears on screen.
     uniform_buffer: wgpu::Buffer,
+
+    /// Bind group for the compass base texture.
+    ///
+    /// Contains the background texture, sampler, and uniform buffer
+    /// for rendering the compass base.
     base_bind_group: wgpu::BindGroup,
+
+    /// Bind groups for each needle direction texture.
+    ///
+    /// Array of 12 bind groups, one for each needle sprite (0-11).
+    /// Each bind group contains the needle texture, sampler, and uniform buffer.
     needle_bind_groups: Vec<wgpu::BindGroup>,
+
+    /// Current needle sprite index (0-11).
+    ///
+    /// Determines which needle texture is currently rendered.
+    /// Updated based on calculated direction to exit.
     current_needle_index: usize,
 
-    // Simple smoothing for compass direction
+    /// Current smoothed compass angle in radians.
+    ///
+    /// This is the interpolated angle used for needle selection.
+    /// Ranges from 0 to 2π and is updated with smoothing applied.
     smoothed_compass_angle: f32,
+
+    /// Smoothing factor for compass movement (0.01 to 1.0).
+    ///
+    /// Controls how quickly the needle responds to direction changes.
+    /// Lower values = smoother but slower response.
+    /// Higher values = faster but potentially jittery response.
     smoothing_factor: f32,
 }
 
 impl CompassRenderer {
+    /// Creates a new `CompassRenderer` instance and initializes all GPU resources required for compass rendering.
+    ///
+    /// This function loads the compass base texture and all 12 needle textures, creates the uniform buffer,
+    /// sets up the bind group layout for textures, samplers, and uniforms, and builds the render pipeline.
     pub fn new(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -282,7 +439,42 @@ impl CompassRenderer {
         })
     }
 
-    /// Update compass position and size
+    /// Updates the compass position and size on screen.
+    ///
+    /// This method uploads new position and size data to the GPU uniform buffer,
+    /// allowing dynamic repositioning and resizing of the compass overlay.
+    /// The position and size are specified in normalized screen coordinates.
+    ///
+    /// # Coordinate System
+    ///
+    /// - **Position**: (0.0, 0.0) = bottom-left, (1.0, 1.0) = top-right
+    /// - **Size**: Values represent fraction of screen (0.12 = 12% of screen)
+    /// - **Origin**: Position is relative to the compass center
+    ///
+    /// # Performance Notes
+    ///
+    /// This operation involves a GPU buffer write. It's typically called when
+    /// the window is resized or when the UI layout changes.
+    ///
+    /// # Parameters
+    ///
+    /// - `queue` - WGPU queue for buffer uploads
+    /// - `screen_position` - Normalized screen position [x, y] (0.0 to 1.0)
+    /// - `compass_size` - Normalized size [width, height] (0.0 to 1.0)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use crate::renderer::game_renderer::compass::CompassRenderer;
+    /// # let compass: CompassRenderer = unimplemented!();
+    /// # let queue: wgpu::Queue = unimplemented!();
+    ///
+    /// // Position in bottom-right corner, 12% of screen size
+    /// compass.update_uniforms(&queue, [0.85, 0.85], [0.12, 0.12]);
+    ///
+    /// // Position in top-left corner, 8% of screen size
+    /// compass.update_uniforms(&queue, [0.08, 0.92], [0.08, 0.08]);
+    /// ```
     pub fn update_uniforms(
         &self,
         queue: &wgpu::Queue,
@@ -298,6 +490,48 @@ impl CompassRenderer {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
 
+    /// Renders the compass overlay to the current render pass.
+    ///
+    /// This method performs a two-pass rendering approach:
+    /// 1. Renders the compass base texture (background)
+    /// 2. Renders the current needle texture on top
+    ///
+    /// The compass is rendered as an overlay using alpha blending,
+    /// allowing it to appear on top of the game scene while maintaining
+    /// transparency for visual integration.
+    ///
+    /// # Render State Requirements
+    ///
+    /// This method assumes:
+    /// - A render pass is active and configured for alpha blending
+    /// - The game scene has already been rendered
+    /// - The viewport is set to the full screen dimensions
+    ///
+    /// # Performance Characteristics
+    ///
+    /// - **Draw Calls**: 2 draw calls per frame (base + needle)
+    /// - **GPU Memory**: Minimal - only vertex buffer and bind group switches
+    /// - **CPU Usage**: Negligible - only pipeline and bind group setup
+    ///
+    /// # Parameters
+    ///
+    /// - `render_pass` - Active render pass to render into
+    /// - `window` - Window reference (currently unused, reserved for future use)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use crate::renderer::game_renderer::compass::CompassRenderer;
+    /// # let compass: CompassRenderer = unimplemented!();
+    /// # let mut render_pass: wgpu::RenderPass = unimplemented!();
+    /// # let window: &winit::window::Window = unimplemented!();
+    ///
+    /// // Render game scene first
+    /// // ... render background, maze, player, etc ...
+    ///
+    /// // Render compass overlay on top
+    /// compass.render(&mut render_pass, window);
+    /// ```
     pub fn render(&self, render_pass: &mut wgpu::RenderPass, _window: &winit::window::Window) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
@@ -366,11 +600,52 @@ impl CompassRenderer {
     /// adjusts for the player's current orientation (yaw) so that the compass always
     /// indicates the direction the player should move to reach the exit.
     ///
-    /// # Arguments
+    /// # Direction Calculation
     ///
-    /// * `player_pos` - The player's position as (x, z) coordinates
-    /// * `exit_pos` - The exit's position as (x, z) coordinates
-    /// * `player_yaw_degrees` - The player's current yaw angle in degrees
+    /// The method uses a sophisticated approach to calculate the compass direction:
+    /// 1. **Vector Calculation**: Computes direction vector from player to exit
+    /// 2. **Player Orientation**: Accounts for player's current facing direction
+    /// 3. **Coordinate Transformation**: Converts world direction to player-relative direction
+    /// 4. **Smoothing**: Applies exponential smoothing to prevent jarring movements
+    /// 5. **Needle Selection**: Maps smoothed angle to appropriate needle sprite (0-11)
+    ///
+    /// # Coordinate Systems
+    ///
+    /// - **World Coordinates**: Player and exit positions in maze space
+    /// - **Player Coordinates**: Direction relative to player's forward vector
+    /// - **Compass Coordinates**: Angle mapped to 12-directional needle sprites
+    ///
+    /// # Smoothing Behavior
+    ///
+    /// The compass uses exponential smoothing to create fluid needle movement:
+    /// - **Shortest Path**: Always takes the shortest angular distance
+    /// - **Configurable Response**: Smoothing factor controls responsiveness
+    /// - **Wrapping**: Properly handles angle wrapping around 0°/360°
+    ///
+    /// # Performance Notes
+    ///
+    /// This method performs minimal calculations and is safe to call every frame.
+    /// The smoothing calculations are CPU-efficient and don't involve GPU operations.
+    ///
+    /// # Parameters
+    ///
+    /// * `player_pos` - The player's position as (x, z) coordinates in world space
+    /// * `exit_pos` - The exit's position as (x, z) coordinates in world space
+    /// * `player_yaw_degrees` - The player's current yaw angle in degrees (0-360)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use crate::renderer::game_renderer::compass::CompassRenderer;
+    /// # let mut compass: CompassRenderer = unimplemented!();
+    ///
+    /// // Update compass direction
+    /// compass.update_compass_with_yaw(
+    ///     (player.x, player.z),      // Player position
+    ///     (exit.x, exit.z),          // Exit position
+    ///     player.yaw_degrees         // Player facing direction
+    /// );
+    /// ```
     pub fn update_compass_with_yaw(
         &mut self,
         player_pos: (f32, f32), // (x, z) coordinates

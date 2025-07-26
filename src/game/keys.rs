@@ -74,6 +74,10 @@ impl KeyState {
         self.pressed_keys.contains(&key)
     }
 
+    /// Clears all pressed keys from the key state.
+    ///
+    /// This method removes all keys from the `pressed_keys` set, effectively
+    /// resetting the input state to no keys being pressed.
     pub fn _clear(&mut self) {
         self.pressed_keys.clear();
     }
