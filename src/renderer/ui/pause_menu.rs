@@ -1,3 +1,4 @@
+use crate::game::audio::GameAudioManager;
 use crate::renderer::ui::button::{
     Button, ButtonAnchor, ButtonManager, ButtonPosition, TextAlign, create_danger_button_style,
     create_goldenrod_button_style, create_lobby_button_style, create_primary_button_style,
@@ -12,9 +13,9 @@ use winit::window::Window;
 #[derive(Debug, Clone, PartialEq)]
 pub enum PauseMenuAction {
     Resume,
-    Settings,
     Restart,
     QuitToMenu,
+    QuitApp,
     ToggleTestMode,
     None,
 }
@@ -91,11 +92,11 @@ impl PauseMenu {
                     .with_anchor(ButtonAnchor::Center),
             );
 
-        // Settings button is now 'Restart Run' with goldenrod style
-        let mut settings_style = create_goldenrod_button_style();
-        settings_style.text_style = text_style.clone();
-        let settings_button = Button::new("settings", "Restart Run")
-            .with_style(settings_style)
+        // Restart Run button with goldenrod style
+        let mut restart_run_style = create_goldenrod_button_style();
+        restart_run_style.text_style = text_style.clone();
+        let restart_run_button = Button::new("restart_run", "Restart Run")
+            .with_style(restart_run_style)
             .with_text_align(TextAlign::Center)
             .with_position(
                 ButtonPosition::new(center_x, y(1), button_width, button_height)
@@ -113,11 +114,11 @@ impl PauseMenu {
                     .with_anchor(ButtonAnchor::Center),
             );
 
-        // Restart button is now 'Quit to Lobby' with less saturated red style
-        let mut restart_style = create_lobby_button_style();
-        restart_style.text_style = text_style.clone();
-        let restart_button = Button::new("restart", "Quit to Lobby")
-            .with_style(restart_style)
+        // Quit to Lobby button with less saturated red style
+        let mut quit_lobby_style = create_lobby_button_style();
+        quit_lobby_style.text_style = text_style.clone();
+        let quit_lobby_button = Button::new("quit_lobby", "Quit to Lobby")
+            .with_style(quit_lobby_style)
             .with_text_align(TextAlign::Center)
             .with_position(
                 ButtonPosition::new(center_x, y(3), button_width, button_height)
@@ -159,9 +160,9 @@ impl PauseMenu {
 
         // Add buttons to manager
         button_manager.add_button(resume_button);
-        button_manager.add_button(settings_button);
+        button_manager.add_button(restart_run_button);
         button_manager.add_button(test_mode_button);
-        button_manager.add_button(restart_button);
+        button_manager.add_button(quit_lobby_button);
         button_manager.add_button(quit_menu_button);
         button_manager.add_button(debug_button);
 
@@ -205,35 +206,41 @@ impl PauseMenu {
         self.visible
     }
 
-    pub fn handle_input(&mut self, event: &WindowEvent) {
+    pub fn handle_input(&mut self, event: &WindowEvent, audio_manager: &mut GameAudioManager) {
         if !self.visible {
             return;
         }
 
         self.button_manager.handle_input(event);
 
-        // Check for button clicks
+        // Check for button clicks and play select sound
         if self.button_manager.is_button_clicked("resume") {
             self.last_action = PauseMenuAction::Resume;
+            let _ = audio_manager.play_select();
         }
 
-        if self.button_manager.is_button_clicked("settings") {
-            self.last_action = PauseMenuAction::Settings;
-        }
-
-        if self.button_manager.is_button_clicked("restart") {
+        if self.button_manager.is_button_clicked("restart_run") {
             self.last_action = PauseMenuAction::Restart;
+            let _ = audio_manager.play_select();
+        }
+
+        if self.button_manager.is_button_clicked("quit_lobby") {
+            self.last_action = PauseMenuAction::QuitToMenu;
+            let _ = audio_manager.play_select();
         }
 
         if self.button_manager.is_button_clicked("toggle_test_mode") {
             self.last_action = PauseMenuAction::ToggleTestMode;
+            let _ = audio_manager.play_select();
         }
 
         if self.button_manager.is_button_clicked("quit_menu") {
-            self.last_action = PauseMenuAction::QuitToMenu;
+            self.last_action = PauseMenuAction::QuitApp;
+            let _ = audio_manager.play_select();
         }
         if self.button_manager.is_button_clicked("debug") {
             self.show_debug_panel = !self.show_debug_panel;
+            let _ = audio_manager.play_select();
         }
     }
 
@@ -278,15 +285,15 @@ impl PauseMenu {
             resume_button.style.text_style = text_style.clone();
         }
 
-        if let Some(settings_button) = self.button_manager.get_button_mut("settings") {
-            settings_button.text = "Restart Run".to_string();
-            settings_button.style = create_goldenrod_button_style();
-            settings_button.style.text_style = text_style.clone();
-            settings_button.position.x = center_x;
-            settings_button.position.y = y(1);
-            settings_button.position.width = button_width;
-            settings_button.position.height = button_height;
-            settings_button.position.anchor = ButtonAnchor::Center;
+        if let Some(restart_run_button) = self.button_manager.get_button_mut("restart_run") {
+            restart_run_button.text = "Restart Run".to_string();
+            restart_run_button.style = create_goldenrod_button_style();
+            restart_run_button.style.text_style = text_style.clone();
+            restart_run_button.position.x = center_x;
+            restart_run_button.position.y = y(1);
+            restart_run_button.position.width = button_width;
+            restart_run_button.position.height = button_height;
+            restart_run_button.position.anchor = ButtonAnchor::Center;
         }
 
         if let Some(test_mode_button) = self.button_manager.get_button_mut("toggle_test_mode") {
@@ -300,15 +307,15 @@ impl PauseMenu {
             test_mode_button.position.anchor = ButtonAnchor::Center;
         }
 
-        if let Some(restart_button) = self.button_manager.get_button_mut("restart") {
-            restart_button.text = "Quit to Lobby".to_string();
-            restart_button.style = create_lobby_button_style();
-            restart_button.style.text_style = text_style.clone();
-            restart_button.position.x = center_x;
-            restart_button.position.y = y(3);
-            restart_button.position.width = button_width;
-            restart_button.position.height = button_height;
-            restart_button.position.anchor = ButtonAnchor::Center;
+        if let Some(quit_lobby_button) = self.button_manager.get_button_mut("quit_lobby") {
+            quit_lobby_button.text = "Quit to Lobby".to_string();
+            quit_lobby_button.style = create_lobby_button_style();
+            quit_lobby_button.style.text_style = text_style.clone();
+            quit_lobby_button.position.x = center_x;
+            quit_lobby_button.position.y = y(3);
+            quit_lobby_button.position.width = button_width;
+            quit_lobby_button.position.height = button_height;
+            quit_lobby_button.position.anchor = ButtonAnchor::Center;
         }
 
         if let Some(quit_menu_button) = self.button_manager.get_button_mut("quit_menu") {

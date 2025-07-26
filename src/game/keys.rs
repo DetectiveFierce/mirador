@@ -31,7 +31,7 @@ pub enum GameKey {
     Jump,
     /// Toggle UI sliders (C).
     ToggleSliders,
-    /// Quit the game (Q).
+    /// Quit the game (`).
     Quit,
     /// Escape key (toggle mouse capture).
     Escape,
@@ -97,7 +97,7 @@ impl KeyState {
             .player
             .update_stamina(is_sprinting, is_moving, game_state.delta_time);
         if is_sprinting {
-            game_state.player.speed = game_state.player.base_speed * 2.0;
+            game_state.player.speed = game_state.player.base_speed * 1.75;
         } else {
             game_state.player.speed = game_state.player.base_speed;
         }
@@ -217,7 +217,7 @@ pub fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
             "a" => GameKey::MoveLeft,
             "d" => GameKey::MoveRight,
             "c" => GameKey::ToggleSliders,
-            "q" => GameKey::Quit,
+            "`" => GameKey::Quit,
             "b" => GameKey::ToggleBoundingBoxes,
             "u" => GameKey::ToggleUpgradeMenu,
         }),

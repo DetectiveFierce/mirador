@@ -124,7 +124,9 @@ impl ApplicationHandler for App {
         let pause_action = if state.game_state.current_screen == crate::game::CurrentScreen::Pause
             && state.pause_menu.is_visible()
         {
-            state.pause_menu.handle_input(&event);
+            state
+                .pause_menu
+                .handle_input(&event, &mut state.game_state.audio_manager);
             state.pause_menu.get_last_action()
         } else {
             crate::renderer::ui::pause_menu::PauseMenuAction::None
@@ -150,15 +152,30 @@ impl ApplicationHandler for App {
                     match previous_screen {
                         crate::game::CurrentScreen::Game => {
                             // Resume game
-                            state.game_state.game_ui.resume_timer();
-                            // Unlock enemy movement
-                            state.game_state.enemy.pathfinder.locked = false;
+                            if !state.game_state.is_test_mode {
+                                // Only resume timer and unlock enemy in normal mode
+                                state.game_state.game_ui.resume_timer();
+                                state.game_state.enemy.pathfinder.locked = false;
+                            }
+                            // In test mode, keep timer paused and enemy locked
                             // Lock cursor
                             state.game_state.capture_mouse = true;
+                            // Restore game audio volumes
+                            state
+                                .game_state
+                                .audio_manager
+                                .set_game_volumes()
+                                .expect("Failed to set game volumes");
                         }
                         crate::game::CurrentScreen::Title => {
                             // Return to title screen - cursor should be unlocked
                             state.game_state.capture_mouse = false;
+                            // Set title screen audio volumes
+                            state
+                                .game_state
+                                .audio_manager
+                                .set_title_screen_volumes()
+                                .expect("Failed to set title screen volumes");
                         }
                         _ => {
                             // For other screens, just unlock cursor
@@ -168,17 +185,39 @@ impl ApplicationHandler for App {
                 } else {
                     // Fallback: return to game
                     state.game_state.current_screen = crate::game::CurrentScreen::Game;
-                    state.game_state.game_ui.resume_timer();
-                    state.game_state.enemy.pathfinder.locked = false;
+                    if !state.game_state.is_test_mode {
+                        // Only resume timer and unlock enemy in normal mode
+                        state.game_state.game_ui.resume_timer();
+                        state.game_state.enemy.pathfinder.locked = false;
+                    }
+                    // In test mode, keep timer paused and enemy locked
                     state.game_state.capture_mouse = true;
+                    // Restore game audio volumes
+                    state
+                        .game_state
+                        .audio_manager
+                        .set_game_volumes()
+                        .expect("Failed to set game volumes");
                 }
                 state.pause_menu.hide();
             }
-            crate::renderer::ui::pause_menu::PauseMenuAction::Settings => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::Restart => {
                 // Restart current run - handle this after the match to avoid borrow issues
                 state.game_state.current_screen = crate::game::CurrentScreen::NewGame;
                 state.game_state.previous_screen = None; // Clear previous screen
                 state.pause_menu.hide();
+                // Restore game audio volumes for new game
+                state
+                    .game_state
+                    .audio_manager
+                    .set_game_volumes()
+                    .expect("Failed to set game volumes");
+                // Ensure mouse is captured for the new game
+                state.game_state.capture_mouse = true;
+                // Apply mouse capture immediately
+                if let Some(window) = self.window.as_ref() {
+                    state.triage_mouse(window);
+                }
 
                 // Hide title screen elements when transitioning away from title
                 if let Some(buf) = state
@@ -204,6 +243,12 @@ impl ApplicationHandler for App {
                     state.game_state.current_screen = crate::game::CurrentScreen::Loading;
                     state.game_state.previous_screen = None; // Clear previous screen
                     state.pause_menu.hide();
+                    // Restore game audio volumes for normal mode
+                    state
+                        .game_state
+                        .audio_manager
+                        .set_game_volumes()
+                        .expect("Failed to set game volumes");
 
                     // Recapture mouse when exiting test mode
                     state.game_state.capture_mouse = true;
@@ -278,13 +323,24 @@ impl ApplicationHandler for App {
                     buf.visible = false;
                 }
             }
-            crate::renderer::ui::pause_menu::PauseMenuAction::Restart => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::QuitToMenu => {
                 // Quit to lobby (title screen)
                 state.game_state.current_screen = crate::game::CurrentScreen::Title;
                 state.game_state.previous_screen = None; // Clear previous screen
                 state.pause_menu.hide();
                 // Reset game state
                 state.game_state = crate::game::GameState::new();
+                // Reset loading screen renderer to ensure new maze generation
+                state.wgpu_renderer.loading_screen_renderer = LoadingRenderer::new(
+                    &state.wgpu_renderer.device,
+                    &state.wgpu_renderer.surface_config,
+                );
+                // Set title screen audio volumes
+                state
+                    .game_state
+                    .audio_manager
+                    .set_title_screen_volumes()
+                    .expect("Failed to set title screen volumes");
                 // Show title screen elements
                 if let Some(buf) = state
                     .text_renderer
@@ -301,7 +357,7 @@ impl ApplicationHandler for App {
                     buf.visible = true;
                 }
             }
-            crate::renderer::ui::pause_menu::PauseMenuAction::QuitToMenu => {
+            crate::renderer::ui::pause_menu::PauseMenuAction::QuitApp => {
                 // Quit the application
                 std::process::exit(0);
             }
@@ -391,6 +447,12 @@ impl ApplicationHandler for App {
                                             state.game_state.capture_mouse = false;
                                             // Show pause menu with current test mode state
                                             state.pause_menu.show(state.game_state.is_test_mode);
+                                            // Set pause menu audio volumes
+                                            state
+                                                .game_state
+                                                .audio_manager
+                                                .set_pause_menu_volumes()
+                                                .expect("Failed to set pause menu volumes");
                                         }
                                         crate::game::CurrentScreen::Pause => {
                                             // Return to previous screen
@@ -403,16 +465,31 @@ impl ApplicationHandler for App {
                                                 match previous_screen {
                                                     crate::game::CurrentScreen::Game => {
                                                         // Resume game
-                                                        state.game_state.game_ui.resume_timer();
-                                                        // Unlock enemy movement
-                                                        state.game_state.enemy.pathfinder.locked =
-                                                            false;
+                                                        if !state.game_state.is_test_mode {
+                                                            // Only resume timer and unlock enemy in normal mode
+                                                            state.game_state.game_ui.resume_timer();
+                                                            state
+                                                                .game_state
+                                                                .enemy
+                                                                .pathfinder
+                                                                .locked = false;
+                                                        }
+                                                        // In test mode, keep timer paused and enemy locked
                                                         // Lock cursor
                                                         state.game_state.capture_mouse = true;
+                                                        // Restore game audio volumes
+                                                        state
+                                                            .game_state
+                                                            .audio_manager
+                                                            .set_game_volumes()
+                                                            .expect("Failed to set game volumes");
                                                     }
                                                     crate::game::CurrentScreen::Title => {
                                                         // Return to title screen - cursor should be unlocked
                                                         state.game_state.capture_mouse = false;
+                                                        // Set title screen audio volumes
+                                                        state.game_state.audio_manager.set_title_screen_volumes()
+                                                            .expect("Failed to set title screen volumes");
                                                     }
                                                     _ => {
                                                         // For other screens, just unlock cursor
@@ -424,6 +501,12 @@ impl ApplicationHandler for App {
                                                 state.game_state.current_screen =
                                                     crate::game::CurrentScreen::Title;
                                                 state.game_state.capture_mouse = false;
+                                                // Set title screen audio volumes
+                                                state
+                                                    .game_state
+                                                    .audio_manager
+                                                    .set_title_screen_volumes()
+                                                    .expect("Failed to set title screen volumes");
                                             }
                                         }
                                         crate::game::CurrentScreen::Title => {
@@ -436,6 +519,12 @@ impl ApplicationHandler for App {
                                             state.game_state.capture_mouse = false;
                                             // Show pause menu with current test mode state
                                             state.pause_menu.show(state.game_state.is_test_mode);
+                                            // Set pause menu audio volumes
+                                            state
+                                                .game_state
+                                                .audio_manager
+                                                .set_pause_menu_volumes()
+                                                .expect("Failed to set pause menu volumes");
                                         }
                                         _ => {
                                             // For all other screens, just toggle cursor lock
@@ -468,6 +557,12 @@ impl ApplicationHandler for App {
                                 if app_state.game_state.current_screen
                                     == crate::game::CurrentScreen::Title
                                 {
+                                    // Set game audio volumes before leaving title screen
+                                    app_state
+                                        .game_state
+                                        .audio_manager
+                                        .set_game_volumes()
+                                        .expect("Failed to set game volumes");
                                     app_state.game_state.current_screen =
                                         crate::game::CurrentScreen::Loading;
                                     // Optionally, lock mouse here if needed
@@ -488,7 +583,6 @@ impl ApplicationHandler for App {
                                     {
                                         buf.visible = false;
                                     }
-                                    return;
                                 }
                                 app_state
                                     .key_state

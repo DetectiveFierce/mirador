@@ -27,6 +27,10 @@ pub struct GameAudioManager {
     enemy_data: StaticSoundData,
     complete_data: StaticSoundData,
     wall_hit_data: StaticSoundData,
+    select_data: StaticSoundData,
+    upgrade_data: StaticSoundData,
+    background_music_data: StaticSoundData,
+    background_music_handle: Option<StaticSoundHandle>,
     spatial_tracks: HashMap<String, SpatialTrackHandle>,
     movement_state: MovementState,
     wall_hit_cooldown: Duration,
@@ -46,8 +50,12 @@ impl GameAudioManager {
         let enemy_data = StaticSoundData::from_file("assets/audio/slime-track.ogg")?;
         let complete_data = StaticSoundData::from_file("assets/audio/complete.wav")?;
         let wall_hit_data = StaticSoundData::from_file("assets/audio/wall.wav")?;
+        let select_data = StaticSoundData::from_file("assets/audio/select.ogg")?;
+        let upgrade_data = StaticSoundData::from_file("assets/audio/upgrade.ogg")?;
+        let background_music_data =
+            StaticSoundData::from_file("assets/audio/music/Mirador Main Track.ogg")?;
 
-        Ok(GameAudioManager {
+        let mut audio_manager_instance = GameAudioManager {
             audio_manager,
             listener,
             footstep_sound: None,
@@ -56,11 +64,122 @@ impl GameAudioManager {
             enemy_data,
             complete_data,
             wall_hit_data,
+            select_data,
+            upgrade_data,
+            background_music_data,
+            background_music_handle: None,
             spatial_tracks: HashMap::new(),
             movement_state: MovementState::Idle,
             wall_hit_cooldown: Duration::from_millis(330),
             last_wall_hit: None,
-        })
+        };
+
+        // Start background music
+        audio_manager_instance.start_background_music()?;
+
+        Ok(audio_manager_instance)
+    }
+
+    /// Start or restart the background music track
+    pub fn start_background_music(&mut self) -> Result<(), Box<dyn Error>> {
+        // Stop existing background music if playing
+        if let Some(mut handle) = self.background_music_handle.take() {
+            handle.stop(Tween::default());
+        }
+
+        // Create settings for background music with low volume and looping
+        let settings = StaticSoundSettings::new()
+            .volume(Decibels::from(-20.0)) // Low volume (-20dB)
+            .loop_region(..); // Loop the entire track
+
+        // Play the background music
+        let handle = self
+            .audio_manager
+            .play(self.background_music_data.clone().with_settings(settings))?;
+        self.background_music_handle = Some(handle);
+
+        Ok(())
+    }
+
+    /// Restart background music (used when starting a new game)
+    pub fn restart_background_music(&mut self) -> Result<(), Box<dyn Error>> {
+        self.start_background_music()
+    }
+
+    /// Adjust audio volumes for title screen (louder background music, quieter enemies)
+    pub fn set_title_screen_volumes(&mut self) -> Result<(), Box<dyn Error>> {
+        // Make background music louder on title screen
+        if self.background_music_handle.is_some() {
+            let handle = self.background_music_handle.as_mut().unwrap();
+            let tween = Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_millis(500), // Smooth transition
+                easing: Easing::Linear,
+            };
+            handle.set_volume(Decibels::from(-5.0), tween);
+        }
+
+        // Make enemy sounds quieter on title screen by adjusting the spatial track volume
+        let enemy_ids: Vec<String> = self.enemy_sounds.keys().cloned().collect();
+        for enemy_id in enemy_ids {
+            if let Some(track) = self.spatial_tracks.get_mut(&enemy_id) {
+                let tween = Tween {
+                    start_time: StartTime::Immediate,
+                    duration: Duration::from_millis(500), // Smooth transition
+                    easing: Easing::Linear,
+                };
+                // Adjust the spatial track's volume directly
+                track.set_volume(Decibels::from(-10.0), tween);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Adjust audio volumes for pause menu (softer background music)
+    pub fn set_pause_menu_volumes(&mut self) -> Result<(), Box<dyn Error>> {
+        // Make background music softer when pause menu is open
+        if self.background_music_handle.is_some() {
+            let handle = self.background_music_handle.as_mut().unwrap();
+            let tween = Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_millis(100), // Quick transition
+                easing: Easing::Linear,
+            };
+            handle.set_volume(Decibels::from(-15.0), tween); // Much softer (-25dB)
+        }
+
+        Ok(())
+    }
+
+    /// Reset audio volumes to normal game levels
+    pub fn set_game_volumes(&mut self) -> Result<(), Box<dyn Error>> {
+        // Reset background music to normal volume
+        if self.background_music_handle.is_some() {
+            let handle = self.background_music_handle.as_mut().unwrap();
+            let tween = Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_millis(500), // Smooth transition
+                easing: Easing::Linear,
+            };
+            handle.set_volume(Decibels::from(-10.0), tween); // Back to normal volume
+        }
+
+        // Reset enemy sounds to normal volume
+        let enemy_ids: Vec<String> = self.enemy_sounds.keys().cloned().collect();
+        for enemy_id in enemy_ids {
+            if let Some(track) = self.spatial_tracks.get_mut(&enemy_id) {
+                let tween = Tween {
+                    start_time: StartTime::Immediate,
+                    duration: Duration::from_millis(500), // Smooth transition
+                    easing: Easing::Linear,
+                };
+                // Reset to normal volume (0dB)
+                track.set_volume(Decibels::from(0.0), tween);
+            }
+        }
+
+        Ok(())
     }
 
     pub fn start_walking(&mut self) -> Result<(), Box<dyn Error>> {
@@ -277,6 +396,16 @@ impl GameAudioManager {
         // Play sound at 1/3 volume (0.33)
         self.play_with_volume(self.wall_hit_data.clone(), 0.0001)?;
         self.last_wall_hit = Some(now);
+        Ok(())
+    }
+
+    pub fn play_select(&mut self) -> Result<(), Box<dyn Error>> {
+        self.audio_manager.play(self.select_data.clone())?;
+        Ok(())
+    }
+
+    pub fn play_upgrade(&mut self) -> Result<(), Box<dyn Error>> {
+        self.audio_manager.play(self.upgrade_data.clone())?;
         Ok(())
     }
 }

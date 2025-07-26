@@ -95,7 +95,8 @@ impl GameState {
         audio_manager
             .spawn_enemy("enemy".to_string(), [-0.5, 30.0, 0.0])
             .expect("Failed to spawn enemy");
-        Self {
+
+        let mut game_state = Self {
             player: Player::new(),
             last_frame_time: Instant::now(),
             delta_time: 0.0,
@@ -117,7 +118,15 @@ impl GameState {
             enemy: Enemy::new([-0.5, 30.0, 0.0], 150.0),
             audio_manager,
             is_test_mode: false,
-        }
+        };
+
+        // Set title screen audio volumes since we start on the title screen
+        game_state
+            .audio_manager
+            .set_title_screen_volumes()
+            .expect("Failed to set title screen volumes");
+
+        game_state
     }
 
     /// Start the game timer

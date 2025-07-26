@@ -267,6 +267,9 @@ impl UpgradeMenu {
         let mut selected_upgrade_name = String::new();
 
         if self.button_manager.is_button_clicked("upgrade_1") {
+            // Play upgrade sound
+            let _ = game_state.audio_manager.play_upgrade();
+
             if let Some(upgrade) = self.current_upgrades.get(0) {
                 selected_upgrade_name = upgrade.name.clone();
                 self.apply_upgrade_by_name(&selected_upgrade_name, game_state);
@@ -276,6 +279,9 @@ impl UpgradeMenu {
         }
 
         if self.button_manager.is_button_clicked("upgrade_2") {
+            // Play upgrade sound
+            let _ = game_state.audio_manager.play_upgrade();
+
             if let Some(upgrade) = self.current_upgrades.get(1) {
                 selected_upgrade_name = upgrade.name.clone();
                 self.apply_upgrade_by_name(&selected_upgrade_name, game_state);
@@ -285,6 +291,9 @@ impl UpgradeMenu {
         }
 
         if self.button_manager.is_button_clicked("upgrade_3") {
+            // Play upgrade sound
+            let _ = game_state.audio_manager.play_upgrade();
+
             if let Some(upgrade) = self.current_upgrades.get(2) {
                 selected_upgrade_name = upgrade.name.clone();
                 self.apply_upgrade_by_name(&selected_upgrade_name, game_state);
