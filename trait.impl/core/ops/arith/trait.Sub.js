@@ -1,5 +1,5 @@
 (function() {
-    var implementors = Object.fromEntries([["mirador",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.87.0/core/ops/arith/trait.Sub.html\" title=\"trait core::ops::arith::Sub\">Sub</a> for <a class=\"struct\" href=\"mirador/math/vec/struct.Vec2.html\" title=\"struct mirador::math::vec::Vec2\">Vec2</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.87.0/core/ops/arith/trait.Sub.html\" title=\"trait core::ops::arith::Sub\">Sub</a> for <a class=\"struct\" href=\"mirador/math/vec/struct.Vec3.html\" title=\"struct mirador::math::vec::Vec3\">Vec3</a>"]]]]);
+    var implementors = Object.fromEntries([["mirador",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.88.0/core/ops/arith/trait.Sub.html\" title=\"trait core::ops::arith::Sub\">Sub</a> for <a class=\"struct\" href=\"mirador/math/vec/struct.Vec2.html\" title=\"struct mirador::math::vec::Vec2\">Vec2</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.88.0/core/ops/arith/trait.Sub.html\" title=\"trait core::ops::arith::Sub\">Sub</a> for <a class=\"struct\" href=\"mirador/math/vec/struct.Vec3.html\" title=\"struct mirador::math::vec::Vec3\">Vec3</a>"]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
