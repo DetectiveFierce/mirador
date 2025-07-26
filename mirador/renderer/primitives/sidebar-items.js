@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["create_exit_cell_floor_patch","create_x_facing_wall","create_z_facing_wall"],"struct":["Uniforms","Vertex"]};
+window.SIDEBAR_ITEMS = {"constant":["CEILING_TEXTURE_SCALE"],"fn":["create_exit_cell_floor_patch","create_x_facing_wall","create_z_facing_wall"],"struct":["Uniforms","Vertex"]};

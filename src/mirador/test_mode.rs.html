@@ -150,65 +150,68 @@
 <a href=#150 id=150 data-nosnippet>150</a>    <span class="comment">// Add wall vertices (test mode always uses perimeter walls)
 <a href=#151 id=151 data-nosnippet>151</a>    </span>floor_vertices.append(<span class="kw-2">&amp;mut </span>Vertex::create_wall_vertices(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">true</span>));
 <a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a>    <span class="comment">// Create vertex buffer
-<a href=#154 id=154 data-nosnippet>154</a>    </span>wgpu_renderer.game_renderer.vertex_buffer =
-<a href=#155 id=155 data-nosnippet>155</a>        wgpu_renderer
-<a href=#156 id=156 data-nosnippet>156</a>            .device
-<a href=#157 id=157 data-nosnippet>157</a>            .create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor {
-<a href=#158 id=158 data-nosnippet>158</a>                label: <span class="prelude-val">Some</span>(<span class="string">"Test Maze Vertex Buffer"</span>),
-<a href=#159 id=159 data-nosnippet>159</a>                contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>floor_vertices),
-<a href=#160 id=160 data-nosnippet>160</a>                usage: wgpu::BufferUsages::VERTEX,
-<a href=#161 id=161 data-nosnippet>161</a>            });
-<a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a>    <span class="comment">// Update vertex count so the renderer knows how many vertices to draw
-<a href=#164 id=164 data-nosnippet>164</a>    </span>wgpu_renderer.game_renderer.vertex_count = floor_vertices.len() <span class="kw">as </span>u32;
+<a href=#153 id=153 data-nosnippet>153</a>    <span class="comment">// Add ceiling vertices
+<a href=#154 id=154 data-nosnippet>154</a>    </span>floor_vertices.append(<span class="kw-2">&amp;mut </span>Vertex::create_ceiling_vertices(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">true</span>));
+<a href=#155 id=155 data-nosnippet>155</a>
+<a href=#156 id=156 data-nosnippet>156</a>    <span class="comment">// Create vertex buffer
+<a href=#157 id=157 data-nosnippet>157</a>    </span>wgpu_renderer.game_renderer.vertex_buffer =
+<a href=#158 id=158 data-nosnippet>158</a>        wgpu_renderer
+<a href=#159 id=159 data-nosnippet>159</a>            .device
+<a href=#160 id=160 data-nosnippet>160</a>            .create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor {
+<a href=#161 id=161 data-nosnippet>161</a>                label: <span class="prelude-val">Some</span>(<span class="string">"Test Maze Vertex Buffer"</span>),
+<a href=#162 id=162 data-nosnippet>162</a>                contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>floor_vertices),
+<a href=#163 id=163 data-nosnippet>163</a>                usage: wgpu::BufferUsages::VERTEX,
+<a href=#164 id=164 data-nosnippet>164</a>            });
 <a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a>    <span class="macro">println!</span>(
-<a href=#167 id=167 data-nosnippet>167</a>        <span class="string">"Debug: Created {} vertices for test maze"</span>,
-<a href=#168 id=168 data-nosnippet>168</a>        floor_vertices.len()
-<a href=#169 id=169 data-nosnippet>169</a>    );
-<a href=#170 id=170 data-nosnippet>170</a>    <span class="macro">println!</span>(
-<a href=#171 id=171 data-nosnippet>171</a>        <span class="string">"Debug: Maze grid dimensions: {}x{}"</span>,
-<a href=#172 id=172 data-nosnippet>172</a>        maze_grid.len(),
-<a href=#173 id=173 data-nosnippet>173</a>        maze_grid[<span class="number">0</span>].len()
-<a href=#174 id=174 data-nosnippet>174</a>    );
-<a href=#175 id=175 data-nosnippet>175</a>    <span class="macro">println!</span>(
-<a href=#176 id=176 data-nosnippet>176</a>        <span class="string">"Debug: Wall count: {}"</span>,
-<a href=#177 id=177 data-nosnippet>177</a>        maze_grid
-<a href=#178 id=178 data-nosnippet>178</a>            .iter()
-<a href=#179 id=179 data-nosnippet>179</a>            .flatten()
-<a href=#180 id=180 data-nosnippet>180</a>            .filter(|&amp;&amp;is_wall| is_wall)
-<a href=#181 id=181 data-nosnippet>181</a>            .count()
-<a href=#182 id=182 data-nosnippet>182</a>    );
-<a href=#183 id=183 data-nosnippet>183</a>
-<a href=#184 id=184 data-nosnippet>184</a>    <span class="comment">// Set exit cell in game state
-<a href=#185 id=185 data-nosnippet>185</a>    </span>game_state.exit_cell = <span class="prelude-val">Some</span>(exit_cell);
+<a href=#166 id=166 data-nosnippet>166</a>    <span class="comment">// Update vertex count so the renderer knows how many vertices to draw
+<a href=#167 id=167 data-nosnippet>167</a>    </span>wgpu_renderer.game_renderer.vertex_count = floor_vertices.len() <span class="kw">as </span>u32;
+<a href=#168 id=168 data-nosnippet>168</a>
+<a href=#169 id=169 data-nosnippet>169</a>    <span class="macro">println!</span>(
+<a href=#170 id=170 data-nosnippet>170</a>        <span class="string">"Debug: Created {} vertices for test maze"</span>,
+<a href=#171 id=171 data-nosnippet>171</a>        floor_vertices.len()
+<a href=#172 id=172 data-nosnippet>172</a>    );
+<a href=#173 id=173 data-nosnippet>173</a>    <span class="macro">println!</span>(
+<a href=#174 id=174 data-nosnippet>174</a>        <span class="string">"Debug: Maze grid dimensions: {}x{}"</span>,
+<a href=#175 id=175 data-nosnippet>175</a>        maze_grid.len(),
+<a href=#176 id=176 data-nosnippet>176</a>        maze_grid[<span class="number">0</span>].len()
+<a href=#177 id=177 data-nosnippet>177</a>    );
+<a href=#178 id=178 data-nosnippet>178</a>    <span class="macro">println!</span>(
+<a href=#179 id=179 data-nosnippet>179</a>        <span class="string">"Debug: Wall count: {}"</span>,
+<a href=#180 id=180 data-nosnippet>180</a>        maze_grid
+<a href=#181 id=181 data-nosnippet>181</a>            .iter()
+<a href=#182 id=182 data-nosnippet>182</a>            .flatten()
+<a href=#183 id=183 data-nosnippet>183</a>            .filter(|&amp;&amp;is_wall| is_wall)
+<a href=#184 id=184 data-nosnippet>184</a>            .count()
+<a href=#185 id=185 data-nosnippet>185</a>    );
 <a href=#186 id=186 data-nosnippet>186</a>
-<a href=#187 id=187 data-nosnippet>187</a>    <span class="comment">// Create and place locked enemy (convert tuple to array for enemy position)
-<a href=#188 id=188 data-nosnippet>188</a>    </span><span class="kw">let </span>enemy_position = [exit_patch_position.<span class="number">0</span>, <span class="number">30.0</span>, exit_patch_position.<span class="number">1</span>];
-<a href=#189 id=189 data-nosnippet>189</a>    game_state.enemy = create_test_enemy(enemy_position);
-<a href=#190 id=190 data-nosnippet>190</a>
-<a href=#191 id=191 data-nosnippet>191</a>    <span class="comment">// Build collision system from test maze (test mode always uses perimeter walls)
-<a href=#192 id=192 data-nosnippet>192</a>    </span>game_state
-<a href=#193 id=193 data-nosnippet>193</a>        .collision_system
-<a href=#194 id=194 data-nosnippet>194</a>        .build_from_maze(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">true</span>);
-<a href=#195 id=195 data-nosnippet>195</a>
-<a href=#196 id=196 data-nosnippet>196</a>    <span class="comment">// Spawn player at the entrance (bottom-left corner)
-<a href=#197 id=197 data-nosnippet>197</a>    </span>game_state.player.spawn_at_maze_entrance(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">true</span>); <span class="comment">// Test mode
+<a href=#187 id=187 data-nosnippet>187</a>    <span class="comment">// Set exit cell in game state
+<a href=#188 id=188 data-nosnippet>188</a>    </span>game_state.exit_cell = <span class="prelude-val">Some</span>(exit_cell);
+<a href=#189 id=189 data-nosnippet>189</a>
+<a href=#190 id=190 data-nosnippet>190</a>    <span class="comment">// Create and place locked enemy (convert tuple to array for enemy position)
+<a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">let </span>enemy_position = [exit_patch_position.<span class="number">0</span>, <span class="number">30.0</span>, exit_patch_position.<span class="number">1</span>];
+<a href=#192 id=192 data-nosnippet>192</a>    game_state.enemy = create_test_enemy(enemy_position);
+<a href=#193 id=193 data-nosnippet>193</a>
+<a href=#194 id=194 data-nosnippet>194</a>    <span class="comment">// Build collision system from test maze (test mode always uses perimeter walls)
+<a href=#195 id=195 data-nosnippet>195</a>    </span>game_state
+<a href=#196 id=196 data-nosnippet>196</a>        .collision_system
+<a href=#197 id=197 data-nosnippet>197</a>        .build_from_maze(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">true</span>);
 <a href=#198 id=198 data-nosnippet>198</a>
-<a href=#199 id=199 data-nosnippet>199</a>    // Set up frozen timer
-<a href=#200 id=200 data-nosnippet>200</a>    </span><span class="kw">let </span>timer_config = create_test_timer_config();
-<a href=#201 id=201 data-nosnippet>201</a>    game_state.start_game_timer(<span class="prelude-val">Some</span>(timer_config));
-<a href=#202 id=202 data-nosnippet>202</a>
-<a href=#203 id=203 data-nosnippet>203</a>    <span class="comment">// Immediately pause the timer to freeze it at 420.00
-<a href=#204 id=204 data-nosnippet>204</a>    </span>game_state.game_ui.pause_timer();
+<a href=#199 id=199 data-nosnippet>199</a>    <span class="comment">// Spawn player at the entrance (bottom-left corner)
+<a href=#200 id=200 data-nosnippet>200</a>    </span>game_state.player.spawn_at_maze_entrance(<span class="kw-2">&amp;</span>maze_grid, <span class="bool-val">true</span>); <span class="comment">// Test mode
+<a href=#201 id=201 data-nosnippet>201</a>
+<a href=#202 id=202 data-nosnippet>202</a>    // Set up frozen timer
+<a href=#203 id=203 data-nosnippet>203</a>    </span><span class="kw">let </span>timer_config = create_test_timer_config();
+<a href=#204 id=204 data-nosnippet>204</a>    game_state.start_game_timer(<span class="prelude-val">Some</span>(timer_config));
 <a href=#205 id=205 data-nosnippet>205</a>
-<a href=#206 id=206 data-nosnippet>206</a>    <span class="macro">println!</span>(<span class="string">"Test mode initialized:"</span>);
-<a href=#207 id=207 data-nosnippet>207</a>    <span class="macro">println!</span>(<span class="string">"  - Maze size: {}x{}"</span>, TEST_MAZE_WIDTH, TEST_MAZE_HEIGHT);
-<a href=#208 id=208 data-nosnippet>208</a>    <span class="macro">println!</span>(<span class="string">"  - Exit at: {:?}"</span>, exit_cell);
-<a href=#209 id=209 data-nosnippet>209</a>    <span class="macro">println!</span>(<span class="string">"  - Timer frozen at 420.00 seconds"</span>);
-<a href=#210 id=210 data-nosnippet>210</a>    <span class="macro">println!</span>(
-<a href=#211 id=211 data-nosnippet>211</a>        <span class="string">"  - Enemy locked at position: {:?}"</span>,
-<a href=#212 id=212 data-nosnippet>212</a>        game_state.enemy.pathfinder.position
-<a href=#213 id=213 data-nosnippet>213</a>    );
-<a href=#214 id=214 data-nosnippet>214</a>}</code></pre></div></section></main></body></html>
+<a href=#206 id=206 data-nosnippet>206</a>    <span class="comment">// Immediately pause the timer to freeze it at 420.00
+<a href=#207 id=207 data-nosnippet>207</a>    </span>game_state.game_ui.pause_timer();
+<a href=#208 id=208 data-nosnippet>208</a>
+<a href=#209 id=209 data-nosnippet>209</a>    <span class="macro">println!</span>(<span class="string">"Test mode initialized:"</span>);
+<a href=#210 id=210 data-nosnippet>210</a>    <span class="macro">println!</span>(<span class="string">"  - Maze size: {}x{}"</span>, TEST_MAZE_WIDTH, TEST_MAZE_HEIGHT);
+<a href=#211 id=211 data-nosnippet>211</a>    <span class="macro">println!</span>(<span class="string">"  - Exit at: {:?}"</span>, exit_cell);
+<a href=#212 id=212 data-nosnippet>212</a>    <span class="macro">println!</span>(<span class="string">"  - Timer frozen at 420.00 seconds"</span>);
+<a href=#213 id=213 data-nosnippet>213</a>    <span class="macro">println!</span>(
+<a href=#214 id=214 data-nosnippet>214</a>        <span class="string">"  - Enemy locked at position: {:?}"</span>,
+<a href=#215 id=215 data-nosnippet>215</a>        game_state.enemy.pathfinder.position
+<a href=#216 id=216 data-nosnippet>216</a>    );
+<a href=#217 id=217 data-nosnippet>217</a>}</code></pre></div></section></main></body></html>
