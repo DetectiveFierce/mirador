@@ -135,6 +135,13 @@ impl Player {
         self.position[2] -= right_z * self.speed * delta_time;
     }
 
+    pub fn move_up(&mut self, delta_time: f32) {
+        self.position[1] += (self.speed / 2.0) * delta_time;
+    }
+    pub fn move_down(&mut self, delta_time: f32) {
+        self.position[1] -= (self.speed / 2.0) * delta_time;
+    }
+
     pub fn update_cell(&mut self, maze_grid: &[Vec<bool>], is_test_mode: bool) {
         let maze_width = maze_grid[0].len();
         let maze_height = maze_grid.len();

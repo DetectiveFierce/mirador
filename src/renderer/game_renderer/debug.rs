@@ -69,31 +69,37 @@ pub fn create_aabb_box_vertices(aabb: &AABB) -> Vec<Vertex> {
             position: [min[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0], // Debug doesn't use texture coordinates
         },
         Vertex {
             position: [max[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
     ]);
 
@@ -103,31 +109,37 @@ pub fn create_aabb_box_vertices(aabb: &AABB) -> Vec<Vertex> {
             position: [max[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
     ]);
 
@@ -137,31 +149,37 @@ pub fn create_aabb_box_vertices(aabb: &AABB) -> Vec<Vertex> {
             position: [max[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
     ]);
 
@@ -171,31 +189,37 @@ pub fn create_aabb_box_vertices(aabb: &AABB) -> Vec<Vertex> {
             position: [min[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
     ]);
 
@@ -205,31 +229,37 @@ pub fn create_aabb_box_vertices(aabb: &AABB) -> Vec<Vertex> {
             position: [min[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], max[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
     ]);
 
@@ -239,31 +269,37 @@ pub fn create_aabb_box_vertices(aabb: &AABB) -> Vec<Vertex> {
             position: [min[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], min[1], min[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [max[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
         Vertex {
             position: [min[0], min[1], max[2]],
             color,
             material: BOUNDING_BOX_MATERIAL,
+            tex_coords: [0.0, 0.0],
         },
     ]);
 

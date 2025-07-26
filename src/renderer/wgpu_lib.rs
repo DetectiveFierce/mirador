@@ -61,7 +61,13 @@ impl WgpuRenderer {
 
         surface.configure(&device, &surface_config);
 
-        let game_renderer = GameRenderer::new(&device, &queue, &surface_config);
+        let mut game_renderer = GameRenderer::new(&device, &queue, &surface_config);
+
+        // Load ceiling texture
+        if let Err(e) = game_renderer.load_ceiling_texture(&device, &queue) {
+            eprintln!("Failed to load ceiling texture: {}", e);
+        }
+
         let loading_screen_renderer = LoadingRenderer::new(&device, &surface_config);
         let game_over_renderer = GameOverRenderer::new(&device, &surface_config);
         let title_renderer =
@@ -106,7 +112,7 @@ impl WgpuRenderer {
                     app_start_time,
                 );
             }
-            CurrentScreen::Game | CurrentScreen::Pause => {
+            CurrentScreen::Game | CurrentScreen::Pause | CurrentScreen::ExitReached => {
                 self.render_game_screen(
                     encoder,
                     &surface_view,

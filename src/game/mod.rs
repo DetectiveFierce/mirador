@@ -61,6 +61,9 @@ pub struct GameState {
     pub audio_manager: GameAudioManager,
     /// Whether the player is currently in test mode
     pub is_test_mode: bool,
+    /// Timer for exit reached upward movement (3 seconds)
+    pub exit_reached_timer: f32,
+    pub beeper_rise_played: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,6 +81,7 @@ pub enum CurrentScreen {
     GameOver,
     NewGame,
     UpgradeMenu,
+    ExitReached,
 }
 
 impl Default for GameState {
@@ -118,6 +122,8 @@ impl GameState {
             enemy: Enemy::new([-0.5, 30.0, 0.0], 150.0),
             audio_manager,
             is_test_mode: false,
+            exit_reached_timer: 0.0,
+            beeper_rise_played: false,
         };
 
         // Set title screen audio volumes since we start on the title screen

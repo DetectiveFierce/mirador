@@ -16,6 +16,7 @@ use crate::renderer::game_renderer::enemy::EnemyRenderer;
 use crate::renderer::game_renderer::stars::StarRenderer;
 use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::primitives::{Uniforms, Vertex};
+use image;
 use stamina_bar::StaminaBarRenderer;
 use std::time::Instant;
 use timer_bar::TimerBarRenderer;
@@ -87,6 +88,11 @@ pub struct GameRenderer {
     pub start_time: Instant,
     pub timer_bar_renderer: TimerBarRenderer,
     pub stamina_bar_renderer: StaminaBarRenderer,
+    // Ceiling texture resources
+    pub ceiling_texture: Option<wgpu::Texture>,
+    pub ceiling_texture_view: Option<wgpu::TextureView>,
+    pub ceiling_sampler: Option<wgpu::Sampler>,
+    pub ceiling_bind_group: Option<wgpu::BindGroup>,
 }
 
 impl GameRenderer {
@@ -97,14 +103,50 @@ impl GameRenderer {
     ) -> Self {
         let uniforms = Uniforms::new();
         let uniform_buffer = uniforms.create_buffer(device);
-        let (uniform_bind_group, uniform_bind_group_layout) =
+        let (uniform_bind_group, _uniform_bind_group_layout) =
             uniforms.create_bind_group(&uniform_buffer, device);
+
+        // Create bind group layout for texture + sampler + uniforms
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Main Pipeline Bind Group Layout"),
+            entries: &[
+                // Uniform buffer (binding 0)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // Texture (binding 1)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                // Sampler (binding 2)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
 
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Main Pipeline")
             .with_shader(include_str!("../shaders/main-shader.wgsl"))
             .with_vertex_buffer(Vertex::desc())
-            .with_bind_group_layout(&uniform_bind_group_layout)
+            .with_bind_group_layout(&bind_group_layout)
             .with_blend_state(wgpu::BlendState {
                 color: wgpu::BlendComponent {
                     src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -159,7 +201,133 @@ impl GameRenderer {
             start_time: Instant::now(), // Initialize start time
             timer_bar_renderer,
             stamina_bar_renderer,
+            ceiling_texture: None,
+            ceiling_texture_view: None,
+            ceiling_sampler: None,
+            ceiling_bind_group: None,
         }
+    }
+
+    /// Loads the ceiling texture and creates the bind group for texturing
+    pub fn load_ceiling_texture(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Load the tiles texture
+        let img = image::open("assets/tiles.jpg")?;
+        let rgba = img.to_rgba8();
+        let dimensions = rgba.dimensions();
+
+        let texture_size = wgpu::Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Ceiling Texture"),
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &rgba,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
+            },
+            texture_size,
+        );
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        // Create sampler with repeat addressing for tiling
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        // Create bind group layout for texture + sampler + uniforms
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Ceiling Texture Bind Group Layout"),
+            entries: &[
+                // Uniform buffer (binding 0)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // Texture (binding 1)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                // Sampler (binding 2)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+
+        // Create bind group
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Ceiling Texture Bind Group"),
+            layout: &bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+        });
+
+        // Store the resources
+        self.ceiling_texture = Some(texture);
+        self.ceiling_texture_view = Some(texture_view);
+        self.ceiling_sampler = Some(sampler);
+        self.ceiling_bind_group = Some(bind_group);
+
+        Ok(())
     }
 
     pub fn update_depth_texture(
@@ -169,8 +337,18 @@ impl GameRenderer {
         height: u32,
     ) -> wgpu::TextureView {
         if self.depth_texture.is_none()
-            || self.depth_texture.as_ref().unwrap().width() != width
-            || self.depth_texture.as_ref().unwrap().height() != height
+            || self
+                .depth_texture
+                .as_ref()
+                .expect("Depth texture should exist")
+                .width()
+                != width
+            || self
+                .depth_texture
+                .as_ref()
+                .expect("Depth texture should exist")
+                .height()
+                != height
         {
             if let Some(depth_texture) = self.depth_texture.take() {
                 // Manually drop the texture to free up resources
@@ -194,7 +372,7 @@ impl GameRenderer {
         }
         self.depth_texture
             .as_ref()
-            .unwrap()
+            .expect("Depth texture should exist")
             .create_view(&wgpu::TextureViewDescriptor::default())
     }
 
@@ -241,7 +419,14 @@ impl GameRenderer {
             if self.vertex_count > 0 {
                 pass.set_pipeline(&self.pipeline);
                 pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-                pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+
+                // Use ceiling texture bind group if available, otherwise fall back to uniform bind group
+                if let Some(ceiling_bind_group) = &self.ceiling_bind_group {
+                    pass.set_bind_group(0, ceiling_bind_group, &[]);
+                } else {
+                    pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+                }
+
                 pass.draw(0..self.vertex_count, 0..1);
             }
 

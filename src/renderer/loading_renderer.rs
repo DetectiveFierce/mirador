@@ -278,8 +278,15 @@ impl LoadingBarRenderer {
         resolution: [f32; 2],
         time: f32,
     ) {
+        // Remap progress so the second half fills twice as fast
+        let speedup = 2.0;
+        let visual_progress = if progress > 0.5 {
+            (0.5 + (progress - 0.5) * speedup).min(1.0)
+        } else {
+            progress
+        };
         let uniforms = LoadingBarUniforms {
-            progress: progress.clamp(0.0, 1.0),
+            progress: visual_progress,
             time,
             resolution,
             _padding: [0.0; 2],

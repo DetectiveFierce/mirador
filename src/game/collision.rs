@@ -438,7 +438,9 @@ impl BVH {
         faces.sort_by(|a, b| {
             let a_center = a.aabb.center()[split_axis];
             let b_center = b.aabb.center()[split_axis];
-            a_center.partial_cmp(&b_center).unwrap()
+            a_center
+                .partial_cmp(&b_center)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Split into two groups

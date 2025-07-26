@@ -101,9 +101,12 @@ impl ApplicationHandler for App {
         if let DeviceEvent::MouseMotion { delta } = event {
             if let Some(state) = self.state.as_mut() {
                 if let Some(window) = &mut self.window {
-                    if state.game_state.current_screen == crate::game::CurrentScreen::Game
+                    if (state.game_state.current_screen == crate::game::CurrentScreen::Game
+                        || state.game_state.current_screen
+                            == crate::game::CurrentScreen::ExitReached)
                         && state.game_state.capture_mouse
                     {
+                        // Allow mouse movement in both Game and ExitReached screens
                         state.game_state.player.mouse_movement(delta.0, delta.1);
                     }
                     state.triage_mouse(window);
@@ -153,11 +156,10 @@ impl ApplicationHandler for App {
                         crate::game::CurrentScreen::Game => {
                             // Resume game
                             if !state.game_state.is_test_mode {
-                                // Only resume timer and unlock enemy in normal mode
+                                // Only resume timer in normal mode (enemy locking is handled in update loop)
                                 state.game_state.game_ui.resume_timer();
-                                state.game_state.enemy.pathfinder.locked = false;
                             }
-                            // In test mode, keep timer paused and enemy locked
+                            // In test mode, keep timer paused (enemy locking is handled in update loop)
                             // Lock cursor
                             state.game_state.capture_mouse = true;
                             // Restore game audio volumes
@@ -186,11 +188,10 @@ impl ApplicationHandler for App {
                     // Fallback: return to game
                     state.game_state.current_screen = crate::game::CurrentScreen::Game;
                     if !state.game_state.is_test_mode {
-                        // Only resume timer and unlock enemy in normal mode
+                        // Only resume timer in normal mode (enemy locking is handled in update loop)
                         state.game_state.game_ui.resume_timer();
-                        state.game_state.enemy.pathfinder.locked = false;
                     }
-                    // In test mode, keep timer paused and enemy locked
+                    // In test mode, keep timer paused (enemy locking is handled in update loop)
                     state.game_state.capture_mouse = true;
                     // Restore game audio volumes
                     state
@@ -439,10 +440,8 @@ impl ApplicationHandler for App {
                                                 Some(crate::game::CurrentScreen::Game);
                                             state.game_state.current_screen =
                                                 crate::game::CurrentScreen::Pause;
-                                            // Pause timer
+                                            // Pause timer (enemy locking is handled in update loop)
                                             state.game_state.game_ui.pause_timer();
-                                            // Lock enemy movement
-                                            state.game_state.enemy.pathfinder.locked = true;
                                             // Unlock cursor
                                             state.game_state.capture_mouse = false;
                                             // Show pause menu with current test mode state
@@ -466,15 +465,10 @@ impl ApplicationHandler for App {
                                                     crate::game::CurrentScreen::Game => {
                                                         // Resume game
                                                         if !state.game_state.is_test_mode {
-                                                            // Only resume timer and unlock enemy in normal mode
+                                                            // Only resume timer in normal mode (enemy locking is handled in update loop)
                                                             state.game_state.game_ui.resume_timer();
-                                                            state
-                                                                .game_state
-                                                                .enemy
-                                                                .pathfinder
-                                                                .locked = false;
                                                         }
-                                                        // In test mode, keep timer paused and enemy locked
+                                                        // In test mode, keep timer paused (enemy locking is handled in update loop)
                                                         // Lock cursor
                                                         state.game_state.capture_mouse = true;
                                                         // Restore game audio volumes

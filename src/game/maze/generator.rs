@@ -386,7 +386,7 @@ impl MazeGenerator {
 
         // Initialize cells
         {
-            let mut maze_lock = maze.lock().unwrap();
+            let mut maze_lock = maze.lock().expect("Failed to lock maze");
             for row in 0..height {
                 for col in 0..width {
                     let cell = Cell::new(row, col);
@@ -414,7 +414,7 @@ impl MazeGenerator {
         edges.shuffle(&mut rng);
 
         {
-            let mut maze_lock = maze.lock().unwrap();
+            let mut maze_lock = maze.lock().expect("Failed to lock maze");
             maze_lock.total_edges = edges.len();
             maze_lock.processed_edges = 0;
         }
@@ -426,7 +426,7 @@ impl MazeGenerator {
             current_edge: 0,
             generation_complete: false,
             connected_cells: HashSet::new(),
-            fast_threshold: 600, // Switch to fast mode when 600 edges remain
+            fast_threshold: 800, // Switch to fast mode when 600 edges remain
             fast_mode: false,
         };
 
@@ -440,7 +440,7 @@ impl MazeGenerator {
             if !self.generation_complete {
                 // Mark generation as complete and set random exit
                 self.generation_complete = true;
-                let mut maze = self.maze.lock().unwrap();
+                let mut maze = self.maze.lock().expect("Failed to lock maze");
                 maze.set_random_exit();
             }
             return false;
@@ -454,7 +454,7 @@ impl MazeGenerator {
         let edge = self.edges[self.current_edge];
         self.current_edge += 1;
 
-        let mut maze = self.maze.lock().unwrap();
+        let mut maze = self.maze.lock().expect("Failed to lock maze");
         maze.processed_edges += 1;
 
         if self.union_find.union(edge.cell1, edge.cell2) {

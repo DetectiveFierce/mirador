@@ -150,6 +150,9 @@ pub fn setup_test_environment(game_state: &mut GameState, wgpu_renderer: &mut Wg
     // Add wall vertices (test mode always uses perimeter walls)
     floor_vertices.append(&mut Vertex::create_wall_vertices(&maze_grid, true));
 
+    // Add ceiling vertices
+    floor_vertices.append(&mut Vertex::create_ceiling_vertices(&maze_grid, true));
+
     // Create vertex buffer
     wgpu_renderer.game_renderer.vertex_buffer =
         wgpu_renderer

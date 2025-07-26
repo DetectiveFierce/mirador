@@ -35,6 +35,7 @@ pub struct GameAudioManager {
     movement_state: MovementState,
     wall_hit_cooldown: Duration,
     last_wall_hit: Option<Instant>,
+    pub beeper_rise_data: StaticSoundData,
 }
 
 impl GameAudioManager {
@@ -54,6 +55,7 @@ impl GameAudioManager {
         let upgrade_data = StaticSoundData::from_file("assets/audio/upgrade.ogg")?;
         let background_music_data =
             StaticSoundData::from_file("assets/audio/music/Mirador Main Track.ogg")?;
+        let beeper_rise_data = StaticSoundData::from_file("assets/audio/beeper-rise.ogg")?;
 
         let mut audio_manager_instance = GameAudioManager {
             audio_manager,
@@ -67,6 +69,7 @@ impl GameAudioManager {
             select_data,
             upgrade_data,
             background_music_data,
+            beeper_rise_data,
             background_music_handle: None,
             spatial_tracks: HashMap::new(),
             movement_state: MovementState::Idle,
@@ -109,8 +112,7 @@ impl GameAudioManager {
     /// Adjust audio volumes for title screen (louder background music, quieter enemies)
     pub fn set_title_screen_volumes(&mut self) -> Result<(), Box<dyn Error>> {
         // Make background music louder on title screen
-        if self.background_music_handle.is_some() {
-            let handle = self.background_music_handle.as_mut().unwrap();
+        if let Some(handle) = self.background_music_handle.as_mut() {
             let tween = Tween {
                 start_time: StartTime::Immediate,
                 duration: Duration::from_millis(500), // Smooth transition
@@ -139,8 +141,7 @@ impl GameAudioManager {
     /// Adjust audio volumes for pause menu (softer background music)
     pub fn set_pause_menu_volumes(&mut self) -> Result<(), Box<dyn Error>> {
         // Make background music softer when pause menu is open
-        if self.background_music_handle.is_some() {
-            let handle = self.background_music_handle.as_mut().unwrap();
+        if let Some(handle) = self.background_music_handle.as_mut() {
             let tween = Tween {
                 start_time: StartTime::Immediate,
                 duration: Duration::from_millis(100), // Quick transition
@@ -155,8 +156,7 @@ impl GameAudioManager {
     /// Reset audio volumes to normal game levels
     pub fn set_game_volumes(&mut self) -> Result<(), Box<dyn Error>> {
         // Reset background music to normal volume
-        if self.background_music_handle.is_some() {
-            let handle = self.background_music_handle.as_mut().unwrap();
+        if let Some(handle) = self.background_music_handle.as_mut() {
             let tween = Tween {
                 start_time: StartTime::Immediate,
                 duration: Duration::from_millis(500), // Smooth transition
@@ -406,6 +406,12 @@ impl GameAudioManager {
 
     pub fn play_upgrade(&mut self) -> Result<(), Box<dyn Error>> {
         self.audio_manager.play(self.upgrade_data.clone())?;
+        Ok(())
+    }
+
+    /// Play the beeper-rise sound effect
+    pub fn play_beeper_rise(&mut self) -> Result<(), Box<dyn Error>> {
+        self.audio_manager.play(self.beeper_rise_data.clone())?;
         Ok(())
     }
 }

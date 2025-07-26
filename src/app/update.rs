@@ -85,7 +85,7 @@ impl App {
                     .loading_screen_renderer
                     .maze
                     .lock()
-                    .unwrap()
+                    .expect("Failed to lock maze")
                     .walls,
                 state.game_state.is_test_mode,
             );
@@ -374,6 +374,27 @@ impl App {
         // the "SurfaceSemaphores still in use" error during cleanup
         state.wgpu_renderer.device.poll(wgpu::Maintain::Poll);
 
+        // Manage enemy locked state based on timer and test mode
+        if state.game_state.current_screen == CurrentScreen::Game {
+            if state.game_state.is_test_mode {
+                // Always keep enemy locked in test mode
+                state.game_state.enemy.pathfinder.locked = true;
+            } else if state.game_state.game_ui.timer.is_some() {
+                // In normal mode, unlock enemy only when timer is running (not paused)
+                if let Some(timer) = &state.game_state.game_ui.timer {
+                    if timer.is_running && timer.paused_at.is_none() {
+                        state.game_state.enemy.pathfinder.locked = false;
+                    } else {
+                        // Lock enemy when timer is paused or stopped
+                        state.game_state.enemy.pathfinder.locked = true;
+                    }
+                }
+            } else {
+                // Lock enemy when no timer exists
+                state.game_state.enemy.pathfinder.locked = true;
+            }
+        }
+
         // Update enemy pathfinding
         state.game_state.enemy.update(
             state.game_state.player.position,
@@ -400,18 +421,33 @@ impl App {
         } else if state.game_state.current_screen == CurrentScreen::Game
             && Some(state.game_state.player.current_cell) == state.game_state.exit_cell
         {
+            // Transition to ExitReached screen
+            state.game_state.current_screen = CurrentScreen::ExitReached;
+            state.game_state.exit_reached_timer = 0.0;
             state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
             state.game_state.enemy.pathfinder.locked = true;
+            if !state.game_state.beeper_rise_played {
+                let _ = state.game_state.audio_manager.play_beeper_rise();
+                state.game_state.beeper_rise_played = true;
+            }
+        } else if state.game_state.current_screen == CurrentScreen::ExitReached {
+            // Handle exit reached upward movement
+            state.game_state.exit_reached_timer += state.game_state.delta_time;
 
-            // Check if we should show upgrade menu (every 3 levels)
-            let current_level = state.game_state.game_ui.level;
-            if current_level > 0 && current_level % 3 == 0 {
-                // Show upgrade menu
-                state.game_state.current_screen = CurrentScreen::UpgradeMenu;
-                state.upgrade_menu.show();
+            // Move player upward for 3 seconds
+            if state.game_state.exit_reached_timer < 1.0 {
+                state.game_state.player.move_up(state.game_state.delta_time);
             } else {
-                // Continue to next level
-                self.new_level(false);
+                // After 3 seconds, transition to appropriate next screen
+                let current_level = state.game_state.game_ui.level;
+                if current_level > 0 && current_level % 3 == 0 {
+                    // Show upgrade menu
+                    state.game_state.current_screen = CurrentScreen::UpgradeMenu;
+                    state.upgrade_menu.show();
+                } else {
+                    // Continue to next level
+                    self.new_level(false);
+                }
             }
         } else if state.game_state.current_screen == CurrentScreen::Game {
             state
@@ -419,9 +455,6 @@ impl App {
                 .audio_manager
                 .resume_enemy_audio("enemy")
                 .expect("Failed to resume enemy audio");
-            if !state.game_state.is_test_mode {
-                state.game_state.enemy.pathfinder.locked = false;
-            }
         }
     }
 
@@ -501,7 +534,7 @@ impl App {
 
             // Process animation steps
             let steps = if renderer.generator.fast_mode {
-                300
+                2000
             } else {
                 100
             };
@@ -522,6 +555,15 @@ impl App {
                     (current as f32 * 100.0 / total.max(1) as f32)
                 );
             }
+
+            // Complete generation all at once if less than 10% remains
+            let progress_ratio = current as f32 / total.max(1) as f32;
+            if progress_ratio > 0.7 && !renderer.generator.is_complete() {
+                while !renderer.generator.is_complete() {
+                    renderer.generator.step();
+                }
+            }
+
             if renderer.generator.is_complete() && state.game_state.maze_path.is_none() {
                 println!("Maze generation complete! Saving to file...");
 
@@ -571,7 +613,7 @@ impl App {
                 // Handle completion
                 if renderer.generator.is_complete() {
                     println!("Maze generation complete! Saving to file...");
-                    let maze_lock = renderer.maze.lock().unwrap();
+                    let maze_lock = renderer.maze.lock().expect("Failed to lock maze");
                     state.game_state.maze_path = maze_lock.save_to_file().map_or_else(
                         |err| {
                             eprintln!("Failed to save maze: {}", err);
@@ -582,7 +624,11 @@ impl App {
 
                     // Generate geometry if maze was saved successfully
                     if let Some(maze_path) = &state.game_state.maze_path {
-                        let (maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
+                        let (maze_grid, exit_cell) = parse_maze_file(
+                            maze_path
+                                .to_str()
+                                .expect("Failed to convert path to string"),
+                        );
                         let (mut floor_vertices, exit_position) = Vertex::create_floor_vertices(
                             &maze_grid,
                             exit_cell,
@@ -592,6 +638,12 @@ impl App {
                         state.wgpu_renderer.game_renderer.exit_position = Some(exit_position);
 
                         floor_vertices.append(&mut Vertex::create_wall_vertices(
+                            &maze_grid,
+                            state.game_state.is_test_mode,
+                        ));
+
+                        // Add ceiling vertices
+                        floor_vertices.append(&mut Vertex::create_ceiling_vertices(
                             &maze_grid,
                             state.game_state.is_test_mode,
                         ));
@@ -665,10 +717,15 @@ impl App {
         } else {
             // Only reset position (x/z), orientation, and cell, not stats or height
             let player = &mut state.game_state.player;
-            let current_height = player.position[1];
             player.position[0] = 0.0;
             player.position[2] = 0.0;
-            player.position[1] = current_height; // preserve height
+            // Set height based on TallBoots upgrades
+            let tall_boots_count = state
+                .upgrade_menu
+                .upgrade_manager
+                .get_upgrade_count(&crate::game::upgrades::AvailableUpgrade::TallBoots);
+            player.position[1] = crate::math::coordinates::constants::PLAYER_HEIGHT
+                + 3.0 * (tall_boots_count as f32);
             player.pitch = 3.0;
             player.yaw = 316.0;
             player.fov = 100.0;
@@ -680,6 +737,8 @@ impl App {
         state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
         state.game_state.enemy.pathfinder.locked = true;
         state.game_state.exit_cell = None; // Clear exit cell to prevent accidental win condition
+        state.game_state.exit_reached_timer = 0.0; // Reset exit reached timer
+        state.game_state.beeper_rise_played = false; // Reset beeper rise played flag
 
         // Stop and reset timer
         if let Some(timer) = &mut state.game_state.game_ui.timer {

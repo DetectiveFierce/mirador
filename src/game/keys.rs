@@ -109,7 +109,9 @@ impl KeyState {
                 .expect("Failed to start sprinting sound");
         }
 
-        if game_state.current_screen == CurrentScreen::Game {
+        if game_state.current_screen == CurrentScreen::Game
+            || game_state.current_screen == CurrentScreen::ExitReached
+        {
             // Handle movement audio based on current state
             if is_moving {
                 if is_sprinting {
