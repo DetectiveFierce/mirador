@@ -9,7 +9,7 @@
 //! - Loads maze geometry and floor/wall vertices
 //! - Renders a starfield background and animated loading screen
 //! - Handles depth buffering and uniform updates for camera/player movement
-//! - Integrates with egui for UI overlays
+//! - Integrates with custom UI system for overlays
 //!
 //! # Usage
 //! Create a [`WgpuRenderer`] via [`WgpuRenderer::new`] and call [`WgpuRenderer::update_canvas`]

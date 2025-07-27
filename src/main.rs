@@ -7,7 +7,7 @@
 //! # Features
 //! - **3D Graphics**: Real-time 3D rendering using WGPU
 //! - **Procedural Generation**: Dynamically generated mazes with increasing complexity
-//! - **Enemy AI**: A* pathfinding enemy that pursues the player
+//! - **Enemy AI**: Rotation-based pathfinding enemy that pursues the player
 //! - **Audio System**: 3D spatial audio with multiple sound sources
 //! - **Progression System**: Player upgrades and level-based difficulty scaling
 //! - **Test Mode**: Development mode with simplified gameplay for testing
