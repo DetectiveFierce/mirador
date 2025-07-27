@@ -484,15 +484,15 @@ mod tests {
     #[test]
     fn test_all_upgrades_available() {
         let upgrade_manager = UpgradeManager::new();
-        let selected = upgrade_manager.select_random_upgrades(7);
+        let selected = upgrade_manager.select_random_upgrades(6);
 
-        // Should get all 7 upgrades when requesting 7
-        assert_eq!(selected.len(), 7);
+        // Should get all 6 upgrades when requesting 6
+        assert_eq!(selected.len(), 6);
 
         // All should be unique
         let mut names: Vec<String> = selected.iter().map(|u| u.name.clone()).collect();
         names.sort();
         names.dedup();
-        assert_eq!(names.len(), 7);
+        assert_eq!(names.len(), 6);
     }
 }

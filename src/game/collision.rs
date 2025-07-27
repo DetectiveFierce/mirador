@@ -413,12 +413,15 @@ impl BVH {
     /// 1. If no faces are provided, the BVH is set to empty (None)
     /// 2. Otherwise, the recursive building process is initiated
     pub fn build(&mut self, faces: Vec<WallFace>) {
-        if faces.is_empty() {
-            self.root = None;
-            return;
-        }
+        // Use benchmark macro for BVH build timing
+        crate::benchmark!("bvh_build", {
+            if faces.is_empty() {
+                self.root = None;
+                return;
+            }
 
-        self.root = Some(Self::build_recursive(faces));
+            self.root = Some(Self::build_recursive(faces));
+        });
     }
 
     /// Recursively builds the BVH tree structure.
@@ -609,11 +612,14 @@ impl BVH {
     /// where n is the total number of faces and k is the number of potentially
     /// colliding faces.
     pub fn query_collisions(&self, player_aabb: &AABB) -> Vec<&WallFace> {
-        let mut results = Vec::new();
-        if let Some(ref root) = self.root {
-            Self::query_recursive(root, player_aabb, &mut results);
-        }
-        results
+        // Use benchmark macro for BVH query timing
+        crate::benchmark!("bvh_query_collisions", {
+            let mut results = Vec::new();
+            if let Some(ref root) = self.root {
+                Self::query_recursive(root, player_aabb, &mut results);
+            }
+            results
+        })
     }
 
     /// Recursively queries the BVH tree for potential collisions.
@@ -747,10 +753,13 @@ impl CollisionSystem {
     /// collision_system.build_from_maze(&maze.grid, false);
     /// ```
     pub fn build_from_maze(&mut self, maze_grid: &[Vec<bool>], is_test_mode: bool) {
-        // Store maze dimensions
-        self.maze_dimensions = (maze_grid[0].len(), maze_grid.len());
-        let wall_faces = self.extract_wall_faces_from_maze(maze_grid, is_test_mode);
-        self.bvh.build(wall_faces);
+        // Use benchmark macro for collision system build timing
+        crate::benchmark!("collision_system_build", {
+            // Store maze dimensions
+            self.maze_dimensions = (maze_grid[0].len(), maze_grid.len());
+            let wall_faces = self.extract_wall_faces_from_maze(maze_grid, is_test_mode);
+            self.bvh.build(wall_faces);
+        });
     }
 
     /// Extracts wall faces from the maze grid for collision detection.
@@ -1101,103 +1110,106 @@ impl CollisionSystem {
         current_pos: [f32; 3],
         desired_pos: [f32; 3],
     ) -> [f32; 3] {
-        // Create player AABB
-        let player_aabb = AABB::new(
-            [
-                desired_pos[0] - self.player_radius,
-                desired_pos[1],
-                desired_pos[2] - self.player_radius,
-            ],
-            [
-                desired_pos[0] + self.player_radius,
-                desired_pos[1] + self.player_height,
-                desired_pos[2] + self.player_radius,
-            ],
-        );
-
-        // Query BVH for potential collisions
-        let potential_collisions = self.bvh.query_collisions(&player_aabb);
-
-        if potential_collisions.is_empty() {
-            return desired_pos;
-        }
-
-        // NEW: Check if player is stuck between opposing faces
-        if self.is_stuck_between_faces(&potential_collisions, current_pos) {
-            // Return to a safe position
-            return self.find_safe_position(current_pos);
-        }
-
-        // Perform collision resolution with wall sliding
-        let mut resolved_pos = desired_pos;
-        let max_iterations = 5;
-
-        for _ in 0..max_iterations {
-            // Create player AABB at current resolved position
+        // Use benchmark macro for collision detection timing
+        crate::benchmark!("collision_detection_and_resolution", {
+            // Create player AABB
             let player_aabb = AABB::new(
                 [
-                    resolved_pos[0] - self.player_radius,
-                    resolved_pos[1],
-                    resolved_pos[2] - self.player_radius,
+                    desired_pos[0] - self.player_radius,
+                    desired_pos[1],
+                    desired_pos[2] - self.player_radius,
                 ],
                 [
-                    resolved_pos[0] + self.player_radius,
-                    resolved_pos[1] + self.player_height,
-                    resolved_pos[2] + self.player_radius,
+                    desired_pos[0] + self.player_radius,
+                    desired_pos[1] + self.player_height,
+                    desired_pos[2] + self.player_radius,
                 ],
             );
 
-            // Check for collisions at this position
+            // Query BVH for potential collisions
             let potential_collisions = self.bvh.query_collisions(&player_aabb);
+
             if potential_collisions.is_empty() {
-                break; // No collisions, we're done
+                return desired_pos;
             }
 
-            // Resolve the closest collision first
-            // (This requires adding a distance calculation)
-            let mut closest_face = &potential_collisions[0];
-            let mut closest_distance = f32::MAX;
+            // NEW: Check if player is stuck between opposing faces
+            if self.is_stuck_between_faces(&potential_collisions, current_pos) {
+                // Return to a safe position
+                return self.find_safe_position(current_pos);
+            }
 
-            for face in &potential_collisions {
-                let face_center = face.aabb.center();
-                let distance = ((face_center[0] - resolved_pos[0]).powi(2)
-                    + (face_center[1] - resolved_pos[1]).powi(2)
-                    + (face_center[2] - resolved_pos[2]).powi(2))
-                .sqrt();
+            // Perform collision resolution with wall sliding
+            let mut resolved_pos = desired_pos;
+            let max_iterations = 5;
 
-                if distance < closest_distance {
-                    closest_distance = distance;
-                    closest_face = face;
+            for _ in 0..max_iterations {
+                // Create player AABB at current resolved position
+                let player_aabb = AABB::new(
+                    [
+                        resolved_pos[0] - self.player_radius,
+                        resolved_pos[1],
+                        resolved_pos[2] - self.player_radius,
+                    ],
+                    [
+                        resolved_pos[0] + self.player_radius,
+                        resolved_pos[1] + self.player_height,
+                        resolved_pos[2] + self.player_radius,
+                    ],
+                );
+
+                // Check for collisions at this position
+                let potential_collisions = self.bvh.query_collisions(&player_aabb);
+                if potential_collisions.is_empty() {
+                    break; // No collisions, we're done
+                }
+
+                // Resolve the closest collision first
+                // (This requires adding a distance calculation)
+                let mut closest_face = &potential_collisions[0];
+                let mut closest_distance = f32::MAX;
+
+                for face in &potential_collisions {
+                    let face_center = face.aabb.center();
+                    let distance = ((face_center[0] - resolved_pos[0]).powi(2)
+                        + (face_center[1] - resolved_pos[1]).powi(2)
+                        + (face_center[2] - resolved_pos[2]).powi(2))
+                    .sqrt();
+
+                    if distance < closest_distance {
+                        closest_distance = distance;
+                        closest_face = face;
+                    }
+                }
+
+                // Resolve only the closest collision
+                let movement = [
+                    resolved_pos[0] - current_pos[0],
+                    resolved_pos[1] - current_pos[1],
+                    resolved_pos[2] - current_pos[2],
+                ];
+
+                resolved_pos = self.resolve_wall_collision(
+                    audio_manager,
+                    current_pos,
+                    resolved_pos,
+                    movement,
+                    closest_face,
+                );
+
+                // If position didn't change significantly, we're stuck - break out
+                let epsilon = 0.0001;
+                let position_changed = (resolved_pos[0] - current_pos[0]).abs() > epsilon
+                    || (resolved_pos[1] - current_pos[1]).abs() > epsilon
+                    || (resolved_pos[2] - current_pos[2]).abs() > epsilon;
+
+                if !position_changed {
+                    break;
                 }
             }
 
-            // Resolve only the closest collision
-            let movement = [
-                resolved_pos[0] - current_pos[0],
-                resolved_pos[1] - current_pos[1],
-                resolved_pos[2] - current_pos[2],
-            ];
-
-            resolved_pos = self.resolve_wall_collision(
-                audio_manager,
-                current_pos,
-                resolved_pos,
-                movement,
-                closest_face,
-            );
-
-            // If position didn't change significantly, we're stuck - break out
-            let epsilon = 0.0001;
-            let position_changed = (resolved_pos[0] - current_pos[0]).abs() > epsilon
-                || (resolved_pos[1] - current_pos[1]).abs() > epsilon
-                || (resolved_pos[2] - current_pos[2]).abs() > epsilon;
-
-            if !position_changed {
-                break;
-            }
-        }
-
-        resolved_pos
+            resolved_pos
+        })
     }
 
     /// Detects if the player is stuck between opposing wall faces.
@@ -1488,29 +1500,32 @@ impl CollisionSystem {
         end: [f32; 3],
         radius: f32,
     ) -> bool {
-        // Create expanded AABB for the cylinder path
-        let cylinder_aabb = AABB::new(
-            [
-                start[0].min(end[0]) - radius,
-                start[1].min(end[1]) - radius,
-                start[2].min(end[2]) - radius,
-            ],
-            [
-                start[0].max(end[0]) + radius,
-                start[1].max(end[1]) + radius,
-                start[2].max(end[2]) + radius,
-            ],
-        );
+        // Use benchmark macro for cylinder intersection timing
+        crate::benchmark!("cylinder_intersects_geometry", {
+            // Create expanded AABB for the cylinder path
+            let cylinder_aabb = AABB::new(
+                [
+                    start[0].min(end[0]) - radius,
+                    start[1].min(end[1]) - radius,
+                    start[2].min(end[2]) - radius,
+                ],
+                [
+                    start[0].max(end[0]) + radius,
+                    start[1].max(end[1]) + radius,
+                    start[2].max(end[2]) + radius,
+                ],
+            );
 
-        let potential_faces = self.bvh.query_collisions(&cylinder_aabb);
+            let potential_faces = self.bvh.query_collisions(&cylinder_aabb);
 
-        for face in &potential_faces {
-            if self.cylinder_intersects_wall_face(start, end, radius, face) {
-                return true;
+            for face in &potential_faces {
+                if self.cylinder_intersects_wall_face(start, end, radius, face) {
+                    return true;
+                }
             }
-        }
 
-        false
+            false
+        })
     }
 
     /// Performs cylinder-wall face intersection test.

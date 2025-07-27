@@ -39,6 +39,8 @@ pub enum GameKey {
     ToggleBoundingBoxes,
     /// Toggle Upgrade Menu (U).
     ToggleUpgradeMenu,
+    /// Save Benchmark Results (F5).
+    SaveBenchmark,
 }
 
 /// Tracks the set of currently pressed game keys.
@@ -215,6 +217,7 @@ pub fn winit_key_to_game_key(key: &keyboard::Key) -> Option<GameKey> {
             Shift => GameKey::Sprint,
             Space => GameKey::Jump,
             Escape => GameKey::Escape,
+            F5 => GameKey::SaveBenchmark,
         }),
 
         keyboard::Key::Character(c) => match_char_key!(c, {

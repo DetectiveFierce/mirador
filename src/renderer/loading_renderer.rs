@@ -47,19 +47,44 @@ impl LoadingRenderer {
     /// # Returns
     /// A fully initialized LoadingRenderer ready to render maze generation
     pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
-        // Initialize maze generation with fixed dimensions
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+        // Initialize profiler for LoadingRenderer initialization benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
+        // Benchmark maze generation initialization
+        init_profiler.start_section("maze_generation_initialization");
         let maze_width = 25;
         let maze_height = 25;
         let (generator, maze) = MazeGenerator::new(maze_width, maze_height);
+        init_profiler.end_section("maze_generation_initialization");
 
-        // Calculate render dimensions and create GPU texture
+        // Benchmark maze texture creation
+        init_profiler.start_section("maze_texture_creation");
         let config = MazeRenderConfig::new(maze_width as u32, maze_height as u32);
         let (texture, texture_view, sampler) = config.create_maze_texture(device);
+        init_profiler.end_section("maze_texture_creation");
 
-        // Initialize all rendering components with their respective pipelines
+        // Benchmark maze renderer initialization
+        init_profiler.start_section("maze_renderer_initialization");
         let maze_renderer = MazeRenderer::new(device, surface_config, &texture_view, &sampler);
+        init_profiler.end_section("maze_renderer_initialization");
+
+        // Benchmark loading bar renderer initialization
+        init_profiler.start_section("loading_bar_renderer_init");
         let loading_bar_renderer = LoadingBarRenderer::new(device, surface_config);
+        init_profiler.end_section("loading_bar_renderer_init");
+
+        // Benchmark exit shader renderer initialization
+        init_profiler.start_section("exit_shader_renderer_init");
         let exit_shader_renderer = ExitShaderRenderer::new(device, surface_config);
+        init_profiler.end_section("exit_shader_renderer_init");
 
         Self {
             generator,

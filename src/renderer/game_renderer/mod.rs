@@ -212,12 +212,27 @@ impl GameRenderer {
         queue: &wgpu::Queue,
         surface_config: &wgpu::SurfaceConfiguration,
     ) -> Self {
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+        // Initialize profiler for GameRenderer initialization benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
+        // Benchmark uniform buffer creation
+        init_profiler.start_section("uniform_buffer_creation");
         let uniforms = Uniforms::new();
         let uniform_buffer = uniforms.create_buffer(device);
         let (uniform_bind_group, _uniform_bind_group_layout) =
             uniforms.create_bind_group(&uniform_buffer, device);
+        init_profiler.end_section("uniform_buffer_creation");
 
-        // Create bind group layout for texture + sampler + uniforms
+        // Benchmark bind group layout creation
+        init_profiler.start_section("bind_group_layout_creation");
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Main Pipeline Bind Group Layout"),
             entries: &[
@@ -252,7 +267,10 @@ impl GameRenderer {
                 },
             ],
         });
+        init_profiler.end_section("bind_group_layout_creation");
 
+        // Benchmark main pipeline creation
+        init_profiler.start_section("main_pipeline_creation");
         let pipeline = PipelineBuilder::new(device, surface_config.format)
             .with_label("Main Pipeline")
             .with_shader(include_str!("../shaders/main-shader.wgsl"))
@@ -275,28 +293,53 @@ impl GameRenderer {
                 bias: wgpu::DepthBiasState::default(),
             })
             .build();
+        init_profiler.end_section("main_pipeline_creation");
 
-        // Initialize vertex buffer - will be set up properly when maze is loaded
+        // Benchmark vertex buffer creation
+        init_profiler.start_section("vertex_buffer_creation");
         let empty_vertices: Vec<Vertex> = Vec::new();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Initial Vertex Buffer"),
             contents: bytemuck::cast_slice(&empty_vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
+        init_profiler.end_section("vertex_buffer_creation");
 
+        // Benchmark star renderer creation
+        init_profiler.start_section("star_renderer_creation");
         let star_renderer = stars::create_star_renderer(device, surface_config, 100);
+        init_profiler.end_section("star_renderer_creation");
 
+        // Benchmark debug renderer creation
+        init_profiler.start_section("debug_renderer_creation");
         let debug_renderer = DebugRenderer {
             debug_render_bounding_boxes: false,
             debug_vertex_buffer: None,
             debug_vertex_count: 0,
         };
+        init_profiler.end_section("debug_renderer_creation");
 
+        // Benchmark compass renderer creation
+        init_profiler.start_section("compass_renderer_creation");
         let compass_renderer = CompassRenderer::new(device, queue, surface_config);
+        init_profiler.end_section("compass_renderer_creation");
+
+        // Benchmark enemy renderer creation
+        init_profiler.start_section("enemy_renderer_creation");
         let enemy = Enemy::new([-1370.0, 50.0, 1370.0], 100.0);
         let enemy_renderer = EnemyRenderer::new(enemy, device, queue, surface_config);
+        init_profiler.end_section("enemy_renderer_creation");
+
+        // Benchmark timer bar renderer creation
+        init_profiler.start_section("timer_bar_renderer_creation");
         let timer_bar_renderer = TimerBarRenderer::new(device, surface_config);
+        init_profiler.end_section("timer_bar_renderer_creation");
+
+        // Benchmark stamina bar renderer creation
+        init_profiler.start_section("stamina_bar_renderer_creation");
         let stamina_bar_renderer = StaminaBarRenderer::new(device, surface_config);
+        init_profiler.end_section("stamina_bar_renderer_creation");
+
         Self {
             pipeline,
             vertex_buffer,

@@ -175,13 +175,47 @@ impl TextRenderer {
         surface_format: wgpu::TextureFormat,
         window: &Window,
     ) -> Self {
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+        // Initialize profiler for TextRenderer initialization benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
+        // Benchmark font system initialization
+        init_profiler.start_section("font_system_initialization");
         let font_system = FontSystem::new();
+        init_profiler.end_section("font_system_initialization");
+
+        // Benchmark swash cache creation
+        init_profiler.start_section("swash_cache_creation");
         let swash_cache = SwashCache::new();
+        init_profiler.end_section("swash_cache_creation");
+
+        // Benchmark cache creation
+        init_profiler.start_section("cache_creation");
         let cache = Cache::new(device);
+        init_profiler.end_section("cache_creation");
+
+        // Benchmark viewport creation
+        init_profiler.start_section("viewport_creation");
         let viewport = Viewport::new(device, &cache);
+        init_profiler.end_section("viewport_creation");
+
+        // Benchmark text atlas creation
+        init_profiler.start_section("text_atlas_creation");
         let mut atlas = TextAtlas::new(device, queue, &cache, surface_format);
+        init_profiler.end_section("text_atlas_creation");
+
+        // Benchmark glyph renderer creation
+        init_profiler.start_section("glyph_renderer_creation");
         let glyph_renderer =
             GlyphonTextRenderer::new(&mut atlas, device, wgpu::MultisampleState::default(), None);
+        init_profiler.end_section("glyph_renderer_creation");
 
         let size = window.inner_size();
 
@@ -196,7 +230,8 @@ impl TextRenderer {
             loaded_fonts: Vec::new(),
         };
 
-        // Try to load the custom font, but don't fail if it doesn't exist
+        // Benchmark custom font loading
+        init_profiler.start_section("custom_font_loading");
         match renderer.load_font(
             "fonts/HankenGrotesk/HankenGrotesk-Medium.ttf",
             "HankenGrotesk",
@@ -209,6 +244,7 @@ impl TextRenderer {
                 );
             }
         }
+        init_profiler.end_section("custom_font_loading");
 
         renderer
     }

@@ -3,6 +3,7 @@
 //! This module defines the [`AppState`] struct, which holds all state required for a running
 //! game session, including rendering backends, UI state, game logic, and input state.
 
+use crate::benchmarks::{FrameRateCounter, Profiler};
 use crate::game::enemy::Enemy;
 use crate::game::{self, CurrentScreen, GameState, TimerConfig, keys::KeyState};
 use crate::renderer::text::TextRenderer;
@@ -33,6 +34,10 @@ pub struct AppState {
     pub pause_menu: crate::renderer::ui::pause_menu::PauseMenu,
     /// The upgrade menu UI component.
     pub upgrade_menu: crate::renderer::ui::upgrade_menu::UpgradeMenu,
+    /// Performance profiler for benchmarking
+    pub profiler: Profiler,
+    /// Frame rate counter for monitoring rendering performance
+    pub fps_counter: FrameRateCounter,
 }
 
 impl AppState {
@@ -51,15 +56,33 @@ impl AppState {
         width: u32,
         height: u32,
     ) -> Self {
-        window.set_cursor_visible(false);
-        let wgpu_renderer = WgpuRenderer::new(instance, surface, width, height).await;
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
 
+        // Initialize profiler for detailed initialization benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
+        window.set_cursor_visible(false);
+
+        // Benchmark WgpuRenderer initialization (most taxing part)
+        init_profiler.start_section("wgpu_renderer_initialization");
+        let wgpu_renderer = WgpuRenderer::new(instance, surface, width, height).await;
+        init_profiler.end_section("wgpu_renderer_initialization");
+
+        // Benchmark TextRenderer initialization
+        init_profiler.start_section("text_renderer_initialization");
         let mut text_renderer = TextRenderer::new(
             &wgpu_renderer.device,
             &wgpu_renderer.queue,
             wgpu_renderer.surface_config.format,
             window,
         );
+        init_profiler.end_section("text_renderer_initialization");
 
         // Check if font loading was successful
         if text_renderer.loaded_fonts.is_empty() {
@@ -69,25 +92,34 @@ impl AppState {
         }
 
         let game_state = GameState::new();
-        // Initialize all game UI elements
+
+        // Benchmark game UI initialization
+        init_profiler.start_section("game_ui_initialization");
         game::initialize_game_ui(&mut text_renderer, &game_state.game_ui, window);
+        init_profiler.end_section("game_ui_initialization");
 
         // Create game over display
         text_renderer.create_game_over_display(width, height);
 
+        // Benchmark pause menu creation
+        init_profiler.start_section("pause_menu_creation");
         let pause_menu = crate::renderer::ui::pause_menu::PauseMenu::new(
             &wgpu_renderer.device,
             &wgpu_renderer.queue,
             wgpu_renderer.surface_config.format,
             window,
         );
+        init_profiler.end_section("pause_menu_creation");
 
+        // Benchmark upgrade menu creation
+        init_profiler.start_section("upgrade_menu_creation");
         let upgrade_menu = crate::renderer::ui::upgrade_menu::UpgradeMenu::new(
             &wgpu_renderer.device,
             &wgpu_renderer.queue,
             wgpu_renderer.surface_config.format,
             window,
         );
+        init_profiler.end_section("upgrade_menu_creation");
 
         // Add big boldMirador' text in the top right for the title screen
         let width = wgpu_renderer.surface_config.width as f32;
@@ -139,6 +171,18 @@ impl AppState {
             Some(subtitle_position),
         );
 
+        // Initialize benchmarking components
+        let benchmark_config = BenchmarkConfig {
+            enabled: cfg!(debug_assertions),
+            print_results: false, // Disable console output
+            write_to_file: true,
+            min_duration_threshold: Duration::from_micros(100),
+            max_samples: 2000,
+        };
+
+        let profiler = Profiler::new(benchmark_config);
+        let fps_counter = FrameRateCounter::new(120);
+
         Self {
             wgpu_renderer,
             game_state,
@@ -148,6 +192,8 @@ impl AppState {
             elapsed_time: Duration::default(),
             pause_menu,
             upgrade_menu,
+            profiler,
+            fps_counter,
         }
     }
 

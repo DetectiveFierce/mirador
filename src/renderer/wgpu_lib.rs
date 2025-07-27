@@ -55,23 +55,60 @@ impl WgpuRenderer {
         width: u32,
         height: u32,
     ) -> Self {
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+        // Initialize profiler for WGPU initialization benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
+        // Benchmark adapter creation
+        init_profiler.start_section("wgpu_adapter_creation");
         let adapter = Self::create_adapter(instance, &surface).await;
+        init_profiler.end_section("wgpu_adapter_creation");
+
+        // Benchmark device and queue creation
+        init_profiler.start_section("wgpu_device_queue_creation");
         let (device, queue) = Self::create_device(&adapter).await;
+        init_profiler.end_section("wgpu_device_queue_creation");
+
+        // Benchmark surface configuration
+        init_profiler.start_section("wgpu_surface_configuration");
         let surface_config = Self::create_surface_config(&surface, &adapter, width, height);
-
         surface.configure(&device, &surface_config);
+        init_profiler.end_section("wgpu_surface_configuration");
 
+        // Benchmark GameRenderer initialization
+        init_profiler.start_section("game_renderer_initialization");
         let mut game_renderer = GameRenderer::new(&device, &queue, &surface_config);
+        init_profiler.end_section("game_renderer_initialization");
 
-        // Load ceiling texture
+        // Benchmark ceiling texture loading
+        init_profiler.start_section("ceiling_texture_loading");
         if let Err(e) = game_renderer.load_ceiling_texture(&device, &queue) {
             eprintln!("Failed to load ceiling texture: {}", e);
         }
+        init_profiler.end_section("ceiling_texture_loading");
 
+        // Benchmark LoadingRenderer initialization
+        init_profiler.start_section("loading_renderer_init");
         let loading_screen_renderer = LoadingRenderer::new(&device, &surface_config);
+        init_profiler.end_section("loading_renderer_init");
+
+        // Benchmark GameOverRenderer initialization
+        init_profiler.start_section("game_over_renderer_init");
         let game_over_renderer = GameOverRenderer::new(&device, &surface_config);
+        init_profiler.end_section("game_over_renderer_init");
+
+        // Benchmark TitleRenderer initialization
+        init_profiler.start_section("title_renderer_initialization");
         let title_renderer =
             crate::renderer::title::TitleRenderer::new(&device, &queue, &surface_config);
+        init_profiler.end_section("title_renderer_initialization");
 
         Self {
             surface,
@@ -613,8 +650,11 @@ impl WgpuRenderer {
             timestamp_writes: None,
         });
 
-        self.game_renderer
-            .render_game(&self.queue, game_state, &mut main_pass, aspect);
+        // Use benchmark macro for game rendering timing
+        crate::debug_benchmark!("game_objects_rendering", {
+            self.game_renderer
+                .render_game(&self.queue, game_state, &mut main_pass, aspect);
+        });
     }
 
     fn render_compass(

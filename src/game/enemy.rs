@@ -400,15 +400,18 @@ impl EnemyPathfinder {
     where
         F: Fn([f32; 3], [f32; 3]) -> bool,
     {
-        // Update stuck detection with level-based tolerance
-        self.update_stuck_detection(level);
+        // Use benchmark macro for pathfinding timing
+        crate::benchmark!("enemy_pathfinding_update", {
+            // Update stuck detection with level-based tolerance
+            self.update_stuck_detection(level);
 
-        // Check if we need to calculate a new target
-        if self.needs_new_target(level) {
-            self.calculate_new_target(player_position, level, line_intersects_geometry);
-        }
+            // Check if we need to calculate a new target
+            if self.needs_new_target(level) {
+                self.calculate_new_target(player_position, level, line_intersects_geometry);
+            }
 
-        self.current_target
+            self.current_target
+        })
     }
 
     /// Updates stuck detection with level-based sensitivity.

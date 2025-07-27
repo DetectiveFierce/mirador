@@ -284,19 +284,51 @@ impl GameState {
     /// assert_eq!(game_state.game_ui.get_level(), 1);
     /// ```
     pub fn new() -> Self {
-        // Initialize the audio manager first, as it's required for game operation
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+        // Initialize profiler for GameState initialization benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
+        // Benchmark audio manager initialization (most taxing part)
+        init_profiler.start_section("audio_manager_initialization");
         let mut audio_manager =
             GameAudioManager::new().expect("Failed to initialize audio manager");
+        init_profiler.end_section("audio_manager_initialization");
 
-        // Spawn the enemy audio source at the enemy's starting position
-        // This creates a spatial audio source that will track the enemy's movement
+        // Benchmark enemy audio source spawning
+        init_profiler.start_section("enemy_audio_source_spawning");
         audio_manager
             .spawn_enemy("enemy".to_string(), [-0.5, 30.0, 0.0])
             .expect("Failed to spawn enemy");
+        init_profiler.end_section("enemy_audio_source_spawning");
+
+        // Benchmark player creation
+        init_profiler.start_section("player_creation");
+        let player = Player::new();
+        init_profiler.end_section("player_creation");
+
+        // Benchmark collision system initialization
+        init_profiler.start_section("collision_system_init");
+        let collision_system = CollisionSystem::new(
+            5.0,   // player_radius - horizontal collision boundary
+            100.0, // player_height - vertical collision boundary
+        );
+        init_profiler.end_section("collision_system_init");
+
+        // Benchmark enemy creation
+        init_profiler.start_section("enemy_creation");
+        let enemy = Enemy::new([-0.5, 30.0, 0.0], 150.0);
+        init_profiler.end_section("enemy_creation");
 
         let mut game_state = Self {
             // Initialize player at default starting position with default orientation
-            player: Player::new(),
+            player,
 
             // Set up timing system - these will be properly updated on the first frame
             last_frame_time: Instant::now(),
@@ -313,10 +345,7 @@ impl GameState {
 
             // Initialize collision system with player dimensions
             // These values should match the actual player model dimensions
-            collision_system: CollisionSystem::new(
-                5.0,   // player_radius - horizontal collision boundary
-                100.0, // player_height - vertical collision boundary
-            ),
+            collision_system,
 
             // Game starts with exit not reached
             exit_reached: false,
@@ -330,7 +359,7 @@ impl GameState {
             previous_screen: None,
 
             // Create enemy at specified starting position with movement speed
-            enemy: Enemy::new([-0.5, 30.0, 0.0], 150.0),
+            enemy,
 
             // Audio manager was initialized above
             audio_manager,
@@ -343,12 +372,13 @@ impl GameState {
             beeper_rise_played: false,
         };
 
-        // Configure audio volumes for the title screen since that's our starting screen
-        // This ensures appropriate background music and effect volumes are set
+        // Benchmark title screen audio configuration
+        init_profiler.start_section("title_audio_config");
         game_state
             .audio_manager
             .set_title_screen_volumes()
             .expect("Failed to set title screen volumes");
+        init_profiler.end_section("title_audio_config");
 
         game_state
     }

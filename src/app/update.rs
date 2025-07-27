@@ -63,6 +63,9 @@ impl App {
             .as_mut()
             .expect("State must be initialized before use");
 
+        // Start timing the entire frame
+        state.profiler.start_section("total_frame");
+
         if state.game_state.current_screen == CurrentScreen::Loading {
             state
                 .game_state
@@ -121,6 +124,7 @@ impl App {
         }
 
         // Update game state and UI
+        state.profiler.start_section("game_state_update");
         state.key_state.update(&mut state.game_state);
         state.update_game_ui(window);
         state
@@ -133,19 +137,25 @@ impl App {
             .audio_manager
             .update_enemy_position("enemy", state.game_state.enemy.pathfinder.position)
             .expect("Failed to update enemy position");
+        state.profiler.end_section("game_state_update");
 
         // Update audio manager to process any pending audio operations
+        state.profiler.start_section("audio_update");
         if let Err(e) = state.game_state.audio_manager.update() {
             println!("Failed to update audio manager: {:?}", e);
         }
+        state.profiler.end_section("audio_update");
 
         // Prepare rendering commands
+        state.profiler.start_section("command_encoder_creation");
         let mut encoder = state
             .wgpu_renderer
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        state.profiler.end_section("command_encoder_creation");
 
         // Update canvas surface
+        state.profiler.start_section("canvas_update");
         let (surface_view, surface_texture) = match state.wgpu_renderer.update_canvas(
             window,
             &mut encoder,
@@ -161,6 +171,7 @@ impl App {
                 return;
             }
         };
+        state.profiler.end_section("canvas_update");
 
         // --- Debug Info Panel ---
         if state.pause_menu.is_debug_panel_visible() {
@@ -219,6 +230,7 @@ impl App {
             }
         }
         // Prepare and render text BEFORE pause menu overlay
+        state.profiler.start_section("text_preparation");
         if let Err(e) = state.text_renderer.prepare(
             &state.wgpu_renderer.device,
             &state.wgpu_renderer.queue,
@@ -226,6 +238,7 @@ impl App {
         ) {
             println!("Failed to prepare text renderer: {}", e);
         }
+        state.profiler.end_section("text_preparation");
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -241,9 +254,11 @@ impl App {
                 label: Some("text render pass"),
                 occlusion_query_set: None,
             });
+            state.profiler.start_section("text_rendering");
             if let Err(e) = state.text_renderer.render(&mut render_pass) {
                 println!("Failed to render text: {}", e);
             }
+            state.profiler.end_section("text_rendering");
         }
         // --- End Game UI ---
 
@@ -393,15 +408,21 @@ impl App {
         window.request_redraw();
 
         // Submit commands and present
+        state.profiler.start_section("command_submission");
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
+        state.profiler.end_section("command_submission");
 
         // Present the surface texture and ensure it's properly handled
+        state.profiler.start_section("surface_presentation");
         surface_texture.present();
+        state.profiler.end_section("surface_presentation");
 
         // Poll the device to process any pending operations
         // This helps ensure resources are properly cleaned up and prevents
         // the "SurfaceSemaphores still in use" error during cleanup
+        state.profiler.start_section("device_polling");
         state.wgpu_renderer.device.poll(wgpu::Maintain::Poll);
+        state.profiler.end_section("device_polling");
 
         // Manage enemy locked state based on timer and test mode
         if state.game_state.current_screen == CurrentScreen::Game {
@@ -434,6 +455,7 @@ impl App {
         }
 
         // Update enemy pathfinding
+        state.profiler.start_section("enemy_pathfinding");
         state.game_state.enemy.update(
             state.game_state.player.position,
             state.game_state.delta_time,
@@ -445,17 +467,22 @@ impl App {
                     .cylinder_intersects_geometry(from, to, 5.0)
             },
         );
+        state.profiler.end_section("enemy_pathfinding");
 
         // Handle title screen animation if needed
         if state.game_state.current_screen == CurrentScreen::Loading {
             state.game_state.game_ui.stop_timer();
+            let _ = state; // Release the borrow
             self.handle_maze_generation();
+            return; // Exit early to avoid the borrow checker issue
         } else if state.game_state.current_screen == CurrentScreen::NewGame {
             state.text_renderer.hide_game_over_display();
             state.upgrade_menu.upgrade_manager.player_upgrades.clear();
             state.game_state.player = crate::game::player::Player::new();
             state.game_state.enemy = crate::game::enemy::Enemy::new([0.0, 30.0, 0.0], 150.0);
+            let _ = state; // Release the borrow
             self.new_level(true);
+            return; // Exit early to avoid the borrow checker issue
         } else if state.game_state.current_screen == CurrentScreen::Game
             && Some(state.game_state.player.current_cell) == state.game_state.exit_cell
         {
@@ -484,7 +511,13 @@ impl App {
                     state.upgrade_menu.show();
                 } else {
                     // Continue to next level
-                    self.new_level(false);
+                    // Store the state we need before calling new_level
+                    let should_continue = true;
+                    let _ = state; // Release the borrow
+                    if should_continue {
+                        self.new_level(false);
+                    }
+                    return; // Exit early to avoid the borrow checker issue
                 }
             }
         } else if state.game_state.current_screen == CurrentScreen::Game {
@@ -493,6 +526,39 @@ impl App {
                 .audio_manager
                 .resume_enemy_audio("enemy")
                 .expect("Failed to resume enemy audio");
+        }
+
+        // End timing the entire frame and record FPS
+        state.profiler.end_section("total_frame");
+
+        // Record frame time for performance analysis
+        crate::benchmark!("frame_time", {
+            // This is just a marker - the actual timing is done by the profiler
+        });
+
+        state.fps_counter.record_frame();
+
+        // Record frame in global benchmark system for FPS statistics
+        crate::benchmarks::utils::record_frame();
+
+        // Print performance summary every 1000 frames (approximately every 16 seconds at 60 FPS)
+        if state.fps_counter.frame_times.len() % 1000 == 0 {
+            // Note: We can't call print_summary here due to borrow checker constraints
+            // The summary will be available when the game exits or when explicitly called
+        }
+
+        // Save benchmark results every 5000 frames (approximately every 83 seconds at 60 FPS)
+        // This ensures we don't lose data if the program crashes
+        if state.fps_counter.frame_times.len() % 5000 == 0
+            && state.fps_counter.frame_times.len() > 0
+        {
+            // Use force_save_results to avoid borrow checker issues
+            if let Err(e) = crate::benchmarks::utils::force_save_results() {
+                eprintln!(
+                    "[BENCHMARK] Failed to save benchmark results during periodic save: {}",
+                    e
+                );
+            }
         }
     }
 
@@ -592,6 +658,8 @@ impl App {
     /// - Manages audio state during generation process
     pub fn handle_maze_generation(&mut self) {
         if let Some(state) = self.state.as_mut() {
+            // Start timing maze generation
+            state.profiler.start_section("maze_generation");
             // If in test mode, skip maze generation entirely and go directly to game
             if state.game_state.is_test_mode {
                 println!("Test mode enabled - skipping maze generation and going to game");
@@ -630,11 +698,13 @@ impl App {
             } else {
                 100
             };
+            state.profiler.start_section("maze_generation_steps");
             for _ in 0..steps {
                 if !renderer.generator.step() {
                     break;
                 }
             }
+            state.profiler.end_section("maze_generation_steps");
 
             // Report progress
             let (current, total) = renderer.generator.get_progress();
@@ -705,6 +775,8 @@ impl App {
                 // Handle completion
                 if renderer.generator.is_complete() {
                     println!("Maze generation complete! Saving to file...");
+                    state.profiler.start_section("maze_completion_processing");
+
                     let maze_lock = renderer.maze.lock().expect("Failed to lock maze");
                     state.game_state.maze_path = maze_lock.save_to_file().map_or_else(
                         |err| {
@@ -716,6 +788,7 @@ impl App {
 
                     // Generate geometry if maze was saved successfully
                     if let Some(maze_path) = &state.game_state.maze_path {
+                        state.profiler.start_section("maze_geometry_generation");
                         let (maze_grid, exit_cell) = parse_maze_file(
                             maze_path
                                 .to_str()
@@ -752,8 +825,10 @@ impl App {
                         // Update vertex count so the renderer knows how many vertices to draw
                         state.wgpu_renderer.game_renderer.vertex_count =
                             floor_vertices.len() as u32;
+                        state.profiler.end_section("maze_geometry_generation");
 
                         if let Some(exit_cell_position) = exit_cell {
+                            state.profiler.start_section("enemy_placement");
                             state.game_state.exit_cell = Some(exit_cell_position);
                             state.game_state.enemy = place_enemy_standard(
                                 maze_to_world(
@@ -771,12 +846,15 @@ impl App {
                                         .cylinder_intersects_geometry(from, to, 5.0)
                                 },
                             );
+                            state.profiler.end_section("enemy_placement");
                         }
 
+                        state.profiler.start_section("collision_system_build");
                         state
                             .game_state
                             .collision_system
                             .build_from_maze(&maze_grid, state.game_state.is_test_mode);
+                        state.profiler.end_section("collision_system_build");
 
                         // Spawn the player at the bottom-left corner of the maze
                         state
@@ -785,8 +863,15 @@ impl App {
                             .spawn_at_maze_entrance(&maze_grid, state.game_state.is_test_mode);
                         // (No automatic transition to Game here)
                     }
+
+                    state.profiler.end_section("maze_completion_processing");
                 }
             }
+        }
+
+        // End timing maze generation
+        if let Some(state) = self.state.as_mut() {
+            state.profiler.end_section("maze_generation");
         }
     }
 

@@ -53,11 +53,38 @@ impl App {
     /// let app = App::new();
     /// ```
     pub fn new() -> Self {
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+        // Initialize profiler for App creation benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
+        // Benchmark WGPU instance creation
+        init_profiler.start_section("wgpu_instance_creation");
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+        init_profiler.end_section("wgpu_instance_creation");
+
         Self {
             instance,
             state: None,
             window: None,
+        }
+    }
+
+    /// Saves benchmark results to file when the application is shutting down.
+    ///
+    /// This method should be called when the application is exiting to ensure
+    /// all performance data is written to disk for analysis.
+    pub fn save_benchmark_results(&self) {
+        println!("[BENCHMARK] Saving benchmark results...");
+        match crate::benchmarks::utils::write_results_to_file_default() {
+            Ok(()) => println!("[BENCHMARK] Benchmark results saved successfully"),
+            Err(e) => eprintln!("[BENCHMARK] Failed to save benchmark results: {}", e),
         }
     }
 
@@ -86,17 +113,33 @@ impl App {
     /// app.set_window(window).await;
     /// ```
     pub async fn set_window(&mut self, window: Window) {
+        use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+        // Initialize profiler for initialization benchmarking
+        let mut init_profiler = Profiler::new(BenchmarkConfig {
+            enabled: true,
+            print_results: false, // Respect user's console output preference
+            write_to_file: false,
+            min_duration_threshold: std::time::Duration::from_micros(1),
+            max_samples: 1000,
+        });
+
         let window = Arc::new(window);
         let initial_width = 1360;
         let initial_height = 768;
 
         let _ = window.request_inner_size(PhysicalSize::new(initial_width, initial_height));
 
+        // Benchmark surface creation
+        init_profiler.start_section("surface_creation");
         let surface = self
             .instance
             .create_surface(window.clone())
             .expect("Failed to create surface!");
+        init_profiler.end_section("surface_creation");
 
+        // Benchmark complete AppState initialization
+        init_profiler.start_section("app_state_initialization");
         let state = AppState::new(
             &self.instance,
             surface,
@@ -105,6 +148,7 @@ impl App {
             initial_height,
         )
         .await;
+        init_profiler.end_section("app_state_initialization");
 
         self.window.get_or_insert(window);
         self.state.get_or_insert(state);
@@ -150,6 +194,13 @@ impl App {
                 .upgrade_menu
                 .resize(&state.wgpu_renderer.queue, resolution);
         }
+    }
+}
+
+impl Drop for App {
+    fn drop(&mut self) {
+        // Save benchmark results when the application is dropped
+        self.save_benchmark_results();
     }
 }
 
@@ -484,6 +535,9 @@ impl ApplicationHandler for App {
                 }
             }
             crate::renderer::ui::pause_menu::PauseMenuAction::QuitApp => {
+                // Save benchmark results before quitting
+                self.save_benchmark_results();
+
                 // Quit the application
                 std::process::exit(0);
             }
@@ -493,6 +547,9 @@ impl ApplicationHandler for App {
         match event {
             WindowEvent::CloseRequested => {
                 println!("The close button was pressed; stopping");
+
+                // Save benchmark results before shutting down
+                self.save_benchmark_results();
 
                 // Ensure all GPU operations are complete before shutting down
                 if let Some(state) = &mut self.state {
@@ -523,7 +580,18 @@ impl ApplicationHandler for App {
 
                             // Handle non-movement keys immediately on press
                             match game_key {
-                                crate::game::keys::GameKey::Quit => event_loop.exit(),
+                                crate::game::keys::GameKey::Quit => {
+                                    // Save benchmark results before quitting
+                                    self.save_benchmark_results();
+                                    event_loop.exit();
+                                }
+                                crate::game::keys::GameKey::SaveBenchmark => {
+                                    // Manually save benchmark results
+                                    println!(
+                                        "[BENCHMARK] F5 pressed - saving benchmark results..."
+                                    );
+                                    self.save_benchmark_results();
+                                }
                                 crate::game::keys::GameKey::ToggleBoundingBoxes => {
                                     state
                                         .wgpu_renderer

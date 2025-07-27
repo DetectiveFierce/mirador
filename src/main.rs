@@ -25,12 +25,15 @@
 
 #![warn(missing_docs)]
 pub mod app;
+pub mod benchmarks;
 pub mod game;
 pub mod math;
 
 pub mod renderer;
 pub mod test_mode;
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use winit::event_loop::{ControlFlow, EventLoop};
 
 #[cfg(feature = "dhat-heap")]
@@ -73,6 +76,38 @@ fn main() {
 /// - Returns early if event loop creation fails
 /// - Exits the process if the application fails to run
 async fn run() {
+    use crate::benchmarks::{BenchmarkConfig, Profiler};
+
+    // Initialize profiler for overall application initialization benchmarking
+    let mut init_profiler = Profiler::new(BenchmarkConfig {
+        enabled: true,
+        print_results: false, // Respect user's console output preference
+        write_to_file: false,
+        min_duration_threshold: std::time::Duration::from_micros(1),
+        max_samples: 1000,
+    });
+
+    // Benchmark complete application initialization
+    init_profiler.start_section("complete_application_initialization");
+
+    // Set up signal handler for graceful shutdown
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        ctrlc::set_handler(move || {
+            println!("\nReceived interrupt signal, saving benchmark results...");
+            // Save benchmark results before exiting
+            if let Err(e) = crate::benchmarks::utils::force_save_results() {
+                eprintln!("Failed to save benchmark results on exit: {}", e);
+            }
+            r.store(false, Ordering::SeqCst);
+            std::process::exit(0);
+        })
+        .expect("Error setting Ctrl-C handler");
+    }
+
     let event_loop = match EventLoop::new() {
         Ok(event_loop) => event_loop,
         Err(err) => {
@@ -86,4 +121,6 @@ async fn run() {
     let mut app = app::App::new();
 
     event_loop.run_app(&mut app).expect("Failed to run app");
+
+    init_profiler.end_section("complete_application_initialization");
 }
