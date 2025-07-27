@@ -2,8 +2,8 @@ use std::env;
 use std::path::Path;
 
 fn main() {
-
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let out_dir = env::var("OUT_DIR").unwrap();
 
     // Path to the source icon
     let icon_path = Path::new(&manifest_dir)

@@ -1306,7 +1306,7 @@ checksum = "c505b3e17ed6b70a7ed2e67fbb2c560ee327353556120d6e72f5232b6880d536"
 
 [[package]]
 name = "mirador"
-version = "0.1.0"
+version = "0.0.1-alpha"
 dependencies = [
  "bytemuck",
  "chrono",
