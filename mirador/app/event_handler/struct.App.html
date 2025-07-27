@@ -72,7 +72,7 @@ configuration and resizes all UI components to match the new window dimensions.<
 <h5 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h5>
 <p>This method safely handles cases where the application state hasn’t been
 initialized yet, logging errors instead of panicking.</p>
-</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-App-1" class="impl"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#21-1079">Source</a><a href="#impl-App-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.App.html" title="struct mirador::app::event_handler::App">App</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.handle_redraw" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#51-559">Source</a><h4 class="code-header">pub fn <a href="#method.handle_redraw" class="fn">handle_redraw</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Handles the main rendering loop and game state updates.</p>
+</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-App-1" class="impl"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#21-1081">Source</a><a href="#impl-App-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.App.html" title="struct mirador::app::event_handler::App">App</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.handle_redraw" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#51-561">Source</a><h4 class="code-header">pub fn <a href="#method.handle_redraw" class="fn">handle_redraw</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Handles the main rendering loop and game state updates.</p>
 <p>This method is called every frame and orchestrates the complete rendering pipeline.
 It handles different game screens (loading, title, game, pause, upgrade menu),
 updates game state, renders the scene, and manages UI overlays.</p>
@@ -104,7 +104,7 @@ updates game state, renders the scene, and manages UI overlays.</p>
 <li>Uses efficient command encoding for GPU operations</li>
 <li>Manages GPU resource cleanup and polling</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_frame_timing" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#585-621">Source</a><h4 class="code-header">pub fn <a href="#method.handle_frame_timing" class="fn">handle_frame_timing</a>(&amp;mut self, current_time: <a class="struct" href="https://doc.rust-lang.org/1.88.0/std/time/struct.Instant.html" title="struct std::time::Instant">Instant</a>)</h4></section></summary><div class="docblock"><p>Updates frame timing and performance metrics.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_frame_timing" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#587-623">Source</a><h4 class="code-header">pub fn <a href="#method.handle_frame_timing" class="fn">handle_frame_timing</a>(&amp;mut self, current_time: <a class="struct" href="https://doc.rust-lang.org/1.88.0/std/time/struct.Instant.html" title="struct std::time::Instant">Instant</a>)</h4></section></summary><div class="docblock"><p>Updates frame timing and performance metrics.</p>
 <p>This method calculates delta time between frames, updates FPS counter,
 and manages performance-related state. It’s called every frame to ensure
 smooth gameplay and accurate timing.</p>
@@ -131,7 +131,7 @@ smooth gameplay and accurate timing.</p>
 <li>Updates FPS counter and frame timing state</li>
 <li>Triggers debug renderer updates when needed</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_maze_generation" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#655-872">Source</a><h4 class="code-header">pub fn <a href="#method.handle_maze_generation" class="fn">handle_maze_generation</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Handles procedural maze generation and loading screen logic.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_maze_generation" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#657-874">Source</a><h4 class="code-header">pub fn <a href="#method.handle_maze_generation" class="fn">handle_maze_generation</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Handles procedural maze generation and loading screen logic.</p>
 <p>This method manages the maze generation process, which can be either
 animated (showing generation steps) or instant (fast mode). It handles
 both normal maze generation and test mode maze creation.</p>
@@ -167,7 +167,7 @@ both normal maze generation and test mode maze creation.</p>
 <li>Plays completion sound when generation finishes</li>
 <li>Manages audio state during generation process</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.new_level" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#920-1078">Source</a><h4 class="code-header">pub fn <a href="#method.new_level" class="fn">new_level</a>(&amp;mut self, game_over: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>)</h4></section></summary><div class="docblock"><p>Initializes a new level or restarts the game.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.new_level" class="method"><a class="src rightside" href="../../../src/mirador/app/update.rs.html#922-1080">Source</a><h4 class="code-header">pub fn <a href="#method.new_level" class="fn">new_level</a>(&amp;mut self, game_over: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>)</h4></section></summary><div class="docblock"><p>Initializes a new level or restarts the game.</p>
 <p>This method handles the transition to a new level or game restart. It manages
 player state, enemy positioning, timer configuration, and scoring systems.
 The method implements a sophisticated scoring system based on completion time

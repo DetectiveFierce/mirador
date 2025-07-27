@@ -37,7 +37,7 @@ various button types including upgrade menu buttons with icons and tooltips.</p>
 </div><span id="structfield.last_mouse_pressed" class="structfield section-header"><a href="#structfield.last_mouse_pressed" class="anchor field">§</a><code>last_mouse_pressed: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></code></span><div class="docblock"><p>Previous mouse press state for change detection optimization</p>
 </div><span id="structfield.pressed_buttons" class="structfield section-header"><a href="#structfield.pressed_buttons" class="anchor field">§</a><code>pressed_buttons: <a class="struct" href="https://doc.rust-lang.org/1.88.0/std/collections/hash/set/struct.HashSet.html" title="struct std::collections::hash::set::HashSet">HashSet</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><div class="docblock"><p>Set of buttons that were pressed during the current mouse press cycle
 This helps handle platform-specific timing differences in mouse event processing</p>
-</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-ButtonManager" class="impl"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#254-1363">Source</a><a href="#impl-ButtonManager" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.ButtonManager.html" title="struct mirador::renderer::ui::button::ButtonManager">ButtonManager</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#271-304">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-ButtonManager" class="impl"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#254-1393">Source</a><a href="#impl-ButtonManager" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.ButtonManager.html" title="struct mirador::renderer::ui::button::ButtonManager">ButtonManager</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#271-304">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(
     device: &amp;Device,
     queue: &amp;Queue,
     surface_format: TextureFormat,
@@ -107,7 +107,7 @@ prints a debug message with the button text.</p>
 </ul>
 <h5 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h5>
 <p><code>true</code> if the button was clicked, <code>false</code> otherwise</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_input" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#604-669">Source</a><h4 class="code-header">pub fn <a href="#method.handle_input" class="fn">handle_input</a>(&amp;mut self, event: &amp;WindowEvent)</h4></section></summary><div class="docblock"><p>Handles window events for button interaction</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_input" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#604-699">Source</a><h4 class="code-header">pub fn <a href="#method.handle_input" class="fn">handle_input</a>(&amp;mut self, event: &amp;WindowEvent)</h4></section></summary><div class="docblock"><p>Handles window events for button interaction</p>
 <p>This method processes mouse input events to:</p>
 <ul>
 <li>Track mouse button press/release states</li>
@@ -120,7 +120,7 @@ prints a debug message with the button text.</p>
 <ul>
 <li><code>event</code> - The window event to process</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.update_button_states" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#686-945">Source</a><h4 class="code-header">pub fn <a href="#method.update_button_states" class="fn">update_button_states</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Updates button states based on mouse interaction and applies visual changes</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_button_states" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#716-975">Source</a><h4 class="code-header">pub fn <a href="#method.update_button_states" class="fn">update_button_states</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Updates button states based on mouse interaction and applies visual changes</p>
 <p>This method:</p>
 <ul>
 <li>Optimizes performance by checking if mouse state has changed</li>
@@ -137,7 +137,7 @@ prints a debug message with the button text.</p>
 <li>Adjusts text positioning to account for button scaling</li>
 <li>Updates level text and tooltip text with proper scaling</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.update_button_positions" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#966-1215">Source</a><h4 class="code-header">pub fn <a href="#method.update_button_positions" class="fn">update_button_positions</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Updates button positions and text layout after window resize or other changes</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_button_positions" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#996-1245">Source</a><h4 class="code-header">pub fn <a href="#method.update_button_positions" class="fn">update_button_positions</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Updates button positions and text layout after window resize or other changes</p>
 <p>This method recalculates:</p>
 <ul>
 <li>Button dimensions based on current window size</li>
@@ -159,7 +159,7 @@ prints a debug message with the button text.</p>
 <li>Positions tooltip text at the bottom</li>
 <li>Applies hover scaling transformations</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.resize" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#1228-1240">Source</a><h4 class="code-header">pub fn <a href="#method.resize" class="fn">resize</a>(&amp;mut self, queue: &amp;Queue, resolution: Resolution)</h4></section></summary><div class="docblock"><p>Resizes the button manager and its renderers to match the new window resolution</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.resize" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#1258-1270">Source</a><h4 class="code-header">pub fn <a href="#method.resize" class="fn">resize</a>(&amp;mut self, queue: &amp;Queue, resolution: Resolution)</h4></section></summary><div class="docblock"><p>Resizes the button manager and its renderers to match the new window resolution</p>
 <p>This method updates:</p>
 <ul>
 <li>Window size for positioning calculations</li>
@@ -172,7 +172,7 @@ prints a debug message with the button text.</p>
 <li><code>queue</code> - WGPU queue for uploading new resources</li>
 <li><code>resolution</code> - New window resolution</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.prepare" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#1254-1261">Source</a><h4 class="code-header">pub fn <a href="#method.prepare" class="fn">prepare</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.prepare" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#1284-1291">Source</a><h4 class="code-header">pub fn <a href="#method.prepare" class="fn">prepare</a>(
     &amp;mut self,
     device: &amp;Device,
     queue: &amp;Queue,
@@ -188,7 +188,7 @@ text buffers and resources for the current frame.</p>
 </ul>
 <h5 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h5>
 <p><code>Ok(())</code> on success, <code>Err(PrepareError)</code> on failure</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.render" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#1285-1362">Source</a><h4 class="code-header">pub fn <a href="#method.render" class="fn">render</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.render" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/button/mod.rs.html#1315-1392">Source</a><h4 class="code-header">pub fn <a href="#method.render" class="fn">render</a>(
     &amp;mut self,
     device: &amp;Device,
     render_pass: &amp;mut RenderPass&lt;'_&gt;,
