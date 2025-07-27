@@ -141,7 +141,7 @@ impl PauseMenu {
         // Resume button - Primary action to continue the game
         let mut resume_style = create_primary_button_style();
         resume_style.text_style = text_style.clone();
-        let resume_button = Button::new("resume", "Resume Game")
+        let resume_button = Button::new("pause_resume", "Resume Game")
             .with_style(resume_style)
             .with_text_align(TextAlign::Center)
             .with_position(
@@ -152,7 +152,7 @@ impl PauseMenu {
         // Restart Run button - Restarts the current game session
         let mut restart_run_style = create_warning_button_style();
         restart_run_style.text_style = text_style.clone();
-        let restart_run_button = Button::new("restart_run", "Restart Run")
+        let restart_run_button = Button::new("pause_restart_run", "Restart Run")
             .with_style(restart_run_style)
             .with_text_align(TextAlign::Center)
             .with_position(
@@ -163,7 +163,7 @@ impl PauseMenu {
         // Toggle Test Mode button - Switches between normal and test modes
         let mut test_mode_style = create_warning_button_style();
         test_mode_style.text_style = text_style.clone();
-        let test_mode_button = Button::new("toggle_test_mode", "Toggle Test Mode")
+        let test_mode_button = Button::new("pause_toggle_test_mode", "Toggle Test Mode")
             .with_style(test_mode_style)
             .with_text_align(TextAlign::Center)
             .with_position(
@@ -174,7 +174,7 @@ impl PauseMenu {
         // Quit to Lobby button - Returns to the main lobby/menu
         let mut quit_lobby_style = create_danger_button_style();
         quit_lobby_style.text_style = text_style.clone();
-        let quit_lobby_button = Button::new("quit_lobby", "Quit to Lobby")
+        let quit_lobby_button = Button::new("pause_quit_lobby", "Quit to Lobby")
             .with_style(quit_lobby_style)
             .with_text_align(TextAlign::Center)
             .with_position(
@@ -185,7 +185,7 @@ impl PauseMenu {
         // Quit App button - Exits the entire application
         let mut quit_style = create_danger_button_style();
         quit_style.text_style = text_style.clone();
-        let quit_menu_button = Button::new("quit_menu", "Quit App")
+        let quit_menu_button = Button::new("pause_quit_menu", "Quit App")
             .with_style(quit_style)
             .with_text_align(TextAlign::Center)
             .with_position(
@@ -205,7 +205,7 @@ impl PauseMenu {
             .text_renderer
             .measure_text(" Show\nDebug\n  Info", &debug_style.text_style);
         let debug_button_side = text_width.max(text_height) + 2.0 * debug_style.padding.1;
-        let debug_button = Button::new("debug", " Show\nDebug\n  Info")
+        let debug_button = Button::new("pause_debug", " Show\nDebug\n  Info")
             .with_style(debug_style)
             .with_text_align(TextAlign::Center)
             .with_position(ButtonPosition {
@@ -301,32 +301,35 @@ impl PauseMenu {
         self.button_manager.handle_input(event);
 
         // Check for button clicks and play select sound for each action
-        if self.button_manager.is_button_clicked("resume") {
+        if self.button_manager.is_button_clicked("pause_resume") {
             self.last_action = PauseMenuAction::Resume;
             let _ = audio_manager.play_select();
         }
 
-        if self.button_manager.is_button_clicked("restart_run") {
+        if self.button_manager.is_button_clicked("pause_restart_run") {
             self.last_action = PauseMenuAction::Restart;
             let _ = audio_manager.play_select();
         }
 
-        if self.button_manager.is_button_clicked("quit_lobby") {
+        if self.button_manager.is_button_clicked("pause_quit_lobby") {
             self.last_action = PauseMenuAction::QuitToMenu;
             let _ = audio_manager.play_select();
         }
 
-        if self.button_manager.is_button_clicked("toggle_test_mode") {
+        if self
+            .button_manager
+            .is_button_clicked("pause_toggle_test_mode")
+        {
             self.last_action = PauseMenuAction::ToggleTestMode;
             let _ = audio_manager.play_select();
         }
 
-        if self.button_manager.is_button_clicked("quit_menu") {
+        if self.button_manager.is_button_clicked("pause_quit_menu") {
             self.last_action = PauseMenuAction::QuitApp;
             let _ = audio_manager.play_select();
         }
 
-        if self.button_manager.is_button_clicked("debug") {
+        if self.button_manager.is_button_clicked("pause_debug") {
             self.show_debug_panel = !self.show_debug_panel;
             let _ = audio_manager.play_select();
         }
@@ -386,7 +389,7 @@ impl PauseMenu {
             |i: usize| start_y + button_height / 2.0 + i as f32 * (button_height + button_spacing);
 
         // Update each button's position and text style
-        if let Some(resume_button) = self.button_manager.get_button_mut("resume") {
+        if let Some(resume_button) = self.button_manager.get_button_mut("pause_resume") {
             resume_button.position.x = center_x;
             resume_button.position.y = y(0);
             resume_button.position.width = button_width;
@@ -395,7 +398,7 @@ impl PauseMenu {
             resume_button.style.text_style = text_style.clone();
         }
 
-        if let Some(restart_run_button) = self.button_manager.get_button_mut("restart_run") {
+        if let Some(restart_run_button) = self.button_manager.get_button_mut("pause_restart_run") {
             restart_run_button.text = "Restart Run".to_string();
             restart_run_button.style = create_warning_button_style();
             restart_run_button.style.text_style = text_style.clone();
@@ -406,7 +409,8 @@ impl PauseMenu {
             restart_run_button.position.anchor = ButtonAnchor::Center;
         }
 
-        if let Some(test_mode_button) = self.button_manager.get_button_mut("toggle_test_mode") {
+        if let Some(test_mode_button) = self.button_manager.get_button_mut("pause_toggle_test_mode")
+        {
             test_mode_button.text = "Toggle Test Mode".to_string();
             test_mode_button.style = create_warning_button_style();
             test_mode_button.style.text_style = text_style.clone();
@@ -417,7 +421,7 @@ impl PauseMenu {
             test_mode_button.position.anchor = ButtonAnchor::Center;
         }
 
-        if let Some(quit_lobby_button) = self.button_manager.get_button_mut("quit_lobby") {
+        if let Some(quit_lobby_button) = self.button_manager.get_button_mut("pause_quit_lobby") {
             quit_lobby_button.text = "Quit to Lobby".to_string();
             quit_lobby_button.style = create_danger_button_style();
             quit_lobby_button.style.text_style = text_style.clone();
@@ -428,7 +432,7 @@ impl PauseMenu {
             quit_lobby_button.position.anchor = ButtonAnchor::Center;
         }
 
-        if let Some(quit_menu_button) = self.button_manager.get_button_mut("quit_menu") {
+        if let Some(quit_menu_button) = self.button_manager.get_button_mut("pause_quit_menu") {
             quit_menu_button.style = create_danger_button_style();
             quit_menu_button.style.text_style = text_style.clone();
             quit_menu_button.position.x = center_x;
@@ -440,7 +444,7 @@ impl PauseMenu {
 
         // Update debug button position for new window size
         let (style, padding) =
-            if let Some(debug_button) = self.button_manager.get_button_mut("debug") {
+            if let Some(debug_button) = self.button_manager.get_button_mut("pause_debug") {
                 debug_button.style.spacing = crate::renderer::ui::button::ButtonSpacing::Wrap;
                 (
                     debug_button.style.text_style.clone(),
@@ -454,7 +458,7 @@ impl PauseMenu {
             .text_renderer
             .measure_text("Show\nDebug\nInfo", &style);
         let side = text_width.max(text_height) + 2.0 * padding.1;
-        if let Some(debug_button) = self.button_manager.get_button_mut("debug") {
+        if let Some(debug_button) = self.button_manager.get_button_mut("pause_debug") {
             debug_button.position.x = 60.0;
             debug_button.position.y = window_size.height as f32 - side - 16.0;
             debug_button.position.width = side;

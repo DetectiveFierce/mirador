@@ -1094,14 +1094,8 @@ fn update_text_content(
     id: &str,
     new_text: &str,
 ) -> Result<(), String> {
-    if let Some(buffer) = text_renderer.text_buffers.get_mut(id) {
-        buffer.text_content = new_text.to_string();
-        // Re-apply style to update the buffer
-        let style = buffer.style.clone();
-        text_renderer.update_style(id, style)
-    } else {
-        Err(format!("Text buffer '{}' not found", id))
-    }
+    // Update the text content using the new update_text method
+    text_renderer.update_text(id, new_text)
 }
 
 /// Call this every frame to update the timer, score, and level displays
@@ -1121,11 +1115,12 @@ pub fn update_game_ui(
     // Update timer display
     let timer_text = game_ui.get_timer_text();
     let _ = update_text_content(text_renderer, "main_timer", &timer_text);
+
     // Update timer color by updating style
-    if let Some(buffer) = text_renderer.text_buffers.get_mut("main_timer") {
-        let mut style = buffer.style.clone();
-        style.color = game_ui.get_timer_color();
-        let _ = text_renderer.update_style("main_timer", style);
+    if let Ok(current_style) = text_renderer.get_style("main_timer") {
+        let mut new_style = current_style;
+        new_style.color = game_ui.get_timer_color();
+        let _ = text_renderer.update_style("main_timer", new_style);
     }
 
     // Update level and score displays
@@ -1143,23 +1138,19 @@ pub fn update_game_ui(
     } else {
         (150.0, 60.0)
     };
-    // Align decimal point with center
-    let timer_style = if let Some(buffer) = text_renderer.text_buffers.get("main_timer") {
-        buffer.style.clone()
-    } else {
-        TextStyle::default()
-    };
-    let decimal_index = timer_text.find('.').unwrap_or(timer_text.len() - 1) + 1;
-    let decimal_substr = &timer_text[..decimal_index];
-    let (_min_x, decimal_offset, _h) = text_renderer.measure_text(decimal_substr, &timer_style);
-    let timer_position = TextPosition {
-        x: (width as f32 / 2.0) - decimal_offset,
-        y: 10.0,
-        max_width: Some(timer_max_width),
-        max_height: Some(timer_max_height),
-    };
-    if let Some(buffer) = text_renderer.text_buffers.get_mut("main_timer") {
-        buffer.position = timer_position;
+
+    // Get current timer style for positioning calculations
+    if let Ok(timer_style) = text_renderer.get_style("main_timer") {
+        let decimal_index = timer_text.find('.').unwrap_or(timer_text.len() - 1) + 1;
+        let decimal_substr = &timer_text[..decimal_index];
+        let (_min_x, decimal_offset, _h) = text_renderer.measure_text(decimal_substr, &timer_style);
+        let timer_position = TextPosition {
+            x: (width as f32 / 2.0) - decimal_offset,
+            y: 10.0,
+            max_width: Some(timer_max_width),
+            max_height: Some(timer_max_height),
+        };
+        let _ = text_renderer.update_position("main_timer", timer_position);
     }
 
     timer_expired

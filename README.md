@@ -46,10 +46,11 @@ Mirador is a work in progress 3D maze game engine written entirely in Rust. It i
 
 Mirador is organized into several core modules:
 
-- **[App](/src/app.rs)**: The main application object, responsible for initialization, event handling, rendering, and orchestrating the game state.
+- **[App](/src/app/)**: The main application object, responsible for initialization, event handling, rendering, and orchestrating the game state.
 - **[Game](/src/game/)**: Contains logic for player state, input handling, collision detection, enemy AI, audio management, and core gameplay mechanics.
 - **[Maze](/src/maze/)**: Handles procedural maze generation using Kruskal's algorithm, storage, and rendering data.
 - **[Renderer](/src/renderer/)**: Manages all rendering pipelines including game scene, loading screen, and UI overlays.
+  - **[TextRenderer](/src/renderer/text.rs)**: Core text rendering functionality using the glyphon library for GPU-accelerated text rendering.
 - **[UI](/src/ui/)**: Implements user interface elements for the game (no longer uses egui).
 - **[Math](/src/math/)**: Provides vector and matrix utilities for graphics and game logic.
 
@@ -66,6 +67,7 @@ The application initializes a WGPU instance and event loop, sets up rendering an
 - **[rand](https://github.com/rust-random/rand)**: Random number generation for procedural content
 - **[chrono](https://github.com/chronotope/chrono)**: Time and date utilities
 - **[glyphon](https://github.com/grovesNL/glyphon)**: Modern Rust API for rendering text on the GPU via wgpu
+
 
 ---
 
@@ -129,6 +131,7 @@ mirador/
 - **Enemy AI**: Pathfinding with level-based aggression scaling
 - **Maze Generation**: Kruskal's algorithm with animated visualization
 - **Scoring**: Time-based performance metrics with bonuses
+- **Text Rendering**: Thread-safe global text renderer with efficient resource sharing and GPU-accelerated rendering
 
 ---
 

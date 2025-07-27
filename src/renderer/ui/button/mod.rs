@@ -47,7 +47,7 @@ use crate::renderer::icon::{Icon, IconRenderer};
 use crate::renderer::rectangle::{Rectangle, RectangleRenderer};
 use crate::renderer::text::{TextPosition, TextRenderer, TextStyle};
 use glyphon::{Color, Style, Weight};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, MouseButton, WindowEvent};
@@ -246,6 +246,9 @@ pub struct ButtonManager {
     pub last_mouse_position: (f32, f32),
     /// Previous mouse press state for change detection optimization
     pub last_mouse_pressed: bool,
+    /// Set of buttons that were pressed during the current mouse press cycle
+    /// This helps handle platform-specific timing differences in mouse event processing
+    pub pressed_buttons: std::collections::HashSet<String>,
 }
 
 impl ButtonManager {
@@ -296,6 +299,7 @@ impl ButtonManager {
             container_rect: None,
             last_mouse_position: (0.0, 0.0),
             last_mouse_pressed: false,
+            pressed_buttons: HashSet::new(),
         }
     }
 
@@ -605,6 +609,7 @@ impl ButtonManager {
                 ..
             } => {
                 self.mouse_pressed = true;
+                self.pressed_buttons.clear(); // Clear previous press cycle
                 self.update_button_states();
             }
             WindowEvent::MouseInput {
@@ -612,16 +617,43 @@ impl ButtonManager {
                 button: MouseButton::Left,
                 ..
             } => {
-                // Check for button clicks when mouse is released
+                // Check for button clicks using both current state and pressed_buttons set
+                // This handles platform-specific timing differences in mouse event processing
+                let mut clicked_button = None;
+
+                // First check current button states
                 for button in self.buttons.values() {
                     if button.visible && button.enabled && button.state == ButtonState::Pressed {
-                        // Button was clicked
-                        self.just_clicked = Some(button.id.clone());
+                        clicked_button = Some(button.id.clone());
                         break;
                     }
                 }
 
+                // If no button found in current state, check the pressed_buttons set
+                // This handles cases where the mouse moved outside the button during press
+                if clicked_button.is_none() {
+                    for button_id in &self.pressed_buttons {
+                        if let Some(button) = self.buttons.get(button_id) {
+                            if button.visible && button.enabled {
+                                // Check if mouse is still over the button or was over it during press
+                                let is_hovered = button
+                                    .contains_point(self.mouse_position.0, self.mouse_position.1);
+                                if is_hovered {
+                                    clicked_button = Some(button_id.clone());
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(clicked_id) = clicked_button {
+                    self.just_clicked = Some(clicked_id);
+                }
+
+                // Now update mouse state
                 self.mouse_pressed = false;
+                self.pressed_buttons.clear();
                 self.update_button_states();
             }
             WindowEvent::CursorMoved { position, .. } => {
@@ -722,6 +754,11 @@ impl ButtonManager {
             } else {
                 ButtonState::Normal
             };
+
+            // Track pressed buttons for click detection
+            if new_state == ButtonState::Pressed {
+                self.pressed_buttons.insert(button.id.clone());
+            }
 
             // Only update if state actually changed
             if button.state == new_state {

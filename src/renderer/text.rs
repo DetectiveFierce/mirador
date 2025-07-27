@@ -33,6 +33,7 @@
 //! text_renderer.render(&mut render_pass)?;
 //! ```
 
+use crate::assets;
 use glyphon::{
     Attrs, Buffer, Cache, Color, Family, FontSystem, Metrics, Resolution, Shaping, Style,
     SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer as GlyphonTextRenderer, Viewport,
@@ -41,7 +42,6 @@ use glyphon::{
 use std::collections::HashMap;
 use wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use winit::window::Window;
-use crate::assets;
 
 /// Defines the visual styling properties for text rendering.
 ///
@@ -302,7 +302,8 @@ impl TextRenderer {
         let position = position.unwrap_or_default();
 
         // If the requested font isn't loaded, fall back to a system font
-        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk" {
+        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk"
+        {
             style.font_family = "DejaVu Sans".to_string();
         }
 
@@ -377,7 +378,8 @@ impl TextRenderer {
             .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
 
         // If the requested font isn't loaded, fall back to a system font
-        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk" {
+        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk"
+        {
             style.font_family = "DejaVu Sans".to_string();
         }
 
@@ -1072,4 +1074,707 @@ impl TextRenderer {
             let _ = self.update_position("level", pos);
         }
     }
+
+    /// Updates the text content of an existing text buffer.
+    ///
+    /// This method allows you to change the text content without affecting the styling
+    /// or positioning. The text is re-shaped with the existing style attributes.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer to update
+    /// * `text` - The new text content to display
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the text was updated successfully
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Behavior
+    ///
+    /// - Updates the stored text content
+    /// - Re-shapes the text with existing style attributes
+    /// - Maintains current position and styling
+    /// - Validates input parameters
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// renderer.update_text("score", "Score: 1500")?;
+    /// ```
+    pub fn update_text(&mut self, id: &str, text: &str) -> Result<(), String> {
+        // Validate input parameters
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        if text.is_empty() {
+            return Err("Text content cannot be empty".to_string());
+        }
+
+        let text_buffer = self
+            .text_buffers
+            .get_mut(id)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
+
+        // Update the stored text content
+        text_buffer.text_content = text.to_string();
+
+        // Re-apply text with existing attributes
+        let attrs = Attrs::new()
+            .family(Family::Name(&text_buffer.style.font_family))
+            .weight(text_buffer.style.weight)
+            .style(text_buffer.style.style);
+
+        text_buffer
+            .buffer
+            .set_text(&mut self.font_system, text, attrs, Shaping::Advanced);
+        text_buffer
+            .buffer
+            .shape_until_scroll(&mut self.font_system, false);
+
+        Ok(())
+    }
+
+    /// Gets the current style of a text buffer.
+    ///
+    /// This method retrieves the current styling properties of an existing text buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(TextStyle)` if the buffer exists and style was retrieved
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let style = renderer.get_style("title")?;
+    /// println!("Font size: {}", style.font_size);
+    /// ```
+    pub fn get_style(&self, id: &str) -> Result<TextStyle, String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        self.text_buffers
+            .get(id)
+            .map(|buffer| buffer.style.clone())
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))
+    }
+
+    /// Gets the current position of a text buffer.
+    ///
+    /// This method retrieves the current positioning properties of an existing text buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(TextPosition)` if the buffer exists and position was retrieved
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let position = renderer.get_position("title")?;
+    /// println!("X position: {}", position.x);
+    /// ```
+    pub fn get_position(&self, id: &str) -> Result<TextPosition, String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        self.text_buffers
+            .get(id)
+            .map(|buffer| buffer.position.clone())
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))
+    }
+
+    /// Gets the current text content of a text buffer.
+    ///
+    /// This method retrieves the current text content of an existing text buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` if the buffer exists and content was retrieved
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let content = renderer.get_text_content("score")?;
+    /// println!("Current text: {}", content);
+    /// ```
+    pub fn get_text_content(&self, id: &str) -> Result<String, String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        self.text_buffers
+            .get(id)
+            .map(|buffer| buffer.text_content.clone())
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))
+    }
+
+    /// Updates both text content and style in a single operation.
+    ///
+    /// This method efficiently updates both the text content and styling properties
+    /// of an existing text buffer, re-shaping the text only once.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer to update
+    /// * `text` - The new text content to display
+    /// * `style` - The new text style to apply
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the update was successful
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Behavior
+    ///
+    /// - Updates both text content and style in one operation
+    /// - Re-shapes the text with new attributes
+    /// - Maintains current position
+    /// - Validates input parameters
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let new_style = TextStyle { font_size: 24.0, ..Default::default() };
+    /// renderer.update_text_and_style("title", "New Title", new_style)?;
+    /// ```
+    pub fn update_text_and_style(
+        &mut self,
+        id: &str,
+        text: &str,
+        mut style: TextStyle,
+    ) -> Result<(), String> {
+        // Validate input parameters
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        if text.is_empty() {
+            return Err("Text content cannot be empty".to_string());
+        }
+
+        // Validate style parameters
+        if style.font_size <= 0.0 {
+            return Err("Font size must be greater than 0".to_string());
+        }
+
+        if style.line_height <= 0.0 {
+            return Err("Line height must be greater than 0".to_string());
+        }
+
+        let text_buffer = self
+            .text_buffers
+            .get_mut(id)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
+
+        // If the requested font isn't loaded, fall back to a system font
+        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk"
+        {
+            style.font_family = "DejaVu Sans".to_string();
+        }
+
+        // Update metrics if font size or line height changed
+        if text_buffer.style.font_size != style.font_size
+            || text_buffer.style.line_height != style.line_height
+        {
+            let metrics = Metrics::new(style.font_size, style.line_height);
+            text_buffer
+                .buffer
+                .set_metrics(&mut self.font_system, metrics);
+        }
+
+        // Update both content and style
+        text_buffer.text_content = text.to_string();
+        text_buffer.style = style;
+
+        // Re-apply text with new attributes
+        let attrs = Attrs::new()
+            .family(Family::Name(&text_buffer.style.font_family))
+            .weight(text_buffer.style.weight)
+            .style(text_buffer.style.style);
+
+        text_buffer
+            .buffer
+            .set_text(&mut self.font_system, text, attrs, Shaping::Advanced);
+        text_buffer
+            .buffer
+            .shape_until_scroll(&mut self.font_system, false);
+
+        Ok(())
+    }
+
+    /// Updates text content, style, and position in a single operation.
+    ///
+    /// This method efficiently updates all properties of a text buffer in one operation,
+    /// re-shaping the text and updating buffer size as needed.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer to update
+    /// * `text` - The new text content to display
+    /// * `style` - The new text style to apply
+    /// * `position` - The new position and size constraints
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the update was successful
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Behavior
+    ///
+    /// - Updates text content, style, and position in one operation
+    /// - Re-shapes the text with new attributes
+    /// - Updates buffer size if position constraints changed
+    /// - Validates input parameters
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let new_style = TextStyle { font_size: 24.0, ..Default::default() };
+    /// let new_position = TextPosition { x: 100.0, y: 200.0, ..Default::default() };
+    /// renderer.update_text_style_and_position("title", "New Title", new_style, new_position)?;
+    /// ```
+    pub fn update_text_style_and_position(
+        &mut self,
+        id: &str,
+        text: &str,
+        mut style: TextStyle,
+        position: TextPosition,
+    ) -> Result<(), String> {
+        // Validate input parameters
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        if text.is_empty() {
+            return Err("Text content cannot be empty".to_string());
+        }
+
+        // Validate style parameters
+        if style.font_size <= 0.0 {
+            return Err("Font size must be greater than 0".to_string());
+        }
+
+        if style.line_height <= 0.0 {
+            return Err("Line height must be greater than 0".to_string());
+        }
+
+        // Validate position parameters
+        if position.x < 0.0 {
+            return Err("X position cannot be negative".to_string());
+        }
+
+        if position.y < 0.0 {
+            return Err("Y position cannot be negative".to_string());
+        }
+
+        let text_buffer = self
+            .text_buffers
+            .get_mut(id)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
+
+        // If the requested font isn't loaded, fall back to a system font
+        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk"
+        {
+            style.font_family = "DejaVu Sans".to_string();
+        }
+
+        // Update metrics if font size or line height changed
+        if text_buffer.style.font_size != style.font_size
+            || text_buffer.style.line_height != style.line_height
+        {
+            let metrics = Metrics::new(style.font_size, style.line_height);
+            text_buffer
+                .buffer
+                .set_metrics(&mut self.font_system, metrics);
+        }
+
+        // Update buffer size if max dimensions changed
+        if text_buffer.position.max_width != position.max_width
+            || text_buffer.position.max_height != position.max_height
+        {
+            let width = position.max_width.unwrap_or(self.window_size.width as f32);
+            let height = position
+                .max_height
+                .unwrap_or(self.window_size.height as f32);
+            text_buffer
+                .buffer
+                .set_size(&mut self.font_system, Some(width), Some(height));
+        }
+
+        // Update all properties
+        text_buffer.text_content = text.to_string();
+        text_buffer.style = style;
+        text_buffer.position = position;
+
+        // Re-apply text with new attributes
+        let attrs = Attrs::new()
+            .family(Family::Name(&text_buffer.style.font_family))
+            .weight(text_buffer.style.weight)
+            .style(text_buffer.style.style);
+
+        text_buffer
+            .buffer
+            .set_text(&mut self.font_system, text, attrs, Shaping::Advanced);
+        text_buffer
+            .buffer
+            .shape_until_scroll(&mut self.font_system, false);
+
+        Ok(())
+    }
+
+    /// Checks if a text buffer exists.
+    ///
+    /// This method provides a simple way to check if a text buffer with the given ID exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer to check
+    ///
+    /// # Returns
+    ///
+    /// `true` if the buffer exists, `false` otherwise
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// if renderer.has_buffer("score") {
+    ///     renderer.update_text("score", "New Score")?;
+    /// }
+    /// ```
+    pub fn has_buffer(&self, id: &str) -> bool {
+        if id.is_empty() {
+            return false;
+        }
+        self.text_buffers.contains_key(id)
+    }
+
+    /// Removes a text buffer from the renderer.
+    ///
+    /// This method completely removes a text buffer from the renderer, freeing up
+    /// associated resources. The buffer will no longer be rendered.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer to remove
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the buffer was removed successfully
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// renderer.remove_buffer("temporary_text")?;
+    /// ```
+    pub fn remove_buffer(&mut self, id: &str) -> Result<(), String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        self.text_buffers
+            .remove(id)
+            .map(|_| ())
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))
+    }
+
+    /// Gets a list of all text buffer IDs.
+    ///
+    /// This method returns a vector of all text buffer identifiers currently
+    /// managed by the renderer.
+    ///
+    /// # Returns
+    ///
+    /// A vector of text buffer IDs
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let buffer_ids = renderer.get_buffer_ids();
+    /// println!("Active buffers: {:?}", buffer_ids);
+    /// ```
+    pub fn get_buffer_ids(&self) -> Vec<String> {
+        self.text_buffers.keys().cloned().collect()
+    }
+
+    /// Clears all text buffers from the renderer.
+    ///
+    /// This method removes all text buffers, freeing up all associated resources.
+    /// No text will be rendered until new buffers are created.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// renderer.clear_all_buffers();
+    /// ```
+    pub fn clear_all_buffers(&mut self) {
+        self.text_buffers.clear();
+    }
+
+    /// Sets the visibility of a text buffer.
+    ///
+    /// This method allows you to show or hide a text buffer without removing it.
+    /// Hidden buffers are not rendered but retain their content and styling.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer
+    /// * `visible` - Whether the text buffer should be visible
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the visibility was set successfully
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// renderer.set_buffer_visibility("debug_info", false)?;
+    /// ```
+    pub fn set_buffer_visibility(&mut self, id: &str, visible: bool) -> Result<(), String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        let text_buffer = self
+            .text_buffers
+            .get_mut(id)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
+        text_buffer.visible = visible;
+        Ok(())
+    }
+
+    /// Gets the visibility of a text buffer.
+    ///
+    /// This method retrieves the current visibility state of a text buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(bool)` if the buffer exists and visibility was retrieved
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let is_visible = renderer.get_buffer_visibility("score")?;
+    /// println!("Score buffer is visible: {}", is_visible);
+    /// ```
+    pub fn get_buffer_visibility(&self, id: &str) -> Result<bool, String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        self.text_buffers
+            .get(id)
+            .map(|buffer| buffer.visible)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))
+    }
+
+    /// Sets the scale factor of a text buffer.
+    ///
+    /// This method allows you to scale the text rendering size without changing
+    /// the font size. Useful for animations and effects.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer
+    /// * `scale` - The scale factor (1.0 = normal size, 2.0 = double size, etc.)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the scale was set successfully
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// renderer.set_buffer_scale("title", 1.5)?; // 50% larger
+    /// ```
+    pub fn set_buffer_scale(&mut self, id: &str, scale: f32) -> Result<(), String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        if scale <= 0.0 {
+            return Err("Scale factor must be greater than 0".to_string());
+        }
+
+        let text_buffer = self
+            .text_buffers
+            .get_mut(id)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
+        text_buffer.scale = scale;
+        Ok(())
+    }
+
+    /// Gets the scale factor of a text buffer.
+    ///
+    /// This method retrieves the current scale factor of a text buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the text buffer
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(f32)` if the buffer exists and scale was retrieved
+    /// * `Err(String)` if the text buffer with the given ID was not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let scale = renderer.get_buffer_scale("title")?;
+    /// println!("Title scale: {}", scale);
+    /// ```
+    pub fn get_buffer_scale(&self, id: &str) -> Result<f32, String> {
+        if id.is_empty() {
+            return Err("Text buffer ID cannot be empty".to_string());
+        }
+
+        self.text_buffers
+            .get(id)
+            .map(|buffer| buffer.scale)
+            .ok_or_else(|| format!("Text buffer '{}' not found", id))
+    }
+
+    /// Validates that all text buffers have valid configurations.
+    ///
+    /// This method checks all text buffers for potential issues such as:
+    /// - Invalid font families
+    /// - Negative positions
+    /// - Invalid font sizes
+    /// - Missing text content
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if all buffers are valid
+    /// * `Err(String)` with details about the first validation error found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// if let Err(e) = renderer.validate_buffers() {
+    ///     println!("Validation error: {}", e);
+    /// }
+    /// ```
+    pub fn validate_buffers(&self) -> Result<(), String> {
+        for (id, buffer) in &self.text_buffers {
+            // Check font family
+            if buffer.style.font_family.is_empty() {
+                return Err(format!("Buffer '{}' has empty font family", id));
+            }
+
+            // Check font size
+            if buffer.style.font_size <= 0.0 {
+                return Err(format!(
+                    "Buffer '{}' has invalid font size: {}",
+                    id, buffer.style.font_size
+                ));
+            }
+
+            // Check line height
+            if buffer.style.line_height <= 0.0 {
+                return Err(format!(
+                    "Buffer '{}' has invalid line height: {}",
+                    id, buffer.style.line_height
+                ));
+            }
+
+            // Check position
+            if buffer.position.x < 0.0 {
+                return Err(format!(
+                    "Buffer '{}' has negative X position: {}",
+                    id, buffer.position.x
+                ));
+            }
+
+            if buffer.position.y < 0.0 {
+                return Err(format!(
+                    "Buffer '{}' has negative Y position: {}",
+                    id, buffer.position.y
+                ));
+            }
+
+            // Check scale
+            if buffer.scale <= 0.0 {
+                return Err(format!(
+                    "Buffer '{}' has invalid scale: {}",
+                    id, buffer.scale
+                ));
+            }
+
+            // Check text content
+            if buffer.text_content.is_empty() {
+                return Err(format!("Buffer '{}' has empty text content", id));
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Gets statistics about the text renderer.
+    ///
+    /// This method returns useful information about the current state of the text renderer.
+    ///
+    /// # Returns
+    ///
+    /// A struct containing various statistics
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let stats = renderer.get_statistics();
+    /// println!("Total buffers: {}", stats.total_buffers);
+    /// println!("Visible buffers: {}", stats.visible_buffers);
+    /// ```
+    pub fn get_statistics(&self) -> TextRendererStats {
+        let total_buffers = self.text_buffers.len();
+        let visible_buffers = self.text_buffers.values().filter(|b| b.visible).count();
+        let loaded_fonts = self.loaded_fonts.len();
+
+        TextRendererStats {
+            total_buffers,
+            visible_buffers,
+            loaded_fonts,
+            window_width: self.window_size.width,
+            window_height: self.window_size.height,
+        }
+    }
+}
+
+/// Statistics about the text renderer
+#[derive(Debug, Clone)]
+pub struct TextRendererStats {
+    /// Total number of text buffers
+    pub total_buffers: usize,
+    /// Number of visible text buffers
+    pub visible_buffers: usize,
+    /// Number of loaded fonts
+    pub loaded_fonts: usize,
+    /// Current window width
+    pub window_width: u32,
+    /// Current window height
+    pub window_height: u32,
 }

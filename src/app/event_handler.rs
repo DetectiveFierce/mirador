@@ -125,10 +125,10 @@ impl App {
         });
 
         let window = Arc::new(window);
-        
+
         // Check if the window is maximized before setting a specific size
         let is_maximized = window.is_maximized();
-        
+
         if !is_maximized {
             // Only set initial size if not maximized
             let initial_width = 1360;
@@ -146,7 +146,7 @@ impl App {
 
         // Benchmark complete AppState initialization
         init_profiler.start_section("app_state_initialization");
-        
+
         // Use actual window size if maximized, otherwise use initial size
         let (width, height) = if is_maximized {
             let size = window.inner_size();
@@ -154,15 +154,8 @@ impl App {
         } else {
             (1360, 768)
         };
-        
-        let state = AppState::new(
-            &self.instance,
-            surface,
-            &window,
-            width,
-            height,
-        )
-        .await;
+
+        let state = AppState::new(&self.instance, surface, &window, width, height).await;
         init_profiler.end_section("app_state_initialization");
 
         self.window.get_or_insert(window);
@@ -233,16 +226,15 @@ impl ApplicationHandler for App {
     /// - If window creation fails
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         // Create window with maximized state
-        let window_attributes = Window::default_attributes()
-            .with_maximized(true);
-            
+        let window_attributes = Window::default_attributes().with_maximized(true);
+
         let window = match event_loop.create_window(window_attributes) {
             Ok(window) => window,
             Err(err) => {
                 panic!("Failed to create window: {}", err);
             }
         };
-        
+
         pollster::block_on(self.set_window(window));
     }
 
@@ -417,19 +409,17 @@ impl ApplicationHandler for App {
                 }
 
                 // Hide title screen elements when transitioning away from title
-                if let Some(buf) = state
+                if let Err(e) = state
                     .text_renderer
-                    .text_buffers
-                    .get_mut("title_mirador_overlay")
+                    .set_buffer_visibility("title_mirador_overlay", false)
                 {
-                    buf.visible = false;
+                    eprintln!("Failed to hide title_mirador_overlay: {}", e);
                 }
-                if let Some(buf) = state
+                if let Err(e) = state
                     .text_renderer
-                    .text_buffers
-                    .get_mut("title_subtitle_overlay")
+                    .set_buffer_visibility("title_subtitle_overlay", false)
                 {
-                    buf.visible = false;
+                    eprintln!("Failed to hide title_subtitle_overlay: {}", e);
                 }
             }
             crate::renderer::ui::pause_menu::PauseMenuAction::ToggleTestMode => {
@@ -471,19 +461,17 @@ impl ApplicationHandler for App {
                     // The timer will be properly initialized when the game starts (in update_game_ui)
 
                     // Hide title screen elements when transitioning away from title
-                    if let Some(buf) = state
+                    if let Err(e) = state
                         .text_renderer
-                        .text_buffers
-                        .get_mut("title_mirador_overlay")
+                        .set_buffer_visibility("title_mirador_overlay", false)
                     {
-                        buf.visible = false;
+                        eprintln!("Failed to hide title_mirador_overlay: {}", e);
                     }
-                    if let Some(buf) = state
+                    if let Err(e) = state
                         .text_renderer
-                        .text_buffers
-                        .get_mut("title_subtitle_overlay")
+                        .set_buffer_visibility("title_subtitle_overlay", false)
                     {
-                        buf.visible = false;
+                        eprintln!("Failed to hide title_subtitle_overlay: {}", e);
                     }
                 } else {
                     // Currently in normal mode, switch to test mode
@@ -505,19 +493,17 @@ impl ApplicationHandler for App {
                 }
 
                 // Hide title screen elements when transitioning away from title
-                if let Some(buf) = state
+                if let Err(e) = state
                     .text_renderer
-                    .text_buffers
-                    .get_mut("title_mirador_overlay")
+                    .set_buffer_visibility("title_mirador_overlay", false)
                 {
-                    buf.visible = false;
+                    eprintln!("Failed to hide title_mirador_overlay: {}", e);
                 }
-                if let Some(buf) = state
+                if let Err(e) = state
                     .text_renderer
-                    .text_buffers
-                    .get_mut("title_subtitle_overlay")
+                    .set_buffer_visibility("title_subtitle_overlay", false)
                 {
-                    buf.visible = false;
+                    eprintln!("Failed to hide title_subtitle_overlay: {}", e);
                 }
             }
             crate::renderer::ui::pause_menu::PauseMenuAction::QuitToMenu => {
@@ -539,19 +525,17 @@ impl ApplicationHandler for App {
                     .set_title_screen_volumes()
                     .expect("Failed to set title screen volumes");
                 // Show title screen elements
-                if let Some(buf) = state
+                if let Err(e) = state
                     .text_renderer
-                    .text_buffers
-                    .get_mut("title_mirador_overlay")
+                    .set_buffer_visibility("title_mirador_overlay", true)
                 {
-                    buf.visible = true;
+                    eprintln!("Failed to show title_mirador_overlay: {}", e);
                 }
-                if let Some(buf) = state
+                if let Err(e) = state
                     .text_renderer
-                    .text_buffers
-                    .get_mut("title_subtitle_overlay")
+                    .set_buffer_visibility("title_subtitle_overlay", true)
                 {
-                    buf.visible = true;
+                    eprintln!("Failed to show title_subtitle_overlay: {}", e);
                 }
             }
             crate::renderer::ui::pause_menu::PauseMenuAction::QuitApp => {
@@ -775,20 +759,18 @@ impl ApplicationHandler for App {
                                     // Optionally, lock mouse here if needed
                                     app_state.game_state.capture_mouse = true;
                                     // Hide the overlay text
-                                    if let Some(buf) = app_state
+                                    if let Err(e) = app_state
                                         .text_renderer
-                                        .text_buffers
-                                        .get_mut("title_mirador_overlay")
+                                        .set_buffer_visibility("title_mirador_overlay", false)
                                     {
-                                        buf.visible = false;
+                                        eprintln!("Failed to hide title_mirador_overlay: {}", e);
                                     }
                                     // Hide the subtitle overlay
-                                    if let Some(buf) = app_state
+                                    if let Err(e) = app_state
                                         .text_renderer
-                                        .text_buffers
-                                        .get_mut("title_subtitle_overlay")
+                                        .set_buffer_visibility("title_subtitle_overlay", false)
                                     {
-                                        buf.visible = false;
+                                        eprintln!("Failed to hide title_subtitle_overlay: {}", e);
                                     }
                                 }
                                 app_state

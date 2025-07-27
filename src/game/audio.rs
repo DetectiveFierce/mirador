@@ -174,14 +174,20 @@ impl GameAudioManager {
         let listener = audio_manager.add_listener([0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0])?;
 
         // Load all required audio files from embedded assets
-        let footstep_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_SINGLE_STEP))?;
-        let enemy_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_SLIME_TRACK))?;
-        let complete_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_COMPLETE))?;
+        let footstep_data =
+            StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_SINGLE_STEP))?;
+        let enemy_data =
+            StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_SLIME_TRACK))?;
+        let complete_data =
+            StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_COMPLETE))?;
         let wall_hit_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_WALL))?;
         let select_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_SELECT))?;
-        let upgrade_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_UPGRADE))?;
-        let background_music_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::MUSIC_MAIN_TRACK))?;
-        let beeper_rise_data = StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_BEEPER_RISE))?;
+        let upgrade_data =
+            StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_UPGRADE))?;
+        let background_music_data =
+            StaticSoundData::from_cursor(std::io::Cursor::new(assets::MUSIC_MAIN_TRACK))?;
+        let beeper_rise_data =
+            StaticSoundData::from_cursor(std::io::Cursor::new(assets::AUDIO_BEEPER_RISE))?;
 
         let mut audio_manager_instance = GameAudioManager {
             audio_manager,

@@ -97,6 +97,33 @@ impl UpgradeMenu {
         }
     }
 
+    /// Creates a scaled text style based on the window height.
+    ///
+    /// This ensures consistent text sizing across different screen resolutions
+    /// by scaling relative to a reference height of 1080p.
+    ///
+    /// # Arguments
+    /// * `window_height` - The current window height in pixels
+    ///
+    /// # Returns
+    /// A `TextStyle` with appropriately scaled font size and line height
+    fn scaled_text_style(window_height: f32) -> crate::renderer::text::TextStyle {
+        // Virtual DPI scaling based on reference height
+        let reference_height = 1080.0;
+        let scale = (window_height / reference_height).clamp(0.7, 2.0);
+        let font_size = (32.0 * scale).clamp(16.0, 48.0); // 32px at 1080p, min 16, max 48
+        let line_height = (48.0 * scale).clamp(24.0, 72.0); // 48px at 1080p, min 24, max 72
+
+        crate::renderer::text::TextStyle {
+            font_family: "Hanken Grotesk".to_string(),
+            font_size,
+            line_height,
+            color: Color::rgb(50, 50, 50), // Dark text for contrast
+            weight: glyphon::Weight::MEDIUM,
+            style: glyphon::Style::Normal,
+        }
+    }
+
     /// Creates the visual layout for the upgrade menu with three selectable upgrade slots.
     ///
     /// This method sets up:
@@ -111,7 +138,7 @@ impl UpgradeMenu {
     /// # Layout Details
     /// - Container: Rounded rectangle with medium grey background
     /// - Slots: 25% container width each, with 5% spacing between them
-    /// - Buttons: Tall aspect ratio with large text (32pt font) and rounded corners
+    /// - Buttons: Tall aspect ratio with scaled text and rounded corners
     fn create_upgrade_layout(button_manager: &mut ButtonManager, window_size: PhysicalSize<u32>) {
         let window_width = window_size.width as f32;
         let window_height = window_size.height as f32;
@@ -140,6 +167,9 @@ impl UpgradeMenu {
         let total_slots_width = slot_width * 3.0 + slot_spacing * 2.0;
         let slots_start_x = container_x + (container_width - total_slots_width) / 2.0;
 
+        // Get scaled text style for consistent sizing across resolutions
+        let text_style = Self::scaled_text_style(window_height);
+
         // Create three upgrade slot buttons
         for i in 0..3 {
             let slot_x = slots_start_x + i as f32 * (slot_width + slot_spacing);
@@ -151,9 +181,7 @@ impl UpgradeMenu {
             slot_style.pressed_color = Color::rgb(160, 160, 160); // Even darker when pressed
             slot_style.corner_radius = 12.0; // Rounded corners
             slot_style.padding = (8.0, 8.0); // Minimal padding
-            slot_style.text_style.font_size = 32.0; // Doubled from 16.0
-            slot_style.text_style.line_height = 48.0; // Doubled from 18.0 (approximate)
-            slot_style.text_style.color = Color::rgb(50, 50, 50); // Dark text for contrast
+            slot_style.text_style = text_style.clone(); // Use scaled text style
 
             let upgrade_text = match i {
                 0 => "Upgrade 1",
@@ -607,18 +635,25 @@ impl UpgradeMenu {
     ///
     /// This method ensures the upgrade menu remains properly sized and positioned
     /// when the game window is resized. It updates both the rendering resolution
-    /// and the UI layout to match the new window dimensions.
+    /// and the UI layout to match the new window dimensions with proper text scaling.
     ///
     /// # Arguments
     /// * `queue` - WGPU command queue for rendering operations
     /// * `resolution` - New window resolution for text rendering
     ///
     /// # Side Effects
-    /// - Updates button manager's internal resolution
-    /// - Recreates the entire UI layout with new dimensions
+    /// - Updates button manager's internal resolution and window size
+    /// - Recreates the entire UI layout with new dimensions and scaled text
     /// - Resets content initialization if menu is currently visible
     pub fn resize(&mut self, queue: &Queue, resolution: Resolution) {
         self.button_manager.resize(queue, resolution);
+
+        // Update window_size for correct scaling calculations
+        self.button_manager.window_size = winit::dpi::PhysicalSize {
+            width: resolution.width,
+            height: resolution.height,
+        };
+
         self.recreate_layout_for_new_size();
     }
 
@@ -627,13 +662,13 @@ impl UpgradeMenu {
     /// This method is called after window resize events to ensure the
     /// UI layout matches the new window dimensions. It:
     /// 1. Clears all existing buttons and layout data
-    /// 2. Recreates the layout using current window size
+    /// 2. Recreates the layout using current window size with proper text scaling
     /// 3. Resets content initialization flag
     /// 4. Re-initializes content if menu is currently visible
     ///
     /// # Layout Preservation
     /// The method maintains the same visual proportions and styling
-    /// while adapting to the new window size.
+    /// while adapting to the new window size and ensuring proper text scaling.
     fn recreate_layout_for_new_size(&mut self) {
         // Clear existing buttons
         self.button_manager.buttons.clear();

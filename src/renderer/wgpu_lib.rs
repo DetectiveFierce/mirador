@@ -362,38 +362,21 @@ impl WgpuRenderer {
         // Apply auto-sizing logic to game over text (similar to title screen)
         text_renderer.handle_game_over_text(self.surface_config.width, self.surface_config.height);
 
-        // Animate the game over restart text color (fade from black to white and back)
-        let restart_color = {
-            if let Some(buf) = text_renderer.text_buffers.get_mut("game_over_restart") {
-                let elapsed = app_start_time.elapsed().as_secs_f32();
-                let t = 0.5 * (1.0 + ((elapsed / 3.0) * std::f32::consts::PI).sin());
-                let c = (t * 255.0) as u8;
-                buf.style.color = glyphon::Color::rgb(c, c, c);
-                Some(buf.style.clone())
-            } else {
-                None
-            }
-        };
-        if let Some(style) = restart_color {
-            let _ = text_renderer.update_style("game_over_restart", style);
-        }
+        // Animate the game over restart text color with a smooth sine wave
+        if let Ok(current_style) = text_renderer.get_style("game_over_restart") {
+            let mut new_style = current_style;
 
-        // Animate the game over subtitle text color (if present) with the same animation as the title screen subtitle
-        let subtitle_color = {
-            if let Some(buf) = text_renderer.text_buffers.get_mut("game_over_subtitle") {
-                let now = std::time::Instant::now();
-                let elapsed = now.elapsed().as_secs_f32();
-                // Fade: t goes 0..1..0 over a slower period (e.g., 6 seconds for a full cycle)
-                let t = 0.5 * (1.0 + ((elapsed / 3.0) * std::f32::consts::PI).sin());
-                let c = (t * 255.0).round() as u8;
-                buf.style.color = glyphon::Color::rgb(c, c, c);
-                Some(buf.style.clone())
-            } else {
-                None
-            }
-        };
-        if let Some(style) = subtitle_color {
-            let _ = text_renderer.update_style("game_over_subtitle", style);
+            // Animate restart text color with a smooth sine wave
+            let elapsed_time = app_start_time.elapsed().as_secs_f32();
+            let color_shift = (elapsed_time * 2.0).sin() * 0.5 + 0.5; // Oscillate between 0.0 and 1.0
+
+            // Create a color that shifts from a dark gray to white
+            let base_color = 100.0; // Base gray value
+            let color_range = 155.0; // Range of color variation (to reach white)
+            let animated_color = (base_color + color_range * color_shift) as u8;
+            new_style.color = glyphon::Color::rgb(animated_color, animated_color, animated_color);
+
+            let _ = text_renderer.update_style("game_over_restart", new_style);
         }
 
         // Render text

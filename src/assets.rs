@@ -1,28 +1,18 @@
 //! # Assets Module
-//! 
+//!
 //! This module contains all game assets embedded in the binary using `include_bytes!()`.
 //! This ensures that all assets are available at runtime without requiring external files.
 
 // Font assets
 /// Hanken Grotesk Regular font data
-pub const HANKEN_GROTESK_REGULAR: &[u8] = include_bytes!("../fonts/HankenGrotesk/HankenGrotesk-Regular.ttf");
+pub const HANKEN_GROTESK_REGULAR: &[u8] =
+    include_bytes!("../fonts/HankenGrotesk/HankenGrotesk-Regular.ttf");
 /// Hanken Grotesk Medium font data
-pub const HANKEN_GROTESK_MEDIUM: &[u8] = include_bytes!("../fonts/HankenGrotesk/HankenGrotesk-Medium.ttf");
+pub const HANKEN_GROTESK_MEDIUM: &[u8] =
+    include_bytes!("../fonts/HankenGrotesk/HankenGrotesk-Medium.ttf");
 /// Hanken Grotesk Bold font data
-pub const HANKEN_GROTESK_BOLD: &[u8] = include_bytes!("../fonts/HankenGrotesk/HankenGrotesk-Bold.ttf");
-
-/// Teen Regular font data
-pub const TEEN_REGULAR: &[u8] = include_bytes!("../fonts/Teen/Teen.otf");
-/// Teen Bold font data
-pub const TEEN_BOLD: &[u8] = include_bytes!("../fonts/Teen/Teen Bd.otf");
-/// Teen Italic font data
-pub const TEEN_ITALIC: &[u8] = include_bytes!("../fonts/Teen/Teen It.otf");
-/// Teen Bold Italic font data
-pub const TEEN_BOLD_ITALIC: &[u8] = include_bytes!("../fonts/Teen/Teen Bd It.otf");
-/// Teen Light font data
-pub const TEEN_LIGHT: &[u8] = include_bytes!("../fonts/Teen/Teen Lt.otf");
-/// Teen Light Italic font data
-pub const TEEN_LIGHT_ITALIC: &[u8] = include_bytes!("../fonts/Teen/Teen Lt It.otf");
+pub const HANKEN_GROTESK_BOLD: &[u8] =
+    include_bytes!("../fonts/HankenGrotesk/HankenGrotesk-Bold.ttf");
 
 // Image assets
 /// Game title image data
@@ -110,13 +100,14 @@ pub const AUDIO_WALL: &[u8] = include_bytes!("../assets/audio/wall.wav");
 /// Main game music track data
 pub const MUSIC_MAIN_TRACK: &[u8] = include_bytes!("../assets/audio/music/Mirador Main Track.ogg");
 /// Stripped main game music track data
-pub const MUSIC_MAIN_TRACK_STRIPPED: &[u8] = include_bytes!("../assets/audio/music/Mirador Main Track - Stripped.ogg");
+pub const MUSIC_MAIN_TRACK_STRIPPED: &[u8] =
+    include_bytes!("../assets/audio/music/Mirador Main Track - Stripped.ogg");
 
 /// Returns all compass needle textures in order
 pub fn compass_needles() -> &'static [&'static [u8]] {
     &[
-        NEEDLE_0, NEEDLE_1, NEEDLE_2, NEEDLE_3, NEEDLE_4, NEEDLE_5,
-        NEEDLE_6, NEEDLE_7, NEEDLE_8, NEEDLE_9, NEEDLE_10, NEEDLE_11
+        NEEDLE_0, NEEDLE_1, NEEDLE_2, NEEDLE_3, NEEDLE_4, NEEDLE_5, NEEDLE_6, NEEDLE_7, NEEDLE_8,
+        NEEDLE_9, NEEDLE_10, NEEDLE_11,
     ]
 }
 
@@ -140,11 +131,5 @@ pub fn fonts() -> &'static [(&'static str, &'static [u8])] {
         ("Hanken Grotesk", HANKEN_GROTESK_REGULAR),
         ("Hanken Grotesk Medium", HANKEN_GROTESK_MEDIUM),
         ("Hanken Grotesk Bold", HANKEN_GROTESK_BOLD),
-        ("Teen", TEEN_REGULAR),
-        ("Teen Bold", TEEN_BOLD),
-        ("Teen Italic", TEEN_ITALIC),
-        ("Teen Bold Italic", TEEN_BOLD_ITALIC),
-        ("Teen Light", TEEN_LIGHT),
-        ("Teen Light Italic", TEEN_LIGHT_ITALIC),
     ]
-} 
+}

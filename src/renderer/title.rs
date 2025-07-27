@@ -1,10 +1,12 @@
 use crate::app::AppState;
+use crate::assets;
 use crate::renderer::pipeline_builder::{
     BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
 };
-use crate::assets;
+use crate::renderer::text::TextPosition;
+use glyphon::Color;
 use image;
-use std::time::Instant;
+// use std::time::Instant; // Temporarily unused
 use wgpu::{self, util::DeviceExt};
 use winit::window::Window;
 
@@ -223,14 +225,17 @@ impl TitleRenderer {
 /// Handles the title screen rendering and animation logic.
 pub fn handle_title(state: &mut AppState, window: &Window) {
     // Explicitly hide game UI overlays on the title screen
-    if let Some(buffer) = state.text_renderer.text_buffers.get_mut("main_timer") {
-        buffer.visible = false;
+    if let Err(e) = state
+        .text_renderer
+        .set_buffer_visibility("main_timer", false)
+    {
+        eprintln!("Failed to hide main_timer: {}", e);
     }
-    if let Some(buffer) = state.text_renderer.text_buffers.get_mut("level") {
-        buffer.visible = false;
+    if let Err(e) = state.text_renderer.set_buffer_visibility("level", false) {
+        eprintln!("Failed to hide level: {}", e);
     }
-    if let Some(buffer) = state.text_renderer.text_buffers.get_mut("score") {
-        buffer.visible = false;
+    if let Err(e) = state.text_renderer.set_buffer_visibility("score", false) {
+        eprintln!("Failed to hide score: {}", e);
     }
 
     // --- Dynamic placement for title and subtitle overlays ---
@@ -247,89 +252,66 @@ pub fn handle_title(state: &mut AppState, window: &Window) {
     let subtitle_font_size = (width * 0.018 * scale).clamp(14.0, 96.0); // 1.8% of width, min 14, max 96 (increased max)
     let subtitle_line_height = (subtitle_font_size * 1.3).clamp(18.0, 128.0); // increased max
 
-    // Gather info for both overlays first to avoid borrow checker issues
-    let title_overlay_info = state
-        .text_renderer
-        .text_buffers
-        .get("title_mirador_overlay")
-        .map(|buf| {
-            let mut style = buf.style.clone();
-            style.font_size = title_font_size;
-            style.line_height = title_line_height;
-            let text = buf.text_content.clone();
-            (style, text)
-        });
-    let subtitle_overlay_info = state
-        .text_renderer
-        .text_buffers
-        .get("title_subtitle_overlay")
-        .map(|buf| {
-            let mut style = buf.style.clone();
-            style.font_size = subtitle_font_size;
-            style.line_height = subtitle_line_height;
-            let text = buf.text_content.clone();
-            (style, text)
-        });
-    // Now update positions and styles mutably
-    if let Some((style, text)) = title_overlay_info {
-        let _ = state
-            .text_renderer
-            .update_style("title_mirador_overlay", style.clone());
-        let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
-        let margin_right = width * 0.045; // 4.5% of width
-        let margin_top = height * 0.10; // 10% of height
-        let pos = crate::renderer::text::TextPosition {
-            x: width - text_width - margin_right,
-            y: margin_top,
-            max_width: Some(text_width + 20.0 * scale), // Add padding to prevent clipping
-            max_height: Some(text_height + 10.0 * scale),
-        };
-        let _ = state
-            .text_renderer
-            .update_position("title_mirador_overlay", pos);
-    }
-    if let Some((style, text)) = subtitle_overlay_info {
-        let _ = state
-            .text_renderer
-            .update_style("title_subtitle_overlay", style.clone());
-        let (_min_x, text_width, text_height) = state.text_renderer.measure_text(&text, &style);
-        let margin_right = width * 0.06; // 6% of width
-        let margin_bottom = height * 0.10; // 10% of height
-        let pos = crate::renderer::text::TextPosition {
-            x: width - text_width - margin_right,
-            y: height - text_height - margin_bottom,
-            max_width: Some(text_width + 40.0 * scale), // Add more padding for subtitle to prevent clipping
-            max_height: Some(text_height + 20.0 * scale),
-        };
-        let _ = state
-            .text_renderer
-            .update_position("title_subtitle_overlay", pos);
-    }
-    // --- End dynamic placement ---
+    // Update title text with dynamic positioning
+    if let Ok(current_style) = state.text_renderer.get_style("title_mirador_overlay") {
+        let mut new_style = current_style;
+        new_style.font_size = title_font_size;
+        new_style.line_height = title_line_height;
 
-    // Animate the subtitle text color (fade from black to white and back)
-    let subtitle_color = {
-        if let Some(buf) = state
-            .text_renderer
-            .text_buffers
-            .get_mut("title_subtitle_overlay")
-        {
-            let now = Instant::now();
-            let elapsed = now.duration_since(state.start_time).as_secs_f32();
-            // Fade: t goes 0..1..0 over a slower period (e.g., 6 seconds for a full cycle)
-            let t = 0.5 * (1.0 + ((elapsed / 3.0) * std::f32::consts::PI).sin());
-            let c = (t * 255.0).round() as u8;
-            buf.style.color = glyphon::Color::rgb(c, c, c);
-            Some(buf.style.clone())
-        } else {
-            None
-        }
-    };
-    if let Some(style) = subtitle_color {
-        let _ = state
-            .text_renderer
-            .update_style("title_subtitle_overlay", style);
+        let title_text = "Mirador";
+        let (_min_x, text_width, text_height) =
+            state.text_renderer.measure_text(title_text, &new_style);
+
+        let title_position = TextPosition {
+            x: width - text_width - 200.0, // 20px margin from right
+            y: 100.0,                      // 100px margin from top
+            max_width: Some(text_width),
+            max_height: Some(text_height),
+        };
+
+        let _ = state.text_renderer.update_text_style_and_position(
+            "title_mirador_overlay",
+            title_text,
+            new_style,
+            title_position,
+        );
     }
+
+    // Update subtitle text with dynamic positioning and color animation
+    if let Ok(current_style) = state.text_renderer.get_style("title_subtitle_overlay") {
+        let mut new_style = current_style;
+        new_style.font_size = subtitle_font_size;
+        new_style.line_height = subtitle_line_height;
+
+        // Animate subtitle color with a smooth sine wave
+        let elapsed_time = state.start_time.elapsed().as_secs_f32();
+        let color_shift = (elapsed_time * 1.5).sin() * 0.5 + 0.5; // Oscillate between 0.0 and 1.0
+
+        // Create a color that shifts from a dark gray to a lighter gray
+        let base_color = 100.0; // Base gray value
+        let color_range = 80.0; // Range of color variation
+        let animated_color = (base_color + color_range * color_shift) as u8;
+        new_style.color = Color::rgb(animated_color, animated_color, animated_color);
+
+        let subtitle_text = "Click anywhere to get lost.";
+        let (_min_x, text_width, text_height) =
+            state.text_renderer.measure_text(subtitle_text, &new_style);
+
+        let subtitle_position = TextPosition {
+            x: width - text_width - 200.0,   // Same x as title
+            y: height - text_height - 100.0, // 100px margin from bottom
+            max_width: Some(text_width),
+            max_height: Some(text_height),
+        };
+
+        let _ = state.text_renderer.update_text_style_and_position(
+            "title_subtitle_overlay",
+            subtitle_text,
+            new_style,
+            subtitle_position,
+        );
+    }
+
     // Render the title screen
     let mut encoder = state
         .wgpu_renderer
