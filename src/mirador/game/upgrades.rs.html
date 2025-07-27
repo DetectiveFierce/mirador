@@ -484,15 +484,15 @@
 <a href=#484 id=484 data-nosnippet>484</a>    </span><span class="attr">#[test]
 <a href=#485 id=485 data-nosnippet>485</a>    </span><span class="kw">fn </span>test_all_upgrades_available() {
 <a href=#486 id=486 data-nosnippet>486</a>        <span class="kw">let </span>upgrade_manager = UpgradeManager::new();
-<a href=#487 id=487 data-nosnippet>487</a>        <span class="kw">let </span>selected = upgrade_manager.select_random_upgrades(<span class="number">7</span>);
+<a href=#487 id=487 data-nosnippet>487</a>        <span class="kw">let </span>selected = upgrade_manager.select_random_upgrades(<span class="number">6</span>);
 <a href=#488 id=488 data-nosnippet>488</a>
-<a href=#489 id=489 data-nosnippet>489</a>        <span class="comment">// Should get all 7 upgrades when requesting 7
-<a href=#490 id=490 data-nosnippet>490</a>        </span><span class="macro">assert_eq!</span>(selected.len(), <span class="number">7</span>);
+<a href=#489 id=489 data-nosnippet>489</a>        <span class="comment">// Should get all 6 upgrades when requesting 6
+<a href=#490 id=490 data-nosnippet>490</a>        </span><span class="macro">assert_eq!</span>(selected.len(), <span class="number">6</span>);
 <a href=#491 id=491 data-nosnippet>491</a>
 <a href=#492 id=492 data-nosnippet>492</a>        <span class="comment">// All should be unique
 <a href=#493 id=493 data-nosnippet>493</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>names: Vec&lt;String&gt; = selected.iter().map(|u| u.name.clone()).collect();
 <a href=#494 id=494 data-nosnippet>494</a>        names.sort();
 <a href=#495 id=495 data-nosnippet>495</a>        names.dedup();
-<a href=#496 id=496 data-nosnippet>496</a>        <span class="macro">assert_eq!</span>(names.len(), <span class="number">7</span>);
+<a href=#496 id=496 data-nosnippet>496</a>        <span class="macro">assert_eq!</span>(names.len(), <span class="number">6</span>);
 <a href=#497 id=497 data-nosnippet>497</a>    }
 <a href=#498 id=498 data-nosnippet>498</a>}</code></pre></div></section></main></body></html>

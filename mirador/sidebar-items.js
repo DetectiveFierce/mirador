@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["main","run"],"mod":["app","game","math","renderer","test_mode"]};
+window.SIDEBAR_ITEMS = {"fn":["main","run"],"macro":["benchmark","debug_benchmark"],"mod":["app","benchmarks","game","math","renderer","test_mode"]};

@@ -96,7 +96,7 @@ during which the player character moves upward as part of the exit animation.</p
 </div><span id="structfield.beeper_rise_played" class="structfield section-header"><a href="#structfield.beeper_rise_played" class="anchor field">§</a><code>beeper_rise_played: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></code></span><div class="docblock"><p>Flag to ensure the beeper rise sound effect is only played once.</p>
 <p>Prevents the audio from being triggered multiple times during
 the exit sequence animation.</p>
-</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-GameState" class="impl"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#257-476">Source</a><a href="#impl-GameState" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.GameState.html" title="struct mirador::game::GameState">GameState</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#286-354">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>Creates a new <a href="struct.GameState.html" title="struct mirador::game::GameState"><code>GameState</code></a> with initialized default values.</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-GameState" class="impl"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#257-506">Source</a><a href="#impl-GameState" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.GameState.html" title="struct mirador::game::GameState">GameState</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#286-384">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>Creates a new <a href="struct.GameState.html" title="struct mirador::game::GameState"><code>GameState</code></a> with initialized default values.</p>
 <p>This constructor performs several important initialization steps:</p>
 <ol>
 <li><strong>Audio System</strong>: Initializes the audio manager and spawns the enemy audio source</li>
@@ -120,7 +120,7 @@ the exit sequence animation.</p>
 <span class="macro">assert_eq!</span>(game_state.current_screen, CurrentScreen::Title);
 <span class="macro">assert!</span>(!game_state.exit_reached);
 <span class="macro">assert_eq!</span>(game_state.game_ui.get_level(), <span class="number">1</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.start_game_timer" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#381-383">Source</a><h4 class="code-header">pub fn <a href="#method.start_game_timer" class="fn">start_game_timer</a>(&amp;mut self, config: <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.TimerConfig.html" title="struct mirador::game::TimerConfig">TimerConfig</a>&gt;)</h4></section></summary><div class="docblock"><p>Starts the game timer with optional custom configuration.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.start_game_timer" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#411-413">Source</a><h4 class="code-header">pub fn <a href="#method.start_game_timer" class="fn">start_game_timer</a>(&amp;mut self, config: <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.TimerConfig.html" title="struct mirador::game::TimerConfig">TimerConfig</a>&gt;)</h4></section></summary><div class="docblock"><p>Starts the game timer with optional custom configuration.</p>
 <p>This method initializes and starts a new countdown timer for the current game session.
 If no configuration is provided, default timer settings are used.</p>
 <h5 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h5>
@@ -140,12 +140,12 @@ and color schemes. If <code>None</code>, uses <a href="struct.TimerConfig.html#m
     ..Default::default()
 };
 game_state.start_game_timer(<span class="prelude-val">Some</span>(custom_config));</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.stop_game_timer" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#392-394">Source</a><h4 class="code-header">pub fn <a href="#method.stop_game_timer" class="fn">stop_game_timer</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Stops the currently running game timer.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.stop_game_timer" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#422-424">Source</a><h4 class="code-header">pub fn <a href="#method.stop_game_timer" class="fn">stop_game_timer</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Stops the currently running game timer.</p>
 <p>The timer will cease counting down and maintain its current remaining time.
 This is different from pausing, as the timer cannot be resumed after stopping.
 To restart timing, use [<code>start_game_timer</code>] again.</p>
 <p>If no timer is currently running, this method has no effect.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.reset_game_timer" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#408-410">Source</a><h4 class="code-header">pub fn <a href="#method.reset_game_timer" class="fn">reset_game_timer</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Resets the game timer to its initial configured duration and restarts it.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.reset_game_timer" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#438-440">Source</a><h4 class="code-header">pub fn <a href="#method.reset_game_timer" class="fn">reset_game_timer</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Resets the game timer to its initial configured duration and restarts it.</p>
 <p>This method preserves the timer’s original configuration (duration, colors, thresholds)
 but resets the countdown to the full duration and begins timing again.</p>
 <p>If no timer exists, this method has no effect.</p>
@@ -155,7 +155,7 @@ but resets the countdown to the full duration and begins timing again.</p>
 <li>Restarting after a game over</li>
 <li>Resetting during testing or debugging</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.is_game_timer_expired" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#427-429">Source</a><h4 class="code-header">pub fn <a href="#method.is_game_timer_expired" class="fn">is_game_timer_expired</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Checks whether the game timer has expired (reached zero).</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.is_game_timer_expired" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#457-459">Source</a><h4 class="code-header">pub fn <a href="#method.is_game_timer_expired" class="fn">is_game_timer_expired</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Checks whether the game timer has expired (reached zero).</p>
 <h5 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h5>
 <p><code>true</code> if the timer exists and has reached zero, <code>false</code> if the timer
 is still running or no timer exists.</p>
@@ -164,7 +164,7 @@ is still running or no timer exists.</p>
     <span class="comment">// Handle timeout condition (e.g., game over, move to next level)
     </span>game_state.current_screen = CurrentScreen::GameOver;
 }</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.set_level" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#450-452">Source</a><h4 class="code-header">pub fn <a href="#method.set_level" class="fn">set_level</a>(&amp;mut self, level: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.i32.html">i32</a>)</h4></section></summary><div class="docblock"><p>Updates the current game level.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_level" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#480-482">Source</a><h4 class="code-header">pub fn <a href="#method.set_level" class="fn">set_level</a>(&amp;mut self, level: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.i32.html">i32</a>)</h4></section></summary><div class="docblock"><p>Updates the current game level.</p>
 <p>This method updates the level counter displayed in the game UI.
 The level affects gameplay difficulty, timer duration, enemy behavior,
 and other game mechanics.</p>
@@ -178,7 +178,7 @@ and other game mechanics.</p>
 
 <span class="comment">// Reset to level 1 for new game
 </span>game_state.set_level(<span class="number">1</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.set_score" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#473-475">Source</a><h4 class="code-header">pub fn <a href="#method.set_score" class="fn">set_score</a>(&amp;mut self, score: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Updates the current game score.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_score" class="method"><a class="src rightside" href="../../src/mirador/game/mod.rs.html#503-505">Source</a><h4 class="code-header">pub fn <a href="#method.set_score" class="fn">set_score</a>(&amp;mut self, score: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Updates the current game score.</p>
 <p>The score is displayed in the game UI and typically increases based on
 player performance, time remaining, items collected, or other gameplay factors.</p>
 <h5 id="parameters-2"><a class="doc-anchor" href="#parameters-2">§</a>Parameters</h5>

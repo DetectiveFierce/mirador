@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["clear_and_save_measurements","clear_measurements","force_save_results","get_fps_stats","get_measurement_count","get_measurements","print_summary","record_frame","scoped_timer","time","write_results_to_file","write_results_to_file_default"],"struct":["ScopedTimer","Timer"]};
