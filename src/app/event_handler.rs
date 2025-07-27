@@ -184,7 +184,7 @@ impl App {
         if width > 0 && height > 0 {
             let state = match &mut self.state {
                 Some(state) => state,
-                None => {
+                _ => {
                     eprintln!("Cannot resize surface without state initialized!");
                     #[cfg(debug_assertions)]
                     eprintln!("Backtrace: {:?}", std::backtrace::Backtrace::capture());
@@ -306,7 +306,7 @@ impl ApplicationHandler for App {
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
         let state = match self.state.as_mut() {
             Some(state) => state,
-            None => {
+            _ => {
                 panic!("State not initialized");
             }
         };

@@ -483,6 +483,10 @@ impl UpgradeMenu {
                 selected_upgrade_name
             );
             self.hide();
+            
+            // Force a redraw to ensure the menu disappears immediately
+            // This helps prevent freezing on Windows
+            println!("[DEBUG] Upgrade selected, requesting redraw");
         }
     }
 

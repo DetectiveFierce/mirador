@@ -608,6 +608,7 @@ impl ButtonManager {
                 button: MouseButton::Left,
                 ..
             } => {
+                println!("[DEBUG] Mouse pressed at position: {:?}", self.mouse_position);
                 self.mouse_pressed = true;
                 self.pressed_buttons.clear(); // Clear previous press cycle
                 self.update_button_states();
@@ -617,6 +618,13 @@ impl ButtonManager {
                 button: MouseButton::Left,
                 ..
             } => {
+                println!("[DEBUG] Mouse released at position: {:?}", self.mouse_position);
+                println!("[DEBUG] Mouse pressed state: {}", self.mouse_pressed);
+                
+                // Force update button states before checking for clicks
+                // This ensures button states are current on Windows
+                self.update_button_states();
+                
                 // Check for button clicks using both current state and pressed_buttons set
                 // This handles platform-specific timing differences in mouse event processing
                 let mut clicked_button = None;
@@ -624,6 +632,7 @@ impl ButtonManager {
                 // First check current button states
                 for button in self.buttons.values() {
                     if button.visible && button.enabled && button.state == ButtonState::Pressed {
+                        println!("[DEBUG] Found pressed button: {}", button.id);
                         clicked_button = Some(button.id.clone());
                         break;
                     }
@@ -632,12 +641,14 @@ impl ButtonManager {
                 // If no button found in current state, check the pressed_buttons set
                 // This handles cases where the mouse moved outside the button during press
                 if clicked_button.is_none() {
+                    println!("[DEBUG] No pressed button found, checking pressed_buttons set: {:?}", self.pressed_buttons);
                     for button_id in &self.pressed_buttons {
                         if let Some(button) = self.buttons.get(button_id) {
                             if button.visible && button.enabled {
                                 // Check if mouse is still over the button or was over it during press
                                 let is_hovered = button
                                     .contains_point(self.mouse_position.0, self.mouse_position.1);
+                                println!("[DEBUG] Checking button {}: hovered = {}", button_id, is_hovered);
                                 if is_hovered {
                                     clicked_button = Some(button_id.clone());
                                     break;
@@ -647,8 +658,27 @@ impl ButtonManager {
                     }
                 }
 
+                // Additional fallback: check if mouse is over any visible button
+                if clicked_button.is_none() {
+                    println!("[DEBUG] No button found in pressed state, checking hover state");
+                    for button in self.buttons.values() {
+                        if button.visible && button.enabled {
+                            let is_hovered = button
+                                .contains_point(self.mouse_position.0, self.mouse_position.1);
+                            if is_hovered {
+                                println!("[DEBUG] Found hovered button: {}", button.id);
+                                clicked_button = Some(button.id.clone());
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 if let Some(clicked_id) = clicked_button {
+                    println!("[DEBUG] Setting just_clicked to: {}", clicked_id);
                     self.just_clicked = Some(clicked_id);
+                } else {
+                    println!("[DEBUG] No button was clicked");
                 }
 
                 // Now update mouse state

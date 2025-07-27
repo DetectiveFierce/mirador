@@ -117,7 +117,15 @@ async fn run() {
         }
     };
 
+    // Configure event loop for better cross-platform compatibility
     event_loop.set_control_flow(ControlFlow::Poll);
+    
+    // Windows-specific configuration
+    #[cfg(target_os = "windows")]
+    {
+        // Ensure Windows processes events with proper timing
+        event_loop.set_control_flow(ControlFlow::Wait);
+    }
 
     let mut app = app::App::new();
 

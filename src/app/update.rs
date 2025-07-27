@@ -95,6 +95,8 @@ impl App {
                 state.game_state.capture_mouse = true;
                 if let Some(window) = self.window.as_ref() {
                     state.triage_mouse(window);
+                    // Force a redraw to ensure the transition is visible
+                    window.request_redraw();
                 }
                 {
                     // Limit the mutable borrow of self/state to this block

@@ -2,20 +2,20 @@ use std::env;
 use std::path::Path;
 
 fn main() {
-    let out_dir = env::var("OUT_DIR").unwrap();
+
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
     // Path to the source icon
     let icon_path = Path::new(&manifest_dir)
         .join("assets")
-        .join("maze-icon.png");
+        .join("maze-icon.ico");
 
     if !icon_path.exists() {
         panic!("Icon file not found: {:?}", icon_path);
     }
 
     // Tell Cargo to rerun this build script if the icon changes
-    println!("cargo:rerun-if-changed=assets/maze-icon.png");
+    println!("cargo:rerun-if-changed=assets/maze-icon.ico");
 
     // Windows: Use winres to embed the icon
     #[cfg(target_os = "windows")]
@@ -28,15 +28,9 @@ fn main() {
     // Linux: Create a desktop file and install script
     #[cfg(target_os = "linux")]
     {
-        // Load and resize the icon for Linux
-        let img = image::open(&icon_path).expect("Failed to open icon image");
-        let rgba = img.to_rgba8();
-        let png_256 =
-            image::imageops::resize(&rgba, 256, 256, image::imageops::FilterType::Lanczos3);
-
-        // Save the resized icon
-        let png_path = Path::new(&out_dir).join("mirador-icon.png");
-        png_256.save(&png_path).expect("Failed to save PNG icon");
+        // Copy the ICO file to output directory
+        let ico_path = Path::new(&out_dir).join("mirador-icon.ico");
+        std::fs::copy(&icon_path, &ico_path).expect("Failed to copy ICO icon");
 
         // Create desktop file content
         let desktop_content = "[Desktop Entry]\n\
@@ -77,7 +71,7 @@ sudo mkdir -p /usr/share/icons/hicolor/256x256/apps
 # Install files
 sudo cp "$EXECUTABLE" /usr/local/bin/
 sudo cp "$DESKTOP_FILE" /usr/share/applications/
-sudo cp "$ICON_FILE" /usr/share/icons/hicolor/256x256/apps/mirador.png
+sudo cp "$ICON_FILE" /usr/share/icons/hicolor/256x256/apps/mirador.ico
 
 # Update icon cache
 sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor
@@ -86,7 +80,7 @@ echo "Mirador installed successfully!"
 echo "You can now find it in your application menu."#,
             manifest_dir,
             desktop_path.to_string_lossy(),
-            png_path.to_string_lossy()
+            ico_path.to_string_lossy()
         );
 
         let install_path = Path::new(&out_dir).join("install.sh");
