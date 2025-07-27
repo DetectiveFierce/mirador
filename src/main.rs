@@ -25,6 +25,7 @@
 
 #![warn(missing_docs)]
 pub mod app;
+pub mod assets;
 pub mod benchmarks;
 pub mod game;
 pub mod math;

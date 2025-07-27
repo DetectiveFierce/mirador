@@ -1,7 +1,6 @@
 //! Update logic for Mirador App.
 //!
 //! Contains update and game logic methods for the App struct.
-
 use crate::game::GameTimer;
 use crate::game::enemy::place_enemy_standard;
 use crate::game::maze::parse_maze_file;
@@ -19,35 +18,7 @@ use wgpu::util::DeviceExt;
 use super::event_handler::App;
 
 impl App {
-    /// Handles the main rendering loop and game state updates.
-    ///
-    /// This method is called every frame and orchestrates the complete rendering pipeline.
-    /// It handles different game screens (loading, title, game, pause, upgrade menu),
-    /// updates game state, renders the scene, and manages UI overlays.
-    ///
-    /// # Rendering Pipeline
-    /// 1. **Screen-Specific Logic**: Handles different game screens appropriately
-    /// 2. **Game State Updates**: Updates player, enemy, audio, and UI systems
-    /// 3. **Rendering**: Creates command encoder and renders the scene
-    /// 4. **UI Overlays**: Renders pause menu, upgrade menu, and debug information
-    /// 5. **Frame Submission**: Submits commands and presents the frame
-    ///
-    /// # Screen Handling
-    /// - **Loading**: Handles maze generation and loading screen rendering
-    /// - **Title**: Renders title screen and handles transitions
-    /// - **Game**: Updates player movement, enemy AI, and game logic
-    /// - **Pause**: Renders pause menu overlay
-    /// - **UpgradeMenu**: Handles upgrade selection and menu interactions
-    ///
-    /// # Error Handling
-    /// - Logs errors for canvas update failures
-    /// - Continues execution even if some systems fail
-    /// - Provides debug backtraces in debug builds
-    ///
-    /// # Performance
-    /// - Skips rendering if window is minimized
-    /// - Uses efficient command encoding for GPU operations
-    /// - Manages GPU resource cleanup and polling
+    // handle_redraw
     pub fn handle_redraw(&mut self) {
         let window = self
             .window
@@ -62,9 +33,6 @@ impl App {
             .state
             .as_mut()
             .expect("State must be initialized before use");
-
-        // Start timing the entire frame
-        state.profiler.start_section("total_frame");
 
         if state.game_state.current_screen == CurrentScreen::Loading {
             state
@@ -86,11 +54,8 @@ impl App {
 
             // Check if upgrade menu is no longer visible (upgrade was selected)
             if !state.upgrade_menu.is_visible() {
-                println!("Upgrade menu is no longer visible, transitioning to loading screen...");
                 // Continue to next level
                 state.game_state.current_screen = CurrentScreen::Loading;
-                // Ensure upgrade menu is completely hidden
-                state.upgrade_menu.hide();
                 // Recapture mouse when leaving upgrade menu
                 state.game_state.capture_mouse = true;
                 if let Some(window) = self.window.as_ref() {
@@ -100,7 +65,14 @@ impl App {
                     // Limit the mutable borrow of self/state to this block
                     self.new_level(false);
                 }
-                // Upgrade effects are already applied in handle_input when the upgrade was selected
+                // Now that the mutable borrow is released, we can safely borrow state again
+                let state = self
+                    .state
+                    .as_mut()
+                    .expect("State must be initialized before use");
+                state
+                    .upgrade_menu
+                    .apply_upgrade_effects(&mut state.game_state);
                 return;
             } else {
                 state.game_state.capture_mouse = false;
@@ -113,14 +85,13 @@ impl App {
                     .loading_screen_renderer
                     .maze
                     .lock()
-                    .expect("Failed to lock maze")
+                    .unwrap()
                     .walls,
                 state.game_state.is_test_mode,
             );
         }
 
         // Update game state and UI
-        state.profiler.start_section("game_state_update");
         state.key_state.update(&mut state.game_state);
         state.update_game_ui(window);
         state
@@ -133,25 +104,14 @@ impl App {
             .audio_manager
             .update_enemy_position("enemy", state.game_state.enemy.pathfinder.position)
             .expect("Failed to update enemy position");
-        state.profiler.end_section("game_state_update");
-
-        // Update audio manager to process any pending audio operations
-        state.profiler.start_section("audio_update");
-        if let Err(e) = state.game_state.audio_manager.update() {
-            println!("Failed to update audio manager: {:?}", e);
-        }
-        state.profiler.end_section("audio_update");
 
         // Prepare rendering commands
-        state.profiler.start_section("command_encoder_creation");
         let mut encoder = state
             .wgpu_renderer
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        state.profiler.end_section("command_encoder_creation");
 
         // Update canvas surface
-        state.profiler.start_section("canvas_update");
         let (surface_view, surface_texture) = match state.wgpu_renderer.update_canvas(
             window,
             &mut encoder,
@@ -167,7 +127,6 @@ impl App {
                 return;
             }
         };
-        state.profiler.end_section("canvas_update");
 
         // --- Debug Info Panel ---
         if state.pause_menu.is_debug_panel_visible() {
@@ -226,7 +185,6 @@ impl App {
             }
         }
         // Prepare and render text BEFORE pause menu overlay
-        state.profiler.start_section("text_preparation");
         if let Err(e) = state.text_renderer.prepare(
             &state.wgpu_renderer.device,
             &state.wgpu_renderer.queue,
@@ -234,7 +192,6 @@ impl App {
         ) {
             println!("Failed to prepare text renderer: {}", e);
         }
-        state.profiler.end_section("text_preparation");
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -250,11 +207,9 @@ impl App {
                 label: Some("text render pass"),
                 occlusion_query_set: None,
             });
-            state.profiler.start_section("text_rendering");
             if let Err(e) = state.text_renderer.render(&mut render_pass) {
                 println!("Failed to render text: {}", e);
             }
-            state.profiler.end_section("text_rendering");
         }
         // --- End Game UI ---
 
@@ -404,54 +359,17 @@ impl App {
         window.request_redraw();
 
         // Submit commands and present
-        state.profiler.start_section("command_submission");
         state.wgpu_renderer.queue.submit(Some(encoder.finish()));
-        state.profiler.end_section("command_submission");
 
         // Present the surface texture and ensure it's properly handled
-        state.profiler.start_section("surface_presentation");
         surface_texture.present();
-        state.profiler.end_section("surface_presentation");
 
         // Poll the device to process any pending operations
         // This helps ensure resources are properly cleaned up and prevents
         // the "SurfaceSemaphores still in use" error during cleanup
-        state.profiler.start_section("device_polling");
         state.wgpu_renderer.device.poll(wgpu::Maintain::Poll);
-        state.profiler.end_section("device_polling");
-
-        // Manage enemy locked state based on timer and test mode
-        if state.game_state.current_screen == CurrentScreen::Game {
-            let was_locked = state.game_state.enemy.pathfinder.locked;
-            if state.game_state.is_test_mode {
-                // Always keep enemy locked in test mode
-                state.game_state.enemy.pathfinder.locked = true;
-            } else if state.game_state.game_ui.timer.is_some() {
-                // In normal mode, unlock enemy only when timer is running (not paused)
-                if let Some(timer) = &state.game_state.game_ui.timer {
-                    if timer.is_running && timer.paused_at.is_none() {
-                        state.game_state.enemy.pathfinder.locked = false;
-                    } else {
-                        // Lock enemy when timer is paused or stopped
-                        state.game_state.enemy.pathfinder.locked = true;
-                    }
-                }
-            } else {
-                // Lock enemy when no timer exists
-                state.game_state.enemy.pathfinder.locked = true;
-            }
-
-            // Debug: Print when enemy lock state changes
-            if was_locked != state.game_state.enemy.pathfinder.locked {
-                println!(
-                    "Enemy lock state changed: {} -> {}",
-                    was_locked, state.game_state.enemy.pathfinder.locked
-                );
-            }
-        }
 
         // Update enemy pathfinding
-        state.profiler.start_section("enemy_pathfinding");
         state.game_state.enemy.update(
             state.game_state.player.position,
             state.game_state.delta_time,
@@ -463,58 +381,32 @@ impl App {
                     .cylinder_intersects_geometry(from, to, 5.0)
             },
         );
-        state.profiler.end_section("enemy_pathfinding");
 
         // Handle title screen animation if needed
         if state.game_state.current_screen == CurrentScreen::Loading {
             state.game_state.game_ui.stop_timer();
-            let _ = state; // Release the borrow
             self.handle_maze_generation();
-            return; // Exit early to avoid the borrow checker issue
         } else if state.game_state.current_screen == CurrentScreen::NewGame {
             state.text_renderer.hide_game_over_display();
             state.upgrade_menu.upgrade_manager.player_upgrades.clear();
             state.game_state.player = crate::game::player::Player::new();
             state.game_state.enemy = crate::game::enemy::Enemy::new([0.0, 30.0, 0.0], 150.0);
-            let _ = state; // Release the borrow
             self.new_level(true);
-            return; // Exit early to avoid the borrow checker issue
         } else if state.game_state.current_screen == CurrentScreen::Game
             && Some(state.game_state.player.current_cell) == state.game_state.exit_cell
         {
-            // Transition to ExitReached screen
-            state.game_state.current_screen = CurrentScreen::ExitReached;
-            state.game_state.exit_reached_timer = 0.0;
             state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
             state.game_state.enemy.pathfinder.locked = true;
-            if !state.game_state.beeper_rise_played {
-                let _ = state.game_state.audio_manager.play_beeper_rise();
-                state.game_state.beeper_rise_played = true;
-            }
-        } else if state.game_state.current_screen == CurrentScreen::ExitReached {
-            // Handle exit reached upward movement
-            state.game_state.exit_reached_timer += state.game_state.delta_time;
 
-            // Move player upward for 3 seconds
-            if state.game_state.exit_reached_timer < 1.0 {
-                state.game_state.player.move_up(state.game_state.delta_time);
+            // Check if we should show upgrade menu (every 3 levels)
+            let current_level = state.game_state.game_ui.level;
+            if current_level > 0 && current_level % 3 == 0 {
+                // Show upgrade menu
+                state.game_state.current_screen = CurrentScreen::UpgradeMenu;
+                state.upgrade_menu.show();
             } else {
-                // After 3 seconds, transition to appropriate next screen
-                let current_level = state.game_state.game_ui.level;
-                if current_level > 0 && current_level % 3 == 0 {
-                    // Show upgrade menu
-                    state.game_state.current_screen = CurrentScreen::UpgradeMenu;
-                    state.upgrade_menu.show();
-                } else {
-                    // Continue to next level
-                    // Store the state we need before calling new_level
-                    let should_continue = true;
-                    let _ = state; // Release the borrow
-                    if should_continue {
-                        self.new_level(false);
-                    }
-                    return; // Exit early to avoid the borrow checker issue
-                }
+                // Continue to next level
+                self.new_level(false);
             }
         } else if state.game_state.current_screen == CurrentScreen::Game {
             state
@@ -522,66 +414,13 @@ impl App {
                 .audio_manager
                 .resume_enemy_audio("enemy")
                 .expect("Failed to resume enemy audio");
-        }
-
-        // End timing the entire frame and record FPS
-        state.profiler.end_section("total_frame");
-
-        // Record frame time for performance analysis
-        crate::benchmark!("frame_time", {
-            // This is just a marker - the actual timing is done by the profiler
-        });
-
-        state.fps_counter.record_frame();
-
-        // Record frame in global benchmark system for FPS statistics
-        crate::benchmarks::utils::record_frame();
-
-        // Print performance summary every 1000 frames (approximately every 16 seconds at 60 FPS)
-        if state.fps_counter.frame_times.len() % 1000 == 0 {
-            // Note: We can't call print_summary here due to borrow checker constraints
-            // The summary will be available when the game exits or when explicitly called
-        }
-
-        // Save benchmark results every 5000 frames (approximately every 83 seconds at 60 FPS)
-        // This ensures we don't lose data if the program crashes
-        if state.fps_counter.frame_times.len() % 5000 == 0
-            && state.fps_counter.frame_times.len() > 0
-        {
-            // Use force_save_results to avoid borrow checker issues
-            if let Err(e) = crate::benchmarks::utils::force_save_results() {
-                eprintln!(
-                    "[BENCHMARK] Failed to save benchmark results during periodic save: {}",
-                    e
-                );
+            if !state.game_state.is_test_mode {
+                state.game_state.enemy.pathfinder.locked = false;
             }
         }
     }
 
-    /// Updates frame timing and performance metrics.
-    ///
-    /// This method calculates delta time between frames, updates FPS counter,
-    /// and manages performance-related state. It's called every frame to ensure
-    /// smooth gameplay and accurate timing.
-    ///
-    /// # Arguments
-    /// - `current_time`: The current frame timestamp
-    ///
-    /// # Calculations
-    /// - **Delta Time**: Time elapsed since the last frame
-    /// - **FPS**: Frames per second, updated every second
-    /// - **Frame Count**: Total frames rendered since start
-    /// - **Elapsed Time**: Total time since application start
-    ///
-    /// # Performance Monitoring
-    /// - Updates debug renderer vertices if bounding box rendering is enabled
-    /// - Maintains accurate timing for game systems
-    /// - Provides timing data for performance analysis
-    ///
-    /// # Side Effects
-    /// - Updates `game_state.delta_time` for use by other systems
-    /// - Updates FPS counter and frame timing state
-    /// - Triggers debug renderer updates when needed
+    // handle_frame_timing
     pub fn handle_frame_timing(&mut self, current_time: Instant) {
         if let Some(state) = self.state.as_mut() {
             let duration = current_time.duration_since(state.game_state.last_fps_time);
@@ -620,42 +459,9 @@ impl App {
         }
     }
 
-    /// Handles procedural maze generation and loading screen logic.
-    ///
-    /// This method manages the maze generation process, which can be either
-    /// animated (showing generation steps) or instant (fast mode). It handles
-    /// both normal maze generation and test mode maze creation.
-    ///
-    /// # Generation Process
-    /// 1. **Test Mode Check**: Skips generation and goes directly to game in test mode
-    /// 2. **Animation Control**: Manages generation speed and progress reporting
-    /// 3. **Completion Handling**: Saves maze to file and generates geometry
-    /// 4. **State Setup**: Initializes player, enemy, and collision systems
-    ///
-    /// # Animation Modes
-    /// - **Normal Mode**: Shows generation steps with configurable speed
-    /// - **Fast Mode**: Completes generation quickly for faster gameplay
-    /// - **Test Mode**: Uses predefined test maze instead of generation
-    ///
-    /// # Progress Reporting
-    /// - Logs generation progress every 50 steps
-    /// - Shows completion percentage
-    /// - Automatically completes generation when 70%+ complete
-    ///
-    /// # Maze Completion
-    /// - Saves maze to file with timestamp
-    /// - Generates floor, wall, and ceiling geometry
-    /// - Places player at maze entrance
-    /// - Places enemy based on exit position
-    /// - Builds collision system from maze data
-    ///
-    /// # Audio Integration
-    /// - Plays completion sound when generation finishes
-    /// - Manages audio state during generation process
+    // handle_maze_generation
     pub fn handle_maze_generation(&mut self) {
         if let Some(state) = self.state.as_mut() {
-            // Start timing maze generation
-            state.profiler.start_section("maze_generation");
             // If in test mode, skip maze generation entirely and go directly to game
             if state.game_state.is_test_mode {
                 println!("Test mode enabled - skipping maze generation and going to game");
@@ -690,17 +496,15 @@ impl App {
 
             // Process animation steps
             let steps = if renderer.generator.fast_mode {
-                2000
+                300
             } else {
                 100
             };
-            state.profiler.start_section("maze_generation_steps");
             for _ in 0..steps {
                 if !renderer.generator.step() {
                     break;
                 }
             }
-            state.profiler.end_section("maze_generation_steps");
 
             // Report progress
             let (current, total) = renderer.generator.get_progress();
@@ -713,15 +517,6 @@ impl App {
                     (current as f32 * 100.0 / total.max(1) as f32)
                 );
             }
-
-            // Complete generation all at once if less than 10% remains
-            let progress_ratio = current as f32 / total.max(1) as f32;
-            if progress_ratio > 0.7 && !renderer.generator.is_complete() {
-                while !renderer.generator.is_complete() {
-                    renderer.generator.step();
-                }
-            }
-
             if renderer.generator.is_complete() && state.game_state.maze_path.is_none() {
                 println!("Maze generation complete! Saving to file...");
 
@@ -771,9 +566,7 @@ impl App {
                 // Handle completion
                 if renderer.generator.is_complete() {
                     println!("Maze generation complete! Saving to file...");
-                    state.profiler.start_section("maze_completion_processing");
-
-                    let maze_lock = renderer.maze.lock().expect("Failed to lock maze");
+                    let maze_lock = renderer.maze.lock().unwrap();
                     state.game_state.maze_path = maze_lock.save_to_file().map_or_else(
                         |err| {
                             eprintln!("Failed to save maze: {}", err);
@@ -784,12 +577,7 @@ impl App {
 
                     // Generate geometry if maze was saved successfully
                     if let Some(maze_path) = &state.game_state.maze_path {
-                        state.profiler.start_section("maze_geometry_generation");
-                        let (maze_grid, exit_cell) = parse_maze_file(
-                            maze_path
-                                .to_str()
-                                .expect("Failed to convert path to string"),
-                        );
+                        let (maze_grid, exit_cell) = parse_maze_file(maze_path.to_str().unwrap());
                         let (mut floor_vertices, exit_position) = Vertex::create_floor_vertices(
                             &maze_grid,
                             exit_cell,
@@ -799,12 +587,6 @@ impl App {
                         state.wgpu_renderer.game_renderer.exit_position = Some(exit_position);
 
                         floor_vertices.append(&mut Vertex::create_wall_vertices(
-                            &maze_grid,
-                            state.game_state.is_test_mode,
-                        ));
-
-                        // Add ceiling vertices
-                        floor_vertices.append(&mut Vertex::create_ceiling_vertices(
                             &maze_grid,
                             state.game_state.is_test_mode,
                         ));
@@ -821,10 +603,8 @@ impl App {
                         // Update vertex count so the renderer knows how many vertices to draw
                         state.wgpu_renderer.game_renderer.vertex_count =
                             floor_vertices.len() as u32;
-                        state.profiler.end_section("maze_geometry_generation");
 
                         if let Some(exit_cell_position) = exit_cell {
-                            state.profiler.start_section("enemy_placement");
                             state.game_state.exit_cell = Some(exit_cell_position);
                             state.game_state.enemy = place_enemy_standard(
                                 maze_to_world(
@@ -842,15 +622,12 @@ impl App {
                                         .cylinder_intersects_geometry(from, to, 5.0)
                                 },
                             );
-                            state.profiler.end_section("enemy_placement");
                         }
 
-                        state.profiler.start_section("collision_system_build");
                         state
                             .game_state
                             .collision_system
                             .build_from_maze(&maze_grid, state.game_state.is_test_mode);
-                        state.profiler.end_section("collision_system_build");
 
                         // Spawn the player at the bottom-left corner of the maze
                         state
@@ -859,64 +636,12 @@ impl App {
                             .spawn_at_maze_entrance(&maze_grid, state.game_state.is_test_mode);
                         // (No automatic transition to Game here)
                     }
-
-                    state.profiler.end_section("maze_completion_processing");
                 }
             }
         }
-
-        // End timing maze generation
-        if let Some(state) = self.state.as_mut() {
-            state.profiler.end_section("maze_generation");
-        }
     }
 
-    /// Initializes a new level or restarts the game.
-    ///
-    /// This method handles the transition to a new level or game restart. It manages
-    /// player state, enemy positioning, timer configuration, and scoring systems.
-    /// The method implements a sophisticated scoring system based on completion time
-    /// and performance metrics.
-    ///
-    /// # Arguments
-    /// - `game_over`: Whether this is a game restart (true) or level progression (false)
-    ///
-    /// # Game Restart (game_over = true)
-    /// - Resets player to starting position and stats
-    /// - Resets level to 1 and score to 0
-    /// - Initializes new timer with default configuration
-    /// - Restarts background music
-    /// - Clears all upgrade effects
-    ///
-    /// # Level Progression (game_over = false)
-    /// - Preserves player stats and upgrades
-    /// - Resets only position and orientation
-    /// - Calculates performance-based scoring
-    /// - Updates level counter
-    /// - Maintains upgrade effects
-    ///
-    /// # Scoring System
-    /// The scoring system rewards performance with multiple components:
-    /// - **Base Score**: 150 points per level
-    /// - **Speed Bonus**: Multiplier based on completion time
-    ///   - Exceptional (≤15s): 3x-5x multiplier
-    ///   - Good (≤25s): 1.5x-3x multiplier
-    ///   - Average (≤35s): 0.5x-1.5x multiplier
-    ///   - Slow (>35s): 0.1x-0.5x multiplier
-    /// - **Level Bonus**: Additional points for higher levels (level > 5)
-    /// - **Consecutive Bonus**: Reward for sustained good performance
-    ///
-    /// # State Management
-    /// - Resets maze path to trigger new generation
-    /// - Clears exit cell and timer state
-    /// - Resets enemy position and locks enemy
-    /// - Manages audio state transitions
-    ///
-    /// # Player State
-    /// - **Game Restart**: Complete reset of all stats
-    /// - **Level Progression**: Preserves upgrades, resets position only
-    /// - **Height Adjustment**: Accounts for TallBoots upgrades
-    /// - **Stamina Reset**: Refills stamina for new level
+    // new_level
     pub fn new_level(&mut self, game_over: bool) {
         let state = self
             .state
@@ -935,15 +660,10 @@ impl App {
         } else {
             // Only reset position (x/z), orientation, and cell, not stats or height
             let player = &mut state.game_state.player;
+            let current_height = player.position[1];
             player.position[0] = 0.0;
             player.position[2] = 0.0;
-            // Set height based on TallBoots upgrades
-            let tall_boots_count = state
-                .upgrade_menu
-                .upgrade_manager
-                .get_upgrade_count(&crate::game::upgrades::AvailableUpgrade::TallBoots);
-            player.position[1] = crate::math::coordinates::constants::PLAYER_HEIGHT
-                + 5.0 * (tall_boots_count as f32);
+            player.position[1] = current_height; // preserve height
             player.pitch = 3.0;
             player.yaw = 316.0;
             player.fov = 100.0;
@@ -955,8 +675,6 @@ impl App {
         state.game_state.enemy.pathfinder.position = [0.0, 30.0, 0.0];
         state.game_state.enemy.pathfinder.locked = true;
         state.game_state.exit_cell = None; // Clear exit cell to prevent accidental win condition
-        state.game_state.exit_reached_timer = 0.0; // Reset exit reached timer
-        state.game_state.beeper_rise_played = false; // Reset beeper rise played flag
 
         // Stop and reset timer
         if let Some(timer) = &mut state.game_state.game_ui.timer {
@@ -968,21 +686,6 @@ impl App {
             state.game_state.set_level(1);
             state.game_state.set_score(0);
             state.game_state.game_ui.timer = Some(GameTimer::new(TimerConfig::default()));
-
-            // Restart background music for new game
-            state
-                .game_state
-                .audio_manager
-                .restart_background_music()
-                .expect("Failed to restart background music");
-
-            // Set game audio volumes after restarting background music
-            state
-                .game_state
-                .audio_manager
-                .set_game_volumes()
-                .expect("Failed to set game volumes");
-
             game::update_game_ui(
                 &mut state.text_renderer,
                 &mut state.game_state.game_ui,

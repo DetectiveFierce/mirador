@@ -39,10 +39,9 @@ use glyphon::{
     Weight,
 };
 use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
 use wgpu::{self, Device, Queue, RenderPass, SurfaceConfiguration};
 use winit::window::Window;
+use crate::assets;
 
 /// Defines the visual styling properties for text rendering.
 ///
@@ -50,7 +49,7 @@ use winit::window::Window;
 /// size, color, and typographic properties like weight and style.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextStyle {
-    /// The font family name (e.g., "Arial", "HankenGrotesk")
+    /// The font family name (e.g., "Arial", "Hanken Grotesk")
     pub font_family: String,
     /// Font size in pixels
     pub font_size: f32,
@@ -156,7 +155,7 @@ impl TextRenderer {
     /// Creates a new text renderer instance.
     ///
     /// Initializes all the necessary Glyphon components and attempts to load
-    /// a custom HankenGrotesk font. If the font loading fails, it falls back
+    /// a custom Hanken Grotesk font. If the font loading fails, it falls back
     /// to system fonts gracefully.
     ///
     /// # Arguments
@@ -232,50 +231,29 @@ impl TextRenderer {
 
         // Benchmark custom font loading
         init_profiler.start_section("custom_font_loading");
-        match renderer.load_font(
-            "fonts/HankenGrotesk/HankenGrotesk-Medium.ttf",
-            "HankenGrotesk",
-        ) {
-            Ok(_) => println!("Successfully loaded HankenGrotesk font"),
-            Err(e) => {
-                println!(
-                    "Failed to load HankenGrotesk font: {}. Using system fonts.",
-                    e
-                );
-            }
-        }
+        renderer.load_embedded_fonts();
         init_profiler.end_section("custom_font_loading");
 
         renderer
     }
 
-    /// Loads a custom font from a file and registers it with the font system.
+    /// Loads all embedded fonts and registers them with the font system.
     ///
-    /// This method reads font data from the specified file path and adds it to
-    /// the font database. The font can then be referenced by the provided name
+    /// This method loads all fonts that are embedded in the binary using `include_bytes!()`
+    /// and adds them to the font database. The fonts can then be referenced by their names
     /// in text styles.
-    ///
-    /// # Arguments
-    ///
-    /// * `font_path` - Path to the font file (typically .ttf or .otf)
-    /// * `font_name` - Name to register the font under for later reference
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(())` if the font was loaded successfully
-    /// * `Err(std::io::Error)` if the file could not be read
     ///
     /// # Example
     ///
     /// ```rust
-    /// renderer.load_font("fonts/MyFont.ttf", "MyCustomFont")?;
+    /// renderer.load_embedded_fonts();
     /// ```
-    pub fn load_font(&mut self, font_path: &str, font_name: &str) -> Result<(), std::io::Error> {
-        let font_data = fs::read(Path::new(font_path))?;
-        self.font_system.db_mut().load_font_data(font_data);
-        self.loaded_fonts.push(font_name.to_string());
-        println!("Loaded font: {} from {}", font_name, font_path);
-        Ok(())
+    pub fn load_embedded_fonts(&mut self) {
+        for (font_name, font_data) in assets::fonts() {
+            self.font_system.db_mut().load_font_data(font_data.to_vec());
+            self.loaded_fonts.push(font_name.to_string());
+            println!("Loaded embedded font: {}", font_name);
+        }
     }
 
     /// Creates a new text buffer with the specified content, style, and position.
@@ -324,7 +302,7 @@ impl TextRenderer {
         let position = position.unwrap_or_default();
 
         // If the requested font isn't loaded, fall back to a system font
-        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "HankenGrotesk" {
+        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk" {
             style.font_family = "DejaVu Sans".to_string();
         }
 
@@ -399,7 +377,7 @@ impl TextRenderer {
             .ok_or_else(|| format!("Text buffer '{}' not found", id))?;
 
         // If the requested font isn't loaded, fall back to a system font
-        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "HankenGrotesk" {
+        if !self.loaded_fonts.contains(&style.font_family) && style.font_family == "Hanken Grotesk" {
             style.font_family = "DejaVu Sans".to_string();
         }
 
@@ -726,7 +704,7 @@ impl TextRenderer {
         let scale = (height as f32 / reference_height).clamp(0.7, 2.0);
         // Main "Game Over!" text - large and centered
         let game_over_style = TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size: (72.0 * scale).clamp(32.0, 180.0),
             line_height: (90.0 * scale).clamp(36.0, 220.0),
             color: Color::rgb(255, 255, 255), // White color
@@ -750,7 +728,7 @@ impl TextRenderer {
         );
         // Restart instruction text - smaller and below the main text
         let restart_style = TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size: (24.0 * scale).clamp(12.0, 60.0),
             line_height: (30.0 * scale).clamp(16.0, 80.0),
             color: Color::rgb(255, 255, 255), // White color
@@ -900,7 +878,7 @@ impl TextRenderer {
             .get("game_over_title")
             .map(|buffer| buffer.style.clone())
             .unwrap_or_else(|| TextStyle {
-                font_family: "HankenGrotesk".to_string(),
+                font_family: "Hanken Grotesk".to_string(),
                 font_size: (72.0 * scale).clamp(32.0, 180.0),
                 line_height: (90.0 * scale).clamp(36.0, 220.0),
                 color: Color::rgb(255, 255, 255),
@@ -912,7 +890,7 @@ impl TextRenderer {
             .get("game_over_restart")
             .map(|buffer| buffer.style.clone())
             .unwrap_or_else(|| TextStyle {
-                font_family: "HankenGrotesk".to_string(),
+                font_family: "Hanken Grotesk".to_string(),
                 font_size: (24.0 * scale).clamp(12.0, 60.0),
                 line_height: (30.0 * scale).clamp(16.0, 80.0),
                 color: Color::rgb(255, 255, 255),

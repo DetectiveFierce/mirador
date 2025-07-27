@@ -125,10 +125,16 @@ impl App {
         });
 
         let window = Arc::new(window);
-        let initial_width = 1360;
-        let initial_height = 768;
-
-        let _ = window.request_inner_size(PhysicalSize::new(initial_width, initial_height));
+        
+        // Check if the window is maximized before setting a specific size
+        let is_maximized = window.is_maximized();
+        
+        if !is_maximized {
+            // Only set initial size if not maximized
+            let initial_width = 1360;
+            let initial_height = 768;
+            let _ = window.request_inner_size(PhysicalSize::new(initial_width, initial_height));
+        }
 
         // Benchmark surface creation
         init_profiler.start_section("surface_creation");
@@ -140,12 +146,21 @@ impl App {
 
         // Benchmark complete AppState initialization
         init_profiler.start_section("app_state_initialization");
+        
+        // Use actual window size if maximized, otherwise use initial size
+        let (width, height) = if is_maximized {
+            let size = window.inner_size();
+            (size.width, size.height)
+        } else {
+            (1360, 768)
+        };
+        
         let state = AppState::new(
             &self.instance,
             surface,
             &window,
-            initial_width,
-            initial_height,
+            width,
+            height,
         )
         .await;
         init_profiler.end_section("app_state_initialization");
@@ -217,12 +232,17 @@ impl ApplicationHandler for App {
     /// # Panics
     /// - If window creation fails
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window = match event_loop.create_window(Window::default_attributes()) {
+        // Create window with maximized state
+        let window_attributes = Window::default_attributes()
+            .with_maximized(true);
+            
+        let window = match event_loop.create_window(window_attributes) {
             Ok(window) => window,
             Err(err) => {
                 panic!("Failed to create window: {}", err);
             }
         };
+        
         pollster::block_on(self.set_window(window));
     }
 

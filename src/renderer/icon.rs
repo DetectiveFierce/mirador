@@ -1,13 +1,12 @@
 use wgpu::{
-    self, BindGroup, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites, Device,
+    BindGroup, BindGroupLayout, BufferUsages, ColorTargetState, ColorWrites, Device,
     FragmentState, MultisampleState, PrimitiveState, RenderPass, RenderPipeline,
-    SamplerBindingType, ShaderStages, Texture, TextureFormat, TextureView, VertexAttribute,
+    SamplerBindingType, ShaderStages, Texture, TextureFormat, VertexAttribute,
     VertexBufferLayout, VertexFormat, VertexState, util::DeviceExt,
 };
-
+use image;
 use std::collections::HashMap;
 use std::mem;
-use std::path::Path;
 
 /// Vertex data structure for rendering icon quads.
 ///
@@ -107,7 +106,7 @@ pub struct IconRenderer {
     /// Collection of icons to be rendered
     icons: Vec<Icon>,
     /// Cache of loaded textures, views, and bind groups keyed by texture ID
-    textures: HashMap<String, (Texture, TextureView, BindGroup)>,
+    textures: HashMap<String, (Texture, BindGroup)>,
     /// Current window width in pixels (used for coordinate conversion)
     window_width: f32,
     /// Current window height in pixels (used for coordinate conversion)
@@ -239,10 +238,10 @@ impl IconRenderer {
         }
     }
 
-    /// Loads a texture from a file path and creates associated GPU resources.
+    /// Loads a texture from embedded assets and creates associated GPU resources.
     ///
     /// This method:
-    /// 1. Loads an image from the specified file path
+    /// 1. Loads an image from embedded assets using the provided data
     /// 2. Converts it to RGBA8 format
     /// 3. Creates a WGPU texture and uploads the image data
     /// 4. Creates a texture view and sampler
@@ -252,7 +251,7 @@ impl IconRenderer {
     /// # Arguments
     /// * `device` - The WGPU device for creating resources
     /// * `queue` - The WGPU queue for uploading texture data
-    /// * `path` - File system path to the image file
+    /// * `texture_data` - The embedded texture data
     /// * `texture_id` - Unique identifier for this texture
     ///
     /// # Returns
@@ -260,18 +259,17 @@ impl IconRenderer {
     ///
     /// # Errors
     /// Returns an error if:
-    /// - The image file cannot be found or read
-    /// - The image format is not supported
+    /// - The image data cannot be decoded
     /// - GPU resource creation fails
-    pub fn load_texture(
+    pub fn load_texture_from_data(
         &mut self,
         device: &Device,
         queue: &wgpu::Queue,
-        path: &str,
+        texture_data: &[u8],
         texture_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Load and convert image to RGBA8
-        let img = image::open(Path::new(path))?;
+        let img = image::load_from_memory(texture_data)?;
         let rgba = img.to_rgba8();
         let dimensions = rgba.dimensions();
 
@@ -322,9 +320,8 @@ impl IconRenderer {
             ..Default::default()
         });
 
-        // Create bind group for this texture
+        // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some(&format!("Icon bind group: {}", texture_id)),
             layout: &self.bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
@@ -336,11 +333,116 @@ impl IconRenderer {
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
             ],
+            label: Some(&format!("Icon bind group: {}", texture_id)),
         });
 
-        // Cache all resources
-        self.textures
-            .insert(texture_id.to_string(), (texture, view, bind_group));
+        // Cache the texture and bind group
+        self.textures.insert(texture_id.to_string(), (texture, bind_group));
+
+        Ok(())
+    }
+
+    /// Loads a texture from a file path and creates associated GPU resources.
+    ///
+    /// This method:
+    /// 1. Loads an image from the specified file path
+    /// 2. Converts it to RGBA8 format
+    /// 3. Creates a WGPU texture and uploads the image data
+    /// 4. Creates a texture view and sampler
+    /// 5. Creates a bind group for use in rendering
+    /// 6. Caches all resources for later use
+    ///
+    /// # Arguments
+    /// * `device` - The WGPU device for creating resources
+    /// * `queue` - The WGPU queue for uploading texture data
+    /// * `path` - File system path to the image file
+    /// * `texture_id` - Unique identifier for this texture
+    ///
+    /// # Returns
+    /// `Ok(())` on success, or an error if the image cannot be loaded
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The image file cannot be found or read
+    /// - The image format is not supported
+    /// - GPU resource creation fails
+    pub fn load_texture(
+        &mut self,
+        device: &Device,
+        queue: &wgpu::Queue,
+        path: &str,
+        texture_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Load and convert image to RGBA8
+        let img = image::open(std::path::Path::new(path))?;
+        let rgba = img.to_rgba8();
+        let dimensions = rgba.dimensions();
+
+        let size = wgpu::Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth_or_array_layers: 1,
+        };
+
+        // Create GPU texture
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(&format!("Icon texture: {}", texture_id)),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        // Upload image data to GPU
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &rgba,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
+            },
+            size,
+        );
+
+        // Create texture view and sampler
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        // Create bind group
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+            label: Some(&format!("Icon bind group: {}", texture_id)),
+        });
+
+        // Cache the texture and bind group
+        self.textures.insert(texture_id.to_string(), (texture, bind_group));
 
         Ok(())
     }
@@ -428,7 +530,7 @@ impl IconRenderer {
 
         // Render each texture batch
         for (texture_id, icons) in icons_by_texture {
-            if let Some((_, _, bind_group)) = self.textures.get(&texture_id) {
+            if let Some((_texture, bind_group)) = self.textures.get(&texture_id) {
                 render_pass.set_bind_group(0, bind_group, &[]);
 
                 // Check if we can reuse cached buffers for this texture

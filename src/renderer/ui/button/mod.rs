@@ -42,6 +42,7 @@ pub use styles::*;
 pub use types::{ButtonAnchor, ButtonPosition, ButtonSpacing, ButtonState, ButtonStyle, TextAlign};
 pub use utils::ColorExt;
 
+use crate::assets;
 use crate::renderer::icon::{Icon, IconRenderer};
 use crate::renderer::rectangle::{Rectangle, RectangleRenderer};
 use crate::renderer::text::{TextPosition, TextRenderer, TextStyle};
@@ -275,21 +276,10 @@ impl ButtonManager {
         let mut icon_renderer = IconRenderer::new(device, surface_format);
         let window_size = window.inner_size();
 
-        // Load all upgrade icons
-        let icon_paths = vec![
-            ("assets/icons/blank-icon.png", "blank_icon"),
-            ("assets/icons/speed-up-icon.png", "speed_up_icon"),
-            ("assets/icons/slower-seconds-icon.png", "slow_down_icon"),
-            ("assets/icons/silent-step-icon.png", "silent_step_icon"),
-            ("assets/icons/tall-boots-icon.png", "tall_boots_icon"),
-            ("assets/icons/head-start-icon.png", "head_start_icon"),
-            ("assets/icons/dash-icon.png", "dash_icon"),
-            ("assets/icons/unknown-icon.png", "unknown_icon"),
-        ];
-
-        for (path, id) in icon_paths {
-            if let Err(e) = icon_renderer.load_texture(device, queue, path, id) {
-                println!("Failed to load icon texture {}: {}", path, e);
+        // Load all upgrade icons from embedded assets
+        for (id, texture_data) in assets::icon_textures() {
+            if let Err(e) = icon_renderer.load_texture_from_data(device, queue, texture_data, id) {
+                println!("Failed to load icon texture {}: {}", id, e);
             }
         }
 

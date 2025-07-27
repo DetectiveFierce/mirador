@@ -74,7 +74,7 @@ pub fn create_primary_button_style() -> ButtonStyle {
         corner_radius: 8.0,
         padding: (16.0, 10.0),
         text_style: TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size: 18.0 * scale,
             line_height: 20.0 * scale,
             color: Color::rgb(255, 255, 255), // white
@@ -129,7 +129,7 @@ pub fn create_warning_button_style() -> ButtonStyle {
         corner_radius: 8.0,
         padding: (16.0, 10.0),
         text_style: TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size: 18.0 * scale,
             line_height: 20.0 * scale,
             color: Color::rgb(255, 255, 255), // white
@@ -191,7 +191,7 @@ pub fn create_danger_button_style() -> ButtonStyle {
         corner_radius: 8.0,
         padding: (16.0, 10.0),
         text_style: TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size: 18.0 * scale,
             line_height: 20.0 * scale,
             color: Color::rgb(255, 255, 255), // white

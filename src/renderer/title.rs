@@ -2,6 +2,8 @@ use crate::app::AppState;
 use crate::renderer::pipeline_builder::{
     BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
 };
+use crate::assets;
+use image;
 use std::time::Instant;
 use wgpu::{self, util::DeviceExt};
 use winit::window::Window;
@@ -122,13 +124,11 @@ impl TitleRenderer {
     }
 
     fn load_title_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-        let path = "assets/Mirador-title.png";
-
-        // Load image using image crate
-        let img = match image::open(path) {
+        // Load image from embedded assets
+        let img = match image::load_from_memory(assets::TITLE_IMAGE) {
             Ok(img) => img.to_rgba8(),
             Err(e) => {
-                eprintln!("Failed to load title texture {}: {}", path, e);
+                eprintln!("Failed to load title texture from embedded assets: {}", e);
                 // Create a fallback texture (solid white square with black text-like pattern)
                 let mut fallback = image::RgbaImage::new(512, 256);
                 for (x, y, pixel) in fallback.enumerate_pixels_mut() {

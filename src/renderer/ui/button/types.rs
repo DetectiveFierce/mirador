@@ -182,7 +182,7 @@ impl Default for ButtonStyle {
     /// - **Colors**: Slate color scheme (dark gray tones)
     /// - **Border**: 1px solid border with 8px corner radius
     /// - **Padding**: 16px horizontal, 8px vertical
-    /// - **Font**: HankenGrotesk Medium, DPI-scaled 18px
+    /// - **Font**: Hanken Grotesk Medium, DPI-scaled 18px
     /// - **Layout**: Center-aligned text, 30% container width
     ///
     /// # Returns
@@ -209,7 +209,7 @@ impl Default for ButtonStyle {
 
             // DPI-scaled text configuration
             text_style: TextStyle {
-                font_family: "HankenGrotesk".to_string(),
+                font_family: "Hanken Grotesk".to_string(),
                 font_size: 18.0 * scale,
                 line_height: 20.0 * scale,
                 color: Color::rgb(248, 250, 252), // slate-50 for contrast

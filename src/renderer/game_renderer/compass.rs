@@ -43,6 +43,8 @@ use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::pipeline_builder::create_uniform_buffer;
 use wgpu;
 use wgpu::util::DeviceExt;
+use crate::assets;
+use image;
 
 /// Uniform data for compass positioning and sizing.
 ///
@@ -189,7 +191,7 @@ impl CompassRenderer {
         surface_config: &wgpu::SurfaceConfiguration,
     ) -> Self {
         // Load compass base texture
-        let base_texture = Self::load_base_texture(device, queue);
+        let base_texture = Self::load_compass_base_texture(device, queue);
 
         // Load all needle textures
         let needle_textures = Self::load_needle_textures(device, queue);
@@ -311,14 +313,12 @@ impl CompassRenderer {
         }
     }
 
-    fn load_base_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-        let path = "assets/compass/gold-compass.png";
-
-        // Load image using image crate
-        let img = match image::open(path) {
+    fn load_compass_base_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
+        // Load image from embedded assets
+        let img = match image::load_from_memory(assets::GOLD_COMPASS) {
             Ok(img) => img.to_rgba8(),
             Err(e) => {
-                eprintln!("Failed to load compass base texture {}: {}", path, e);
+                eprintln!("Failed to load compass base texture from embedded assets: {}", e);
                 // Create a fallback texture (solid color or default compass)
                 image::RgbaImage::new(64, 64)
             }
@@ -364,15 +364,13 @@ impl CompassRenderer {
     fn load_needle_textures(device: &wgpu::Device, queue: &wgpu::Queue) -> Vec<wgpu::Texture> {
         let mut textures = Vec::new();
 
-        // Load needle textures (needle-1.png through needle-12.png)
-        for i in 0..=11 {
-            let path = format!("assets/compass/needle/needle-{}.png", i);
-
-            // Load image using image crate
-            let img = match image::open(&path) {
+        // Load needle textures from embedded assets
+        for (i, needle_data) in assets::compass_needles().iter().enumerate() {
+            // Load image from embedded assets
+            let img = match image::load_from_memory(needle_data) {
                 Ok(img) => img.to_rgba8(),
                 Err(e) => {
-                    eprintln!("Failed to load needle texture {}: {}", path, e);
+                    eprintln!("Failed to load needle texture {} from embedded assets: {}", i, e);
                     // Create a fallback texture (transparent or simple needle)
                     image::RgbaImage::new(64, 64)
                 }

@@ -70,6 +70,7 @@ use crate::renderer::game_renderer::enemy::EnemyRenderer;
 use crate::renderer::game_renderer::stars::StarRenderer;
 use crate::renderer::pipeline_builder::PipelineBuilder;
 use crate::renderer::primitives::{Uniforms, Vertex};
+use crate::assets;
 use image;
 use stamina_bar::StaminaBarRenderer;
 use std::time::Instant;
@@ -399,8 +400,8 @@ impl GameRenderer {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Load the tiles texture
-        let img = image::open("assets/tiles.jpg")?;
+        // Load the tiles texture from embedded assets
+        let img = image::load_from_memory(assets::TILES_IMAGE)?;
         let rgba = img.to_rgba8();
         let dimensions = rgba.dimensions();
 

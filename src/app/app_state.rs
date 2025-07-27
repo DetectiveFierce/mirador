@@ -125,7 +125,7 @@ impl AppState {
         let width = wgpu_renderer.surface_config.width as f32;
         let height = wgpu_renderer.surface_config.height as f32;
         let mirador_style = crate::renderer::text::TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size: 125.0,
             line_height: 150.0,
             color: Color::rgb(58, 53, 70), // #3
@@ -149,7 +149,7 @@ impl AppState {
         );
         // Add subtitle text at the same x, 60px from the bottom
         let subtitle_style = crate::renderer::text::TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size: 48.0,
             line_height: 72.0,
             color: Color::rgb(58, 53, 70), // #3

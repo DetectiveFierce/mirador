@@ -1019,7 +1019,7 @@ pub fn initialize_game_ui(
     // Timer display (decimal-aligned at top)
     let timer_text = game_ui.get_timer_text();
     let timer_style = TextStyle {
-        font_family: "HankenGrotesk".to_string(),
+        font_family: "Hanken Grotesk".to_string(),
         font_size: timer_font_size,
         line_height: timer_line_height,
         color: Color::rgb(100, 255, 100),
@@ -1045,7 +1045,7 @@ pub fn initialize_game_ui(
 
     // Level display (top left, above score)
     let level_style = TextStyle {
-        font_family: "HankenGrotesk".to_string(),
+        font_family: "Hanken Grotesk".to_string(),
         font_size: label_font_size,
         line_height: label_line_height,
         color: Color::rgb(255, 255, 150),
@@ -1067,7 +1067,7 @@ pub fn initialize_game_ui(
 
     // Score display (top left, below level, left edge aligned)
     let score_style = TextStyle {
-        font_family: "HankenGrotesk".to_string(),
+        font_family: "Hanken Grotesk".to_string(),
         font_size: label_font_size,
         line_height: label_line_height,
         color: Color::rgb(150, 255, 255),

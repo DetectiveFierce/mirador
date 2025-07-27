@@ -101,7 +101,7 @@ impl PauseMenu {
         let line_height = (40.0 * scale).clamp(24.0, 60.0); // 40px at 1080p, min 24, max 60
 
         crate::renderer::text::TextStyle {
-            font_family: "HankenGrotesk".to_string(),
+            font_family: "Hanken Grotesk".to_string(),
             font_size,
             line_height,
             color: crate::renderer::ui::button::create_primary_button_style()

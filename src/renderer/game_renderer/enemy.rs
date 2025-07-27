@@ -10,6 +10,8 @@ use crate::renderer::pipeline_builder::{
     BindGroupLayoutBuilder, PipelineBuilder, create_uniform_buffer,
 };
 use wgpu::{self, util::DeviceExt};
+use crate::assets;
+use image;
 
 /// Uniform data structure for enemy rendering shader.
 ///
@@ -183,13 +185,11 @@ impl EnemyRenderer {
     ///
     /// A WGPU texture containing the slime image or a fallback texture.
     fn load_slime_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-        let path = "assets/Slime.png";
-
-        // Load image using image crate
-        let img = match image::open(path) {
+        // Load image from embedded assets
+        let img = match image::load_from_memory(assets::SLIME_IMAGE) {
             Ok(img) => img.to_rgba8(),
             Err(e) => {
-                eprintln!("Failed to load slime texture {}: {}", path, e);
+                eprintln!("Failed to load slime texture from embedded assets: {}", e);
                 // Create a fallback texture (solid red square)
                 let mut fallback = image::RgbaImage::new(64, 64);
                 for pixel in fallback.pixels_mut() {

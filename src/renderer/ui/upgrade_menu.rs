@@ -344,7 +344,7 @@ impl UpgradeMenu {
     fn get_icon_id_for_upgrade_name(upgrade_name: &str) -> String {
         match upgrade_name {
             "Speed Up" => "speed_up_icon".to_string(),
-            "Slow Time" => "slow_down_icon".to_string(),
+            "Slow Time" => "slower_seconds_icon".to_string(),
             "Silent Step" => "silent_step_icon".to_string(),
             "Tall Boots" => "tall_boots_icon".to_string(),
             "Head Start" => "head_start_icon".to_string(),
