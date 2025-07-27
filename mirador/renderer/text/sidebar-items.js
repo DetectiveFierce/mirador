@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["TextBuffer","TextPosition","TextRenderer","TextStyle"]};
+window.SIDEBAR_ITEMS = {"struct":["TextBuffer","TextPosition","TextRenderer","TextRendererStats","TextStyle"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The main text rendering system that manages fonts, text buffers, and rendering."><title>TextRenderer in mirador::renderer::text - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1a91846b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.88.0 (6b00bc388 2025-06-23)" data-channel="1.88.0" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../mirador/index.html">mirador</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Text<wbr>Renderer</a></h2><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.atlas" title="atlas">atlas</a></li><li><a href="#structfield.font_system" title="font_system">font_system</a></li><li><a href="#structfield.glyph_renderer" title="glyph_renderer">glyph_renderer</a></li><li><a href="#structfield.loaded_fonts" title="loaded_fonts">loaded_fonts</a></li><li><a href="#structfield.swash_cache" title="swash_cache">swash_cache</a></li><li><a href="#structfield.text_buffers" title="text_buffers">text_buffers</a></li><li><a href="#structfield.viewport" title="viewport">viewport</a></li><li><a href="#structfield.window_size" title="window_size">window_size</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.create_game_over_display" title="create_game_over_display">create_game_over_display</a></li><li><a href="#method.create_text_buffer" title="create_text_buffer">create_text_buffer</a></li><li><a href="#method.handle_game_over_text" title="handle_game_over_text">handle_game_over_text</a></li><li><a href="#method.handle_score_and_level_text" title="handle_score_and_level_text">handle_score_and_level_text</a></li><li><a href="#method.hide_game_over_display" title="hide_game_over_display">hide_game_over_display</a></li><li><a href="#method.is_game_over_visible" title="is_game_over_visible">is_game_over_visible</a></li><li><a href="#method.load_font" title="load_font">load_font</a></li><li><a href="#method.measure_text" title="measure_text">measure_text</a></li><li><a href="#method.new" title="new">new</a></li><li><a href="#method.prepare" title="prepare">prepare</a></li><li><a href="#method.render" title="render">render</a></li><li><a href="#method.resize" title="resize">resize</a></li><li><a href="#method.show_game_over_display" title="show_game_over_display">show_game_over_display</a></li><li><a href="#method.update_game_over_position" title="update_game_over_position">update_game_over_position</a></li><li><a href="#method.update_position" title="update_position">update_position</a></li><li><a href="#method.update_style" title="update_style">update_style</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-RefUnwindSafe-for-TextRenderer" title="!RefUnwindSafe">!RefUnwindSafe</a></li><li><a href="#impl-UnwindSafe-for-TextRenderer" title="!UnwindSafe">!UnwindSafe</a></li><li><a href="#impl-Freeze-for-TextRenderer" title="Freeze">Freeze</a></li><li><a href="#impl-Send-for-TextRenderer" title="Send">Send</a></li><li><a href="#impl-Sync-for-TextRenderer" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-TextRenderer" title="Unpin">Unpin</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-Downcast-for-T" title="Downcast">Downcast</a></li><li><a href="#impl-Downcast%3CT%3E-for-T" title="Downcast&#60;T&#62;">Downcast&#60;T&#62;</a></li><li><a href="#impl-DowncastSync-for-T" title="DowncastSync">DowncastSync</a></li><li><a href="#impl-Duplex%3CS%3E-for-T" title="Duplex&#60;S&#62;">Duplex&#60;S&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-FromSample%3CS%3E-for-S" title="FromSample&#60;S&#62;">FromSample&#60;S&#62;</a></li><li><a href="#impl-Instrument-for-T" title="Instrument">Instrument</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-IntoEither-for-T" title="IntoEither">IntoEither</a></li><li><a href="#impl-IntoSample%3CT%3E-for-F" title="IntoSample&#60;T&#62;">IntoSample&#60;T&#62;</a></li><li><a href="#impl-Pointable-for-T" title="Pointable">Pointable</a></li><li><a href="#impl-ToSample%3CU%3E-for-T" title="ToSample&#60;U&#62;">ToSample&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li><li><a href="#impl-Upcast%3CT%3E-for-T" title="Upcast&#60;T&#62;">Upcast&#60;T&#62;</a></li><li><a href="#impl-VZip%3CV%3E-for-T" title="VZip&#60;V&#62;">VZip&#60;V&#62;</a></li><li><a href="#impl-WasmNotSend-for-T" title="WasmNotSend">WasmNotSend</a></li><li><a href="#impl-WasmNotSendSync-for-T" title="WasmNotSendSync">WasmNotSendSync</a></li><li><a href="#impl-WasmNotSync-for-T" title="WasmNotSync">WasmNotSync</a></li><li><a href="#impl-WithSubscriber-for-T" title="WithSubscriber">WithSubscriber</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In mirador::<wbr>renderer::<wbr>text</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">mirador</a>::<wbr><a href="../index.html">renderer</a>::<wbr><a href="index.html">text</a></div><h1>Struct <span class="struct">TextRenderer</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/mirador/renderer/text.rs.html#136-153">Source</a> </span></div><pre class="rust item-decl"><code>pub struct TextRenderer {
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The main text rendering system that manages fonts, text buffers, and rendering."><title>TextRenderer in mirador::renderer::text - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1a91846b.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="mirador" data-themes="" data-resource-suffix="" data-rustdoc-version="1.88.0 (6b00bc388 2025-06-23)" data-channel="1.88.0" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../mirador/index.html">mirador</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Text<wbr>Renderer</a></h2><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.atlas" title="atlas">atlas</a></li><li><a href="#structfield.font_system" title="font_system">font_system</a></li><li><a href="#structfield.glyph_renderer" title="glyph_renderer">glyph_renderer</a></li><li><a href="#structfield.loaded_fonts" title="loaded_fonts">loaded_fonts</a></li><li><a href="#structfield.swash_cache" title="swash_cache">swash_cache</a></li><li><a href="#structfield.text_buffers" title="text_buffers">text_buffers</a></li><li><a href="#structfield.viewport" title="viewport">viewport</a></li><li><a href="#structfield.window_size" title="window_size">window_size</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.clear_all_buffers" title="clear_all_buffers">clear_all_buffers</a></li><li><a href="#method.create_game_over_display" title="create_game_over_display">create_game_over_display</a></li><li><a href="#method.create_text_buffer" title="create_text_buffer">create_text_buffer</a></li><li><a href="#method.get_buffer_ids" title="get_buffer_ids">get_buffer_ids</a></li><li><a href="#method.get_buffer_scale" title="get_buffer_scale">get_buffer_scale</a></li><li><a href="#method.get_buffer_visibility" title="get_buffer_visibility">get_buffer_visibility</a></li><li><a href="#method.get_position" title="get_position">get_position</a></li><li><a href="#method.get_statistics" title="get_statistics">get_statistics</a></li><li><a href="#method.get_style" title="get_style">get_style</a></li><li><a href="#method.get_text_content" title="get_text_content">get_text_content</a></li><li><a href="#method.handle_game_over_text" title="handle_game_over_text">handle_game_over_text</a></li><li><a href="#method.handle_score_and_level_text" title="handle_score_and_level_text">handle_score_and_level_text</a></li><li><a href="#method.has_buffer" title="has_buffer">has_buffer</a></li><li><a href="#method.hide_game_over_display" title="hide_game_over_display">hide_game_over_display</a></li><li><a href="#method.is_game_over_visible" title="is_game_over_visible">is_game_over_visible</a></li><li><a href="#method.load_embedded_fonts" title="load_embedded_fonts">load_embedded_fonts</a></li><li><a href="#method.measure_text" title="measure_text">measure_text</a></li><li><a href="#method.new" title="new">new</a></li><li><a href="#method.prepare" title="prepare">prepare</a></li><li><a href="#method.remove_buffer" title="remove_buffer">remove_buffer</a></li><li><a href="#method.render" title="render">render</a></li><li><a href="#method.resize" title="resize">resize</a></li><li><a href="#method.set_buffer_scale" title="set_buffer_scale">set_buffer_scale</a></li><li><a href="#method.set_buffer_visibility" title="set_buffer_visibility">set_buffer_visibility</a></li><li><a href="#method.show_game_over_display" title="show_game_over_display">show_game_over_display</a></li><li><a href="#method.update_game_over_position" title="update_game_over_position">update_game_over_position</a></li><li><a href="#method.update_position" title="update_position">update_position</a></li><li><a href="#method.update_style" title="update_style">update_style</a></li><li><a href="#method.update_text" title="update_text">update_text</a></li><li><a href="#method.update_text_and_style" title="update_text_and_style">update_text_and_style</a></li><li><a href="#method.update_text_style_and_position" title="update_text_style_and_position">update_text_style_and_position</a></li><li><a href="#method.validate_buffers" title="validate_buffers">validate_buffers</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-RefUnwindSafe-for-TextRenderer" title="!RefUnwindSafe">!RefUnwindSafe</a></li><li><a href="#impl-UnwindSafe-for-TextRenderer" title="!UnwindSafe">!UnwindSafe</a></li><li><a href="#impl-Freeze-for-TextRenderer" title="Freeze">Freeze</a></li><li><a href="#impl-Send-for-TextRenderer" title="Send">Send</a></li><li><a href="#impl-Sync-for-TextRenderer" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-TextRenderer" title="Unpin">Unpin</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-Downcast-for-T" title="Downcast">Downcast</a></li><li><a href="#impl-Downcast%3CT%3E-for-T" title="Downcast&#60;T&#62;">Downcast&#60;T&#62;</a></li><li><a href="#impl-DowncastSync-for-T" title="DowncastSync">DowncastSync</a></li><li><a href="#impl-Duplex%3CS%3E-for-T" title="Duplex&#60;S&#62;">Duplex&#60;S&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-FromSample%3CS%3E-for-S" title="FromSample&#60;S&#62;">FromSample&#60;S&#62;</a></li><li><a href="#impl-Instrument-for-T" title="Instrument">Instrument</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-IntoEither-for-T" title="IntoEither">IntoEither</a></li><li><a href="#impl-IntoSample%3CT%3E-for-F" title="IntoSample&#60;T&#62;">IntoSample&#60;T&#62;</a></li><li><a href="#impl-Pointable-for-T" title="Pointable">Pointable</a></li><li><a href="#impl-ToSample%3CU%3E-for-T" title="ToSample&#60;U&#62;">ToSample&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li><li><a href="#impl-Upcast%3CT%3E-for-T" title="Upcast&#60;T&#62;">Upcast&#60;T&#62;</a></li><li><a href="#impl-VZip%3CV%3E-for-T" title="VZip&#60;V&#62;">VZip&#60;V&#62;</a></li><li><a href="#impl-WasmNotSend-for-T" title="WasmNotSend">WasmNotSend</a></li><li><a href="#impl-WasmNotSendSync-for-T" title="WasmNotSendSync">WasmNotSendSync</a></li><li><a href="#impl-WasmNotSync-for-T" title="WasmNotSync">WasmNotSync</a></li><li><a href="#impl-WithSubscriber-for-T" title="WithSubscriber">WithSubscriber</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In mirador::<wbr>renderer::<wbr>text</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">mirador</a>::<wbr><a href="../index.html">renderer</a>::<wbr><a href="index.html">text</a></div><h1>Struct <span class="struct">TextRenderer</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/mirador/renderer/text.rs.html#135-152">Source</a> </span></div><pre class="rust item-decl"><code>pub struct TextRenderer {
     pub font_system: FontSystem,
     pub swash_cache: SwashCache,
     pub viewport: Viewport,
@@ -19,14 +19,14 @@ Multiple text buffers can be managed simultaneously using unique string identifi
 </div><span id="structfield.text_buffers" class="structfield section-header"><a href="#structfield.text_buffers" class="anchor field">§</a><code>text_buffers: <a class="struct" href="https://doc.rust-lang.org/1.88.0/std/collections/hash/map/struct.HashMap.html" title="struct std::collections::hash::map::HashMap">HashMap</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="struct" href="struct.TextBuffer.html" title="struct mirador::renderer::text::TextBuffer">TextBuffer</a>&gt;</code></span><div class="docblock"><p>Collection of all text buffers indexed by unique IDs</p>
 </div><span id="structfield.window_size" class="structfield section-header"><a href="#structfield.window_size" class="anchor field">§</a><code>window_size: PhysicalSize&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>&gt;</code></span><div class="docblock"><p>Current window size for layout calculations</p>
 </div><span id="structfield.loaded_fonts" class="structfield section-header"><a href="#structfield.loaded_fonts" class="anchor field">§</a><code>loaded_fonts: <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><div class="docblock"><p>List of successfully loaded custom font names</p>
-</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-TextRenderer" class="impl"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#155-1097">Source</a><a href="#impl-TextRenderer" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#172-250">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-TextRenderer" class="impl"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#154-1765">Source</a><a href="#impl-TextRenderer" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#171-238">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(
     device: &amp;Device,
     queue: &amp;Queue,
     surface_format: TextureFormat,
     window: &amp;Window,
 ) -&gt; Self</h4></section></summary><div class="docblock"><p>Creates a new text renderer instance.</p>
 <p>Initializes all the necessary Glyphon components and attempts to load
-a custom HankenGrotesk font. If the font loading fails, it falls back
+a custom Hanken Grotesk font. If the font loading fails, it falls back
 to system fonts gracefully.</p>
 <h5 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h5>
 <ul>
@@ -37,27 +37,13 @@ to system fonts gracefully.</p>
 </ul>
 <h5 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h5>
 <p>A new <code>TextRenderer</code> instance ready for use.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.load_font" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#273-279">Source</a><h4 class="code-header">pub fn <a href="#method.load_font" class="fn">load_font</a>(
-    &amp;mut self,
-    font_path: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
-    font_name: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/std/io/error/struct.Error.html" title="struct std::io::error::Error">Error</a>&gt;</h4></section></summary><div class="docblock"><p>Loads a custom font from a file and registers it with the font system.</p>
-<p>This method reads font data from the specified file path and adds it to
-the font database. The font can then be referenced by the provided name
+</div></details><details class="toggle method-toggle" open><summary><section id="method.load_embedded_fonts" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#251-257">Source</a><h4 class="code-header">pub fn <a href="#method.load_embedded_fonts" class="fn">load_embedded_fonts</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Loads all embedded fonts and registers them with the font system.</p>
+<p>This method loads all fonts that are embedded in the binary using <code>include_bytes!()</code>
+and adds them to the font database. The fonts can then be referenced by their names
 in text styles.</p>
-<h5 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h5>
-<ul>
-<li><code>font_path</code> - Path to the font file (typically .ttf or .otf)</li>
-<li><code>font_name</code> - Name to register the font under for later reference</li>
-</ul>
-<h5 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h5>
-<ul>
-<li><code>Ok(())</code> if the font was loaded successfully</li>
-<li><code>Err(std::io::Error)</code> if the file could not be read</li>
-</ul>
 <h5 id="example"><a class="doc-anchor" href="#example">§</a>Example</h5>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code>renderer.load_font(<span class="string">"fonts/MyFont.ttf"</span>, <span class="string">"MyCustomFont"</span>)<span class="question-mark">?</span>;</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.create_text_buffer" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#316-360">Source</a><h4 class="code-header">pub fn <a href="#method.create_text_buffer" class="fn">create_text_buffer</a>(
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>renderer.load_embedded_fonts();</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.create_text_buffer" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#294-339">Source</a><h4 class="code-header">pub fn <a href="#method.create_text_buffer" class="fn">create_text_buffer</a>(
     &amp;mut self,
     id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
     text: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
@@ -67,7 +53,7 @@ in text styles.</p>
 <p>This method creates a new text buffer that can be rendered to the screen.
 Each buffer is identified by a unique string ID that can be used to update
 or reference the buffer later.</p>
-<h5 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h5>
+<h5 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h5>
 <ul>
 <li><code>id</code> - Unique identifier for this text buffer</li>
 <li><code>text</code> - The text content to display</li>
@@ -93,16 +79,16 @@ or reference the buffer later.</p>
     ..Default::default()
 };
 renderer.create_text_buffer(<span class="string">"title"</span>, <span class="string">"Hello World"</span>, <span class="prelude-val">Some</span>(style), <span class="prelude-val">Some</span>(position));</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.update_style" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#395-434">Source</a><h4 class="code-header">pub fn <a href="#method.update_style" class="fn">update_style</a>(&amp;mut self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>, style: <a class="struct" href="struct.TextStyle.html" title="struct mirador::renderer::text::TextStyle">TextStyle</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Updates the visual style of an existing text buffer.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_style" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#374-414">Source</a><h4 class="code-header">pub fn <a href="#method.update_style" class="fn">update_style</a>(&amp;mut self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>, style: <a class="struct" href="struct.TextStyle.html" title="struct mirador::renderer::text::TextStyle">TextStyle</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Updates the visual style of an existing text buffer.</p>
 <p>This method allows you to change the appearance of existing text without
 recreating the entire buffer. The text content remains the same but is
 re-shaped with the new styling attributes.</p>
-<h5 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h5>
+<h5 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h5>
 <ul>
 <li><code>id</code> - The unique identifier of the text buffer to update</li>
 <li><code>style</code> - The new text style to apply</li>
 </ul>
-<h5 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h5>
+<h5 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h5>
 <ul>
 <li><code>Ok(())</code> if the style was updated successfully</li>
 <li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
@@ -121,19 +107,19 @@ re-shaped with the new styling attributes.</p>
     ..Default::default()
 };
 renderer.update_style(<span class="string">"title"</span>, new_style)<span class="question-mark">?</span>;</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.update_position" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#467-488">Source</a><h4 class="code-header">pub fn <a href="#method.update_position" class="fn">update_position</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_position" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#447-468">Source</a><h4 class="code-header">pub fn <a href="#method.update_position" class="fn">update_position</a>(
     &amp;mut self,
     id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
     position: <a class="struct" href="struct.TextPosition.html" title="struct mirador::renderer::text::TextPosition">TextPosition</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Updates the position and size constraints of an existing text buffer.</p>
 <p>This method allows you to move text around the screen or change its
 maximum dimensions without affecting the content or styling.</p>
-<h5 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h5>
+<h5 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h5>
 <ul>
 <li><code>id</code> - The unique identifier of the text buffer to update</li>
 <li><code>position</code> - The new position and size constraints</li>
 </ul>
-<h5 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h5>
+<h5 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h5>
 <ul>
 <li><code>Ok(())</code> if the position was updated successfully</li>
 <li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
@@ -151,11 +137,11 @@ maximum dimensions without affecting the content or styling.</p>
     max_height: <span class="prelude-val">Some</span>(<span class="number">200.0</span>),
 };
 renderer.update_position(<span class="string">"title"</span>, new_position)<span class="question-mark">?</span>;</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.resize" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#513-515">Source</a><h4 class="code-header">pub fn <a href="#method.resize" class="fn">resize</a>(&amp;mut self, queue: &amp;Queue, resolution: Resolution)</h4></section></summary><div class="docblock"><p>Updates the viewport when the window is resized.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.resize" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#493-495">Source</a><h4 class="code-header">pub fn <a href="#method.resize" class="fn">resize</a>(&amp;mut self, queue: &amp;Queue, resolution: Resolution)</h4></section></summary><div class="docblock"><p>Updates the viewport when the window is resized.</p>
 <p>This method should be called whenever the window size changes to ensure
 that text rendering coordinates remain correct and the viewport is properly
 synchronized with the new window dimensions.</p>
-<h5 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h5>
+<h5 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h5>
 <ul>
 <li><code>queue</code> - WGPU command queue for GPU operations</li>
 <li><code>resolution</code> - New resolution/size information from the window resize event</li>
@@ -169,7 +155,7 @@ synchronized with the new window dimensions.</p>
 <h5 id="example-4"><a class="doc-anchor" href="#example-4">§</a>Example</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// In your window resize event handler
 </span>renderer.resize(<span class="kw-2">&amp;</span>queue, Resolution::new(new_width, new_height));</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.prepare" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#547-597">Source</a><h4 class="code-header">pub fn <a href="#method.prepare" class="fn">prepare</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.prepare" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#527-577">Source</a><h4 class="code-header">pub fn <a href="#method.prepare" class="fn">prepare</a>(
     &amp;mut self,
     device: &amp;Device,
     queue: &amp;Queue,
@@ -178,13 +164,13 @@ synchronized with the new window dimensions.</p>
 <p>This method must be called before rendering to update the texture atlas
 with any changes to text content, styling, or positioning. It processes
 all visible text buffers and prepares them for GPU rendering.</p>
-<h5 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h5>
+<h5 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h5>
 <ul>
 <li><code>device</code> - WGPU device for GPU operations</li>
 <li><code>queue</code> - WGPU command queue</li>
 <li><code>_surface_config</code> - Surface configuration (currently unused)</li>
 </ul>
-<h5 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h5>
+<h5 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h5>
 <ul>
 <li><code>Ok(())</code> if preparation was successful</li>
 <li><code>Err(glyphon::PrepareError)</code> if preparation failed</li>
@@ -199,17 +185,17 @@ all visible text buffers and prepares them for GPU rendering.</p>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// In your render loop
 </span>renderer.prepare(<span class="kw-2">&amp;</span>device, <span class="kw-2">&amp;</span>queue, <span class="kw-2">&amp;</span>surface_config)<span class="question-mark">?</span>;
 renderer.render(<span class="kw-2">&amp;mut </span>render_pass)<span class="question-mark">?</span>;</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.render" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#620-623">Source</a><h4 class="code-header">pub fn <a href="#method.render" class="fn">render</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.render" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#600-603">Source</a><h4 class="code-header">pub fn <a href="#method.render" class="fn">render</a>(
     &amp;mut self,
     render_pass: &amp;mut RenderPass&lt;'_&gt;,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, RenderError&gt;</h4></section></summary><div class="docblock"><p>Renders all prepared text to the current render pass.</p>
 <p>This method should be called during your render loop after calling <code>prepare()</code>.
 It renders all visible text buffers that were prepared in the previous step.</p>
-<h5 id="arguments-7"><a class="doc-anchor" href="#arguments-7">§</a>Arguments</h5>
+<h5 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h5>
 <ul>
 <li><code>render_pass</code> - The active WGPU render pass to draw into</li>
 </ul>
-<h5 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h5>
+<h5 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h5>
 <ul>
 <li><code>Ok(())</code> if rendering was successful</li>
 <li><code>Err(glyphon::RenderError)</code> if rendering failed</li>
@@ -218,16 +204,16 @@ It renders all visible text buffers that were prepared in the previous step.</p>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// In your render loop
 </span><span class="kw">let </span><span class="kw-2">mut </span>render_pass = encoder.begin_render_pass(<span class="kw-2">&amp;</span>render_pass_descriptor);
 renderer.render(<span class="kw-2">&amp;mut </span>render_pass)<span class="question-mark">?</span>;</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.measure_text" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#656-692">Source</a><h4 class="code-header">pub fn <a href="#method.measure_text" class="fn">measure_text</a>(&amp;mut self, text: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>, style: &amp;<a class="struct" href="struct.TextStyle.html" title="struct mirador::renderer::text::TextStyle">TextStyle</a>) -&gt; (<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>, <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>, <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Measures the dimensions of text without creating a buffer.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.measure_text" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#636-672">Source</a><h4 class="code-header">pub fn <a href="#method.measure_text" class="fn">measure_text</a>(&amp;mut self, text: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>, style: &amp;<a class="struct" href="struct.TextStyle.html" title="struct mirador::renderer::text::TextStyle">TextStyle</a>) -&gt; (<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>, <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>, <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>)</h4></section></summary><div class="docblock"><p>Measures the dimensions of text without creating a buffer.</p>
 <p>This utility method calculates how much space text will occupy when
 rendered with the given style. Useful for layout calculations and
 positioning decisions.</p>
-<h5 id="arguments-8"><a class="doc-anchor" href="#arguments-8">§</a>Arguments</h5>
+<h5 id="arguments-7"><a class="doc-anchor" href="#arguments-7">§</a>Arguments</h5>
 <ul>
 <li><code>text</code> - The text content to measure</li>
 <li><code>style</code> - The text style to use for measurement</li>
 </ul>
-<h5 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h5>
+<h5 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h5>
 <p>A tuple containing <code>(min_x, width, height)</code>:</p>
 <ul>
 <li><code>min_x</code>: The leftmost x coordinate of the text</li>
@@ -244,14 +230,14 @@ positioning decisions.</p>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>style = TextStyle::default();
 <span class="kw">let </span>(min_x, width, height) = renderer.measure_text(<span class="string">"Hello World"</span>, <span class="kw-2">&amp;</span>style);
 <span class="macro">println!</span>(<span class="string">"Text dimensions: {}x{} at x={}"</span>, width, height, min_x);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.create_game_over_display" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#723-776">Source</a><h4 class="code-header">pub fn <a href="#method.create_game_over_display" class="fn">create_game_over_display</a>(&amp;mut self, width: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>, height: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Creates a game over display with title and restart instruction.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.create_game_over_display" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#703-756">Source</a><h4 class="code-header">pub fn <a href="#method.create_game_over_display" class="fn">create_game_over_display</a>(&amp;mut self, width: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>, height: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Creates a game over display with title and restart instruction.</p>
 <p>This convenience method creates two text buffers for a typical game over screen:</p>
 <ul>
 <li>A large “Game Over!” title</li>
 <li>A smaller instruction to restart the game</li>
 </ul>
 <p>The display uses DPI-aware scaling and is initially hidden.</p>
-<h5 id="arguments-9"><a class="doc-anchor" href="#arguments-9">§</a>Arguments</h5>
+<h5 id="arguments-8"><a class="doc-anchor" href="#arguments-8">§</a>Arguments</h5>
 <ul>
 <li><code>width</code> - Screen width in pixels for positioning calculations</li>
 <li><code>height</code> - Screen height in pixels for positioning calculations</li>
@@ -269,7 +255,7 @@ positioning decisions.</p>
 
 <span class="comment">// Show it when the game ends
 </span>renderer.show_game_over_display();</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.show_game_over_display" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#801-808">Source</a><h4 class="code-header">pub fn <a href="#method.show_game_over_display" class="fn">show_game_over_display</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Makes the game over display visible.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.show_game_over_display" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#781-788">Source</a><h4 class="code-header">pub fn <a href="#method.show_game_over_display" class="fn">show_game_over_display</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Makes the game over display visible.</p>
 <p>Shows both the game over title and restart instruction text that were
 created by <code>create_game_over_display()</code>. This method should be called
 when the game ends to display the game over screen to the player.</p>
@@ -285,7 +271,7 @@ to create the necessary text buffers.</p>
 <h5 id="example-9"><a class="doc-anchor" href="#example-9">§</a>Example</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// When the game ends
 </span>renderer.show_game_over_display();</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.hide_game_over_display" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#833-840">Source</a><h4 class="code-header">pub fn <a href="#method.hide_game_over_display" class="fn">hide_game_over_display</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Hides the game over display.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.hide_game_over_display" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#813-820">Source</a><h4 class="code-header">pub fn <a href="#method.hide_game_over_display" class="fn">hide_game_over_display</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Hides the game over display.</p>
 <p>Hides both the game over title and restart instruction text, making
 them invisible during rendering. This method should be called when
 starting a new game or transitioning away from the game over state.</p>
@@ -301,10 +287,10 @@ to create the necessary text buffers.</p>
 <h5 id="example-10"><a class="doc-anchor" href="#example-10">§</a>Example</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// When starting a new game
 </span>renderer.hide_game_over_display();</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.is_game_over_visible" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#865-870">Source</a><h4 class="code-header">pub fn <a href="#method.is_game_over_visible" class="fn">is_game_over_visible</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Checks if the game over display is currently visible.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.is_game_over_visible" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#845-850">Source</a><h4 class="code-header">pub fn <a href="#method.is_game_over_visible" class="fn">is_game_over_visible</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Checks if the game over display is currently visible.</p>
 <p>This method can be used to determine the current state of the game over
 display, which is useful for game state management and UI logic.</p>
-<h5 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h5>
+<h5 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h5>
 <p><code>true</code> if the game over title is visible, <code>false</code> otherwise</p>
 <h5 id="behavior-9"><a class="doc-anchor" href="#behavior-9">§</a>Behavior</h5>
 <ul>
@@ -317,19 +303,19 @@ display, which is useful for game state management and UI logic.</p>
 </span><span class="kw">if </span>renderer.is_game_over_visible() {
     <span class="comment">// Handle game over state logic
 </span>}</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.update_game_over_position" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#894-943">Source</a><h4 class="code-header">pub fn <a href="#method.update_game_over_position" class="fn">update_game_over_position</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_game_over_position" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#874-923">Source</a><h4 class="code-header">pub fn <a href="#method.update_game_over_position" class="fn">update_game_over_position</a>(
     &amp;mut self,
     width: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Updates game over display positioning for different screen sizes.</p>
 <p>This method should be called when the window is resized to ensure
 the game over display remains properly centered and scaled.</p>
-<h5 id="arguments-10"><a class="doc-anchor" href="#arguments-10">§</a>Arguments</h5>
+<h5 id="arguments-9"><a class="doc-anchor" href="#arguments-9">§</a>Arguments</h5>
 <ul>
 <li><code>width</code> - New screen width in pixels</li>
 <li><code>height</code> - New screen height in pixels</li>
 </ul>
-<h5 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h5>
+<h5 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h5>
 <ul>
 <li><code>Ok(())</code> if the update was successful</li>
 <li><code>Err(String)</code> if the game over buffers don’t exist</li>
@@ -341,11 +327,11 @@ the game over display remains properly centered and scaled.</p>
 <li>Updates both title and restart text positions</li>
 <li>Adds padding to prevent text clipping</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_game_over_text" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#970-1021">Source</a><h4 class="code-header">pub fn <a href="#method.handle_game_over_text" class="fn">handle_game_over_text</a>(&amp;mut self, width: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>, height: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Dynamically adjusts game over text sizing and positioning based on window dimensions.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_game_over_text" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#950-1001">Source</a><h4 class="code-header">pub fn <a href="#method.handle_game_over_text" class="fn">handle_game_over_text</a>(&amp;mut self, width: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>, height: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Dynamically adjusts game over text sizing and positioning based on window dimensions.</p>
 <p>This method provides responsive text scaling for the game over display, similar to the title screen.
 It automatically adjusts font sizes, line heights, and positions to maintain readability across
 different screen sizes and resolutions.</p>
-<h5 id="arguments-11"><a class="doc-anchor" href="#arguments-11">§</a>Arguments</h5>
+<h5 id="arguments-10"><a class="doc-anchor" href="#arguments-10">§</a>Arguments</h5>
 <ul>
 <li><code>width</code> - Current window width in pixels</li>
 <li><code>height</code> - Current window height in pixels</li>
@@ -361,12 +347,12 @@ different screen sizes and resolutions.</p>
 <h5 id="example-12"><a class="doc-anchor" href="#example-12">§</a>Example</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// Call when window is resized or game over display is shown
 </span>renderer.handle_game_over_text(<span class="number">1920</span>, <span class="number">1080</span>);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_score_and_level_text" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1054-1096">Source</a><h4 class="code-header">pub fn <a href="#method.handle_score_and_level_text" class="fn">handle_score_and_level_text</a>(&amp;mut self, width: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>, height: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Dynamically adjusts score and level text sizing and positioning for responsive UI.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_score_and_level_text" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1034-1076">Source</a><h4 class="code-header">pub fn <a href="#method.handle_score_and_level_text" class="fn">handle_score_and_level_text</a>(&amp;mut self, width: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>, height: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.u32.html">u32</a>)</h4></section></summary><div class="docblock"><p>Dynamically adjusts score and level text sizing and positioning for responsive UI.</p>
 <p>This method provides responsive text scaling for score and level displays, making them
 smaller than subtitle text but still legible across different screen sizes and resolutions.
 It automatically adjusts font sizes, line heights, and positions to maintain consistent
 visual hierarchy in the game interface.</p>
-<h5 id="arguments-12"><a class="doc-anchor" href="#arguments-12">§</a>Arguments</h5>
+<h5 id="arguments-11"><a class="doc-anchor" href="#arguments-11">§</a>Arguments</h5>
 <ul>
 <li><code>width</code> - Current window width in pixels</li>
 <li><code>height</code> - Current window height in pixels</li>
@@ -385,6 +371,257 @@ visual hierarchy in the game interface.</p>
 <h5 id="example-13"><a class="doc-anchor" href="#example-13">§</a>Example</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// Call when window is resized or score/level changes
 </span>renderer.handle_score_and_level_text(<span class="number">1920</span>, <span class="number">1080</span>);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_text" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1105-1137">Source</a><h4 class="code-header">pub fn <a href="#method.update_text" class="fn">update_text</a>(&amp;mut self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>, text: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Updates the text content of an existing text buffer.</p>
+<p>This method allows you to change the text content without affecting the styling
+or positioning. The text is re-shaped with the existing style attributes.</p>
+<h5 id="arguments-12"><a class="doc-anchor" href="#arguments-12">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer to update</li>
+<li><code>text</code> - The new text content to display</li>
+</ul>
+<h5 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h5>
+<ul>
+<li><code>Ok(())</code> if the text was updated successfully</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="behavior-13"><a class="doc-anchor" href="#behavior-13">§</a>Behavior</h5>
+<ul>
+<li>Updates the stored text content</li>
+<li>Re-shapes the text with existing style attributes</li>
+<li>Maintains current position and styling</li>
+<li>Validates input parameters</li>
+</ul>
+<h5 id="example-14"><a class="doc-anchor" href="#example-14">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>renderer.update_text(<span class="string">"score"</span>, <span class="string">"Score: 1500"</span>)<span class="question-mark">?</span>;</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_style" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1158-1167">Source</a><h4 class="code-header">pub fn <a href="#method.get_style" class="fn">get_style</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.TextStyle.html" title="struct mirador::renderer::text::TextStyle">TextStyle</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Gets the current style of a text buffer.</p>
+<p>This method retrieves the current styling properties of an existing text buffer.</p>
+<h5 id="arguments-13"><a class="doc-anchor" href="#arguments-13">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer</li>
+</ul>
+<h5 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h5>
+<ul>
+<li><code>Ok(TextStyle)</code> if the buffer exists and style was retrieved</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-15"><a class="doc-anchor" href="#example-15">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>style = renderer.get_style(<span class="string">"title"</span>)<span class="question-mark">?</span>;
+<span class="macro">println!</span>(<span class="string">"Font size: {}"</span>, style.font_size);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_position" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1188-1197">Source</a><h4 class="code-header">pub fn <a href="#method.get_position" class="fn">get_position</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="struct.TextPosition.html" title="struct mirador::renderer::text::TextPosition">TextPosition</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Gets the current position of a text buffer.</p>
+<p>This method retrieves the current positioning properties of an existing text buffer.</p>
+<h5 id="arguments-14"><a class="doc-anchor" href="#arguments-14">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer</li>
+</ul>
+<h5 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h5>
+<ul>
+<li><code>Ok(TextPosition)</code> if the buffer exists and position was retrieved</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-16"><a class="doc-anchor" href="#example-16">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>position = renderer.get_position(<span class="string">"title"</span>)<span class="question-mark">?</span>;
+<span class="macro">println!</span>(<span class="string">"X position: {}"</span>, position.x);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_text_content" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1218-1227">Source</a><h4 class="code-header">pub fn <a href="#method.get_text_content" class="fn">get_text_content</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Gets the current text content of a text buffer.</p>
+<p>This method retrieves the current text content of an existing text buffer.</p>
+<h5 id="arguments-15"><a class="doc-anchor" href="#arguments-15">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer</li>
+</ul>
+<h5 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h5>
+<ul>
+<li><code>Ok(String)</code> if the buffer exists and content was retrieved</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-17"><a class="doc-anchor" href="#example-17">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>content = renderer.get_text_content(<span class="string">"score"</span>)<span class="question-mark">?</span>;
+<span class="macro">println!</span>(<span class="string">"Current text: {}"</span>, content);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_text_and_style" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1258-1321">Source</a><h4 class="code-header">pub fn <a href="#method.update_text_and_style" class="fn">update_text_and_style</a>(
+    &amp;mut self,
+    id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
+    text: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
+    style: <a class="struct" href="struct.TextStyle.html" title="struct mirador::renderer::text::TextStyle">TextStyle</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Updates both text content and style in a single operation.</p>
+<p>This method efficiently updates both the text content and styling properties
+of an existing text buffer, re-shaping the text only once.</p>
+<h5 id="arguments-16"><a class="doc-anchor" href="#arguments-16">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer to update</li>
+<li><code>text</code> - The new text content to display</li>
+<li><code>style</code> - The new text style to apply</li>
+</ul>
+<h5 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h5>
+<ul>
+<li><code>Ok(())</code> if the update was successful</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="behavior-14"><a class="doc-anchor" href="#behavior-14">§</a>Behavior</h5>
+<ul>
+<li>Updates both text content and style in one operation</li>
+<li>Re-shapes the text with new attributes</li>
+<li>Maintains current position</li>
+<li>Validates input parameters</li>
+</ul>
+<h5 id="example-18"><a class="doc-anchor" href="#example-18">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>new_style = TextStyle { font_size: <span class="number">24.0</span>, ..Default::default() };
+renderer.update_text_and_style(<span class="string">"title"</span>, <span class="string">"New Title"</span>, new_style)<span class="question-mark">?</span>;</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_text_style_and_position" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1354-1441">Source</a><h4 class="code-header">pub fn <a href="#method.update_text_style_and_position" class="fn">update_text_style_and_position</a>(
+    &amp;mut self,
+    id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
+    text: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
+    style: <a class="struct" href="struct.TextStyle.html" title="struct mirador::renderer::text::TextStyle">TextStyle</a>,
+    position: <a class="struct" href="struct.TextPosition.html" title="struct mirador::renderer::text::TextPosition">TextPosition</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Updates text content, style, and position in a single operation.</p>
+<p>This method efficiently updates all properties of a text buffer in one operation,
+re-shaping the text and updating buffer size as needed.</p>
+<h5 id="arguments-17"><a class="doc-anchor" href="#arguments-17">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer to update</li>
+<li><code>text</code> - The new text content to display</li>
+<li><code>style</code> - The new text style to apply</li>
+<li><code>position</code> - The new position and size constraints</li>
+</ul>
+<h5 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h5>
+<ul>
+<li><code>Ok(())</code> if the update was successful</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="behavior-15"><a class="doc-anchor" href="#behavior-15">§</a>Behavior</h5>
+<ul>
+<li>Updates text content, style, and position in one operation</li>
+<li>Re-shapes the text with new attributes</li>
+<li>Updates buffer size if position constraints changed</li>
+<li>Validates input parameters</li>
+</ul>
+<h5 id="example-19"><a class="doc-anchor" href="#example-19">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>new_style = TextStyle { font_size: <span class="number">24.0</span>, ..Default::default() };
+<span class="kw">let </span>new_position = TextPosition { x: <span class="number">100.0</span>, y: <span class="number">200.0</span>, ..Default::default() };
+renderer.update_text_style_and_position(<span class="string">"title"</span>, <span class="string">"New Title"</span>, new_style, new_position)<span class="question-mark">?</span>;</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.has_buffer" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1462-1467">Source</a><h4 class="code-header">pub fn <a href="#method.has_buffer" class="fn">has_buffer</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Checks if a text buffer exists.</p>
+<p>This method provides a simple way to check if a text buffer with the given ID exists.</p>
+<h5 id="arguments-18"><a class="doc-anchor" href="#arguments-18">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer to check</li>
+</ul>
+<h5 id="returns-14"><a class="doc-anchor" href="#returns-14">§</a>Returns</h5>
+<p><code>true</code> if the buffer exists, <code>false</code> otherwise</p>
+<h5 id="example-20"><a class="doc-anchor" href="#example-20">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">if </span>renderer.has_buffer(<span class="string">"score"</span>) {
+    renderer.update_text(<span class="string">"score"</span>, <span class="string">"New Score"</span>)<span class="question-mark">?</span>;
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_buffer" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1488-1497">Source</a><h4 class="code-header">pub fn <a href="#method.remove_buffer" class="fn">remove_buffer</a>(&amp;mut self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Removes a text buffer from the renderer.</p>
+<p>This method completely removes a text buffer from the renderer, freeing up
+associated resources. The buffer will no longer be rendered.</p>
+<h5 id="arguments-19"><a class="doc-anchor" href="#arguments-19">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer to remove</li>
+</ul>
+<h5 id="returns-15"><a class="doc-anchor" href="#returns-15">§</a>Returns</h5>
+<ul>
+<li><code>Ok(())</code> if the buffer was removed successfully</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-21"><a class="doc-anchor" href="#example-21">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>renderer.remove_buffer(<span class="string">"temporary_text"</span>)<span class="question-mark">?</span>;</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_buffer_ids" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1514-1516">Source</a><h4 class="code-header">pub fn <a href="#method.get_buffer_ids" class="fn">get_buffer_ids</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Gets a list of all text buffer IDs.</p>
+<p>This method returns a vector of all text buffer identifiers currently
+managed by the renderer.</p>
+<h5 id="returns-16"><a class="doc-anchor" href="#returns-16">§</a>Returns</h5>
+<p>A vector of text buffer IDs</p>
+<h5 id="example-22"><a class="doc-anchor" href="#example-22">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>buffer_ids = renderer.get_buffer_ids();
+<span class="macro">println!</span>(<span class="string">"Active buffers: {:?}"</span>, buffer_ids);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.clear_all_buffers" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1528-1530">Source</a><h4 class="code-header">pub fn <a href="#method.clear_all_buffers" class="fn">clear_all_buffers</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Clears all text buffers from the renderer.</p>
+<p>This method removes all text buffers, freeing up all associated resources.
+No text will be rendered until new buffers are created.</p>
+<h5 id="example-23"><a class="doc-anchor" href="#example-23">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>renderer.clear_all_buffers();</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_buffer_visibility" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1552-1563">Source</a><h4 class="code-header">pub fn <a href="#method.set_buffer_visibility" class="fn">set_buffer_visibility</a>(
+    &amp;mut self,
+    id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>,
+    visible: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Sets the visibility of a text buffer.</p>
+<p>This method allows you to show or hide a text buffer without removing it.
+Hidden buffers are not rendered but retain their content and styling.</p>
+<h5 id="arguments-20"><a class="doc-anchor" href="#arguments-20">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer</li>
+<li><code>visible</code> - Whether the text buffer should be visible</li>
+</ul>
+<h5 id="returns-17"><a class="doc-anchor" href="#returns-17">§</a>Returns</h5>
+<ul>
+<li><code>Ok(())</code> if the visibility was set successfully</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-24"><a class="doc-anchor" href="#example-24">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>renderer.set_buffer_visibility(<span class="string">"debug_info"</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_buffer_visibility" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1584-1593">Source</a><h4 class="code-header">pub fn <a href="#method.get_buffer_visibility" class="fn">get_buffer_visibility</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Gets the visibility of a text buffer.</p>
+<p>This method retrieves the current visibility state of a text buffer.</p>
+<h5 id="arguments-21"><a class="doc-anchor" href="#arguments-21">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer</li>
+</ul>
+<h5 id="returns-18"><a class="doc-anchor" href="#returns-18">§</a>Returns</h5>
+<ul>
+<li><code>Ok(bool)</code> if the buffer exists and visibility was retrieved</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-25"><a class="doc-anchor" href="#example-25">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>is_visible = renderer.get_buffer_visibility(<span class="string">"score"</span>)<span class="question-mark">?</span>;
+<span class="macro">println!</span>(<span class="string">"Score buffer is visible: {}"</span>, is_visible);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_buffer_scale" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1615-1630">Source</a><h4 class="code-header">pub fn <a href="#method.set_buffer_scale" class="fn">set_buffer_scale</a>(&amp;mut self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>, scale: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Sets the scale factor of a text buffer.</p>
+<p>This method allows you to scale the text rendering size without changing
+the font size. Useful for animations and effects.</p>
+<h5 id="arguments-22"><a class="doc-anchor" href="#arguments-22">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer</li>
+<li><code>scale</code> - The scale factor (1.0 = normal size, 2.0 = double size, etc.)</li>
+</ul>
+<h5 id="returns-19"><a class="doc-anchor" href="#returns-19">§</a>Returns</h5>
+<ul>
+<li><code>Ok(())</code> if the scale was set successfully</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-26"><a class="doc-anchor" href="#example-26">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>renderer.set_buffer_scale(<span class="string">"title"</span>, <span class="number">1.5</span>)<span class="question-mark">?</span>; <span class="comment">// 50% larger</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_buffer_scale" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1651-1660">Source</a><h4 class="code-header">pub fn <a href="#method.get_buffer_scale" class="fn">get_buffer_scale</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.f32.html">f32</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Gets the scale factor of a text buffer.</p>
+<p>This method retrieves the current scale factor of a text buffer.</p>
+<h5 id="arguments-23"><a class="doc-anchor" href="#arguments-23">§</a>Arguments</h5>
+<ul>
+<li><code>id</code> - The unique identifier of the text buffer</li>
+</ul>
+<h5 id="returns-20"><a class="doc-anchor" href="#returns-20">§</a>Returns</h5>
+<ul>
+<li><code>Ok(f32)</code> if the buffer exists and scale was retrieved</li>
+<li><code>Err(String)</code> if the text buffer with the given ID was not found</li>
+</ul>
+<h5 id="example-27"><a class="doc-anchor" href="#example-27">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>scale = renderer.get_buffer_scale(<span class="string">"title"</span>)<span class="question-mark">?</span>;
+<span class="macro">println!</span>(<span class="string">"Title scale: {}"</span>, scale);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.validate_buffers" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1682-1735">Source</a><h4 class="code-header">pub fn <a href="#method.validate_buffers" class="fn">validate_buffers</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.88.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.88.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Validates that all text buffers have valid configurations.</p>
+<p>This method checks all text buffers for potential issues such as:</p>
+<ul>
+<li>Invalid font families</li>
+<li>Negative positions</li>
+<li>Invalid font sizes</li>
+<li>Missing text content</li>
+</ul>
+<h5 id="returns-21"><a class="doc-anchor" href="#returns-21">§</a>Returns</h5>
+<ul>
+<li><code>Ok(())</code> if all buffers are valid</li>
+<li><code>Err(String)</code> with details about the first validation error found</li>
+</ul>
+<h5 id="example-28"><a class="doc-anchor" href="#example-28">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = renderer.validate_buffers() {
+    <span class="macro">println!</span>(<span class="string">"Validation error: {}"</span>, e);
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_statistics" class="method"><a class="src rightside" href="../../../src/mirador/renderer/text.rs.html#1752-1764">Source</a><h4 class="code-header">pub fn <a href="#method.get_statistics" class="fn">get_statistics</a>(&amp;self) -&gt; <a class="struct" href="struct.TextRendererStats.html" title="struct mirador::renderer::text::TextRendererStats">TextRendererStats</a></h4></section></summary><div class="docblock"><p>Gets statistics about the text renderer.</p>
+<p>This method returns useful information about the current state of the text renderer.</p>
+<h5 id="returns-22"><a class="doc-anchor" href="#returns-22">§</a>Returns</h5>
+<p>A struct containing various statistics</p>
+<h5 id="example-29"><a class="doc-anchor" href="#example-29">§</a>Example</h5>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>stats = renderer.get_statistics();
+<span class="macro">println!</span>(<span class="string">"Total buffers: {}"</span>, stats.total_buffers);
+<span class="macro">println!</span>(<span class="string">"Visible buffers: {}"</span>, stats.visible_buffers);</code></pre></div>
 </div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-TextRenderer" class="impl"><a href="#impl-Freeze-for-TextRenderer" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Freeze.html" title="trait core::marker::Freeze">Freeze</a> for <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section><section id="impl-RefUnwindSafe-for-TextRenderer" class="impl"><a href="#impl-RefUnwindSafe-for-TextRenderer" class="anchor">§</a><h3 class="code-header">impl !<a class="trait" href="https://doc.rust-lang.org/1.88.0/core/panic/unwind_safe/trait.RefUnwindSafe.html" title="trait core::panic::unwind_safe::RefUnwindSafe">RefUnwindSafe</a> for <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section><section id="impl-Send-for-TextRenderer" class="impl"><a href="#impl-Send-for-TextRenderer" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> for <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section><section id="impl-Sync-for-TextRenderer" class="impl"><a href="#impl-Sync-for-TextRenderer" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a> for <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section><section id="impl-Unpin-for-TextRenderer" class="impl"><a href="#impl-Unpin-for-TextRenderer" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a> for <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section><section id="impl-UnwindSafe-for-TextRenderer" class="impl"><a href="#impl-UnwindSafe-for-TextRenderer" class="anchor">§</a><h3 class="code-header">impl !<a class="trait" href="https://doc.rust-lang.org/1.88.0/core/panic/unwind_safe/trait.UnwindSafe.html" title="trait core::panic::unwind_safe::UnwindSafe">UnwindSafe</a> for <a class="struct" href="struct.TextRenderer.html" title="struct mirador::renderer::text::TextRenderer">TextRenderer</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/any.rs.html#138">Source</a><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/any/trait.Any.html" title="trait core::any::Any">Any</a> for T<div class="where">where
     T: 'static + ?<a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/any.rs.html#139">Source</a><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/any/trait.Any.html#tymethod.type_id" class="fn">type_id</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.88.0/core/any/struct.TypeId.html" title="struct core::any::TypeId">TypeId</a></h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a href="https://doc.rust-lang.org/1.88.0/core/any/trait.Any.html#tymethod.type_id">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/borrow.rs.html#209">Source</a><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.Borrow.html" title="trait core::borrow::Borrow">Borrow</a>&lt;T&gt; for T<div class="where">where
     T: ?<a class="trait" href="https://doc.rust-lang.org/1.88.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/borrow.rs.html#211">Source</a><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.Borrow.html#tymethod.borrow" class="fn">borrow</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.reference.html">&amp;T</a></h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.Borrow.html#tymethod.borrow">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a class="src rightside" href="https://doc.rust-lang.org/1.88.0/src/core/borrow.rs.html#217">Source</a><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="https://doc.rust-lang.org/1.88.0/core/borrow/trait.BorrowMut.html" title="trait core::borrow::BorrowMut">BorrowMut</a>&lt;T&gt; for T<div class="where">where

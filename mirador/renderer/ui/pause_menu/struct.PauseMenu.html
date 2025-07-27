@@ -19,7 +19,7 @@ to maintain consistent appearance across different resolutions.</p>
 </div><span id="structfield.visible" class="structfield section-header"><a href="#structfield.visible" class="anchor field">§</a><code>visible: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></code></span><div class="docblock"><p>Whether the pause menu is currently visible</p>
 </div><span id="structfield.last_action" class="structfield section-header"><a href="#structfield.last_action" class="anchor field">§</a><code>last_action: <a class="enum" href="enum.PauseMenuAction.html" title="enum mirador::renderer::ui::pause_menu::PauseMenuAction">PauseMenuAction</a></code></span><div class="docblock"><p>The last action that was triggered by the menu</p>
 </div><span id="structfield.show_debug_panel" class="structfield section-header"><a href="#structfield.show_debug_panel" class="anchor field">§</a><code>show_debug_panel: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></code></span><div class="docblock"><p>Whether the debug panel should be shown</p>
-</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-PauseMenu" class="impl"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#52-532">Source</a><a href="#impl-PauseMenu" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.PauseMenu.html" title="struct mirador::renderer::ui::pause_menu::PauseMenu">PauseMenu</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#65-82">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-PauseMenu" class="impl"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#52-536">Source</a><a href="#impl-PauseMenu" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.PauseMenu.html" title="struct mirador::renderer::ui::pause_menu::PauseMenu">PauseMenu</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#65-82">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(
     device: &amp;Device,
     queue: &amp;Queue,
     surface_format: TextureFormat,
@@ -70,7 +70,7 @@ used when showing the menu to update button text</li>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.is_visible" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#283-285">Source</a><h4 class="code-header">pub fn <a href="#method.is_visible" class="fn">is_visible</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns whether the pause menu is currently visible.</p>
 <h5 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h5>
 <p><code>true</code> if the menu is visible, <code>false</code> otherwise</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_input" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#296-333">Source</a><h4 class="code-header">pub fn <a href="#method.handle_input" class="fn">handle_input</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.handle_input" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#296-336">Source</a><h4 class="code-header">pub fn <a href="#method.handle_input" class="fn">handle_input</a>(
     &amp;mut self,
     event: &amp;WindowEvent,
     audio_manager: &amp;mut <a class="struct" href="../../../game/audio/struct.GameAudioManager.html" title="struct mirador::game::audio::GameAudioManager">GameAudioManager</a>,
@@ -82,21 +82,21 @@ setting the appropriate action and playing audio feedback.</p>
 <li><code>event</code> - The window event to handle</li>
 <li><code>audio_manager</code> - The audio manager for playing button click sounds</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.get_last_action" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#343-347">Source</a><h4 class="code-header">pub fn <a href="#method.get_last_action" class="fn">get_last_action</a>(&amp;mut self) -&gt; <a class="enum" href="enum.PauseMenuAction.html" title="enum mirador::renderer::ui::pause_menu::PauseMenuAction">PauseMenuAction</a></h4></section></summary><div class="docblock"><p>Gets the last action that was triggered and resets it to <code>None</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_last_action" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#346-350">Source</a><h4 class="code-header">pub fn <a href="#method.get_last_action" class="fn">get_last_action</a>(&amp;mut self) -&gt; <a class="enum" href="enum.PauseMenuAction.html" title="enum mirador::renderer::ui::pause_menu::PauseMenuAction">PauseMenuAction</a></h4></section></summary><div class="docblock"><p>Gets the last action that was triggered and resets it to <code>None</code>.</p>
 <p>This method should be called each frame to check what action
 the user has requested from the pause menu.</p>
 <h5 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h5>
 <p>The last <code>PauseMenuAction</code> that was triggered, or <code>None</code> if no action occurred</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.resize" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#355-366">Source</a><h4 class="code-header">pub fn <a href="#method.resize" class="fn">resize</a>(&amp;mut self, queue: &amp;Queue, resolution: Resolution)</h4></section></summary><div class="docblock"><p>Handles window resize events by updating button positions and text rendering.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.resize" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#358-369">Source</a><h4 class="code-header">pub fn <a href="#method.resize" class="fn">resize</a>(&amp;mut self, queue: &amp;Queue, resolution: Resolution)</h4></section></summary><div class="docblock"><p>Handles window resize events by updating button positions and text rendering.</p>
 <h5 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h5>
 <ul>
 <li><code>queue</code> - The WGPU command queue</li>
 <li><code>resolution</code> - The new window resolution</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.recreate_buttons_for_new_size" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#372-467">Source</a><h4 class="code-header">fn <a href="#method.recreate_buttons_for_new_size" class="fn">recreate_buttons_for_new_size</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Recreates all button positions and styles for the current window size.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.recreate_buttons_for_new_size" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#375-471">Source</a><h4 class="code-header">fn <a href="#method.recreate_buttons_for_new_size" class="fn">recreate_buttons_for_new_size</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Recreates all button positions and styles for the current window size.</p>
 <p>This method is called after a window resize to ensure all buttons
 are properly positioned and scaled for the new dimensions.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.prepare" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#482-489">Source</a><h4 class="code-header">pub fn <a href="#method.prepare" class="fn">prepare</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.prepare" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#486-493">Source</a><h4 class="code-header">pub fn <a href="#method.prepare" class="fn">prepare</a>(
     &amp;mut self,
     device: &amp;Device,
     queue: &amp;Queue,
@@ -111,7 +111,7 @@ are properly positioned and scaled for the new dimensions.</p>
 </ul>
 <h5 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h5>
 <p><code>Ok(())</code> on success, or a <code>PrepareError</code> if text preparation fails</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.render" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#501-507">Source</a><h4 class="code-header">pub fn <a href="#method.render" class="fn">render</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.render" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#505-511">Source</a><h4 class="code-header">pub fn <a href="#method.render" class="fn">render</a>(
     &amp;mut self,
     device: &amp;Device,
     render_pass: &amp;mut RenderPass&lt;'_&gt;,
@@ -123,10 +123,10 @@ are properly positioned and scaled for the new dimensions.</p>
 </ul>
 <h5 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h5>
 <p><code>Ok(())</code> on success, or a <code>RenderError</code> if rendering fails</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.is_debug_panel_visible" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#514-516">Source</a><h4 class="code-header">pub fn <a href="#method.is_debug_panel_visible" class="fn">is_debug_panel_visible</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns whether the debug panel should be visible.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.is_debug_panel_visible" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#518-520">Source</a><h4 class="code-header">pub fn <a href="#method.is_debug_panel_visible" class="fn">is_debug_panel_visible</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns whether the debug panel should be visible.</p>
 <h5 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h5>
 <p><code>true</code> if the debug panel should be shown, <code>false</code> otherwise</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.update_test_mode_button_text" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#523-531">Source</a><h4 class="code-header">pub fn <a href="#method.update_test_mode_button_text" class="fn">update_test_mode_button_text</a>(&amp;mut self, is_test_mode: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>)</h4></section></summary><div class="docblock"><p>Updates the test mode button text based on the current test mode state.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_test_mode_button_text" class="method"><a class="src rightside" href="../../../../src/mirador/renderer/ui/pause_menu.rs.html#527-535">Source</a><h4 class="code-header">pub fn <a href="#method.update_test_mode_button_text" class="fn">update_test_mode_button_text</a>(&amp;mut self, is_test_mode: <a class="primitive" href="https://doc.rust-lang.org/1.88.0/std/primitive.bool.html">bool</a>)</h4></section></summary><div class="docblock"><p>Updates the test mode button text based on the current test mode state.</p>
 <h5 id="arguments-9"><a class="doc-anchor" href="#arguments-9">§</a>Arguments</h5>
 <ul>
 <li><code>is_test_mode</code> - Whether the game is currently in test mode</li>
