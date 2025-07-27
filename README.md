@@ -2,7 +2,7 @@
 
 A 3D maze game where you navigate procedurally generated labyrinths while being hunted by increasingly aggressive enemies. Built in Rust with real-time GPU rendering and spatial audio.
 
-![Mirador Gameplay](assets/Mirador-title.png)
+<img width="2555" height="1038" alt="image" src="https://github.com/user-attachments/assets/a6611345-99eb-4a43-a5bf-6b24a26e6a0f" />
 
 ---
 
